@@ -1,0 +1,112 @@
+﻿@model TheatreHub.Models.Venue
+
+<div asp-validation-summary="All"
+     class="text-danger mb-3">
+</div>
+
+<div class="mb-3">
+    <label asp-for="Name"
+           class="form-label fw-semibold">
+    </label>
+
+    <input asp-for="Name"
+           class="form-control"
+           placeholder="Наприклад: Національний театр" />
+
+    <span asp-validation-for="Name"
+          class="text-danger">
+    </span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Address"
+           class="form-label fw-semibold">
+    </label>
+
+    <input asp-for="Address"
+           class="form-control"
+           placeholder="Вулиця, будинок" />
+
+    <span asp-validation-for="Address"
+          class="text-danger">
+    </span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="City"
+           class="form-label fw-semibold">
+    </label>
+
+    <input asp-for="City"
+           class="form-control"
+           placeholder="Наприклад: Київ" />
+
+    <span asp-validation-for="City"
+          class="text-danger">
+    </span>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label asp-for="ContactPerson"
+               class="form-label fw-semibold">
+        </label>
+
+        <input asp-for="ContactPerson"
+               class="form-control" />
+
+        <span asp-validation-for="ContactPerson"
+              class="text-danger">
+        </span>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <label asp-for="PhoneNumber"
+               class="form-label fw-semibold">
+        </label>
+
+        <input asp-for="PhoneNumber"
+               class="form-control" />
+
+        <span asp-validation-for="PhoneNumber"
+              class="text-danger">
+        </span>
+    </div>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Email"
+           class="form-label fw-semibold">
+    </label>
+
+    <input asp-for="Email"
+           class="form-control"
+           type="email" />
+
+    <span asp-validation-for="Email"
+          class="text-danger">
+    </span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Notes"
+           class="form-label fw-semibold">
+    </label>
+
+    <textarea asp-for="Notes"
+              class="form-control"
+              rows="4"></textarea>
+
+    <span asp-validation-for="Notes"
+          class="text-danger">
+    </span>
+</div>
+
+<div class="form-check mb-4">
+    <input asp-for="IsActive"
+           class="form-check-input" />
+
+    <label asp-for="IsActive"
+           class="form-check-label fw-semibold">
+    </label>
+</div>

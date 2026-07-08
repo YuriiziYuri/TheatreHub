@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TheatreHub.Data;
 
@@ -10,9 +11,11 @@ using TheatreHub.Data;
 namespace TheatreHub.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260708181101_AddVenuesAndHalls")]
+    partial class AddVenuesAndHalls
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.12");
@@ -185,8 +188,13 @@ namespace TheatreHub.Migrations
                     b.Property<DateTime>("EndDateTime")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("HallId")
+                    b.Property<int?>("HallId")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
@@ -346,8 +354,7 @@ namespace TheatreHub.Migrations
                     b.HasOne("TheatreHub.Models.Hall", "Hall")
                         .WithMany("Rehearsals")
                         .HasForeignKey("HallId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("TheatreHub.Models.Performance", "Performance")
                         .WithMany("Rehearsals")

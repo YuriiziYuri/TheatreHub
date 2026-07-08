@@ -4,9 +4,16 @@
     ViewData["Title"] = "Репетиції";
 }
 
-<div class="d-flex justify-content-between align-items-start mb-4">
+<div class="d-flex flex-wrap
+            justify-content-between
+            align-items-center
+            gap-3
+            mb-4">
+
     <div>
-        <h1 class="h2 mb-1">Репетиції</h1>
+        <h1 class="h2 mb-1">
+            Репетиції
+        </h1>
 
         <p class="text-muted mb-0">
             Планування та контроль театральних репетицій.
@@ -18,6 +25,20 @@
         Створити репетицію
     </a>
 </div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["ErrorMessage"]
+    </div>
+}
 
 @if (!Model.Any())
 {
@@ -37,7 +58,7 @@ else
                         <th>Вистава</th>
                         <th>Початок</th>
                         <th>Завершення</th>
-                        <th>Місце</th>
+                        <th>Зал</th>
                         <th>Учасники</th>
                         <th>Статус</th>
                         <th class="text-end">Дії</th>
@@ -49,19 +70,32 @@ else
                     {
                         <tr>
                             <td class="fw-semibold">
-                                @item.Performance.Title
+                                <a asp-controller="Performances"
+                                   asp-action="Details"
+                                   asp-route-id="@item.PerformanceId"
+                                   class="text-decoration-none">
+
+                                    @item.Performance.Title
+
+                                </a>
                             </td>
 
-                            <td>
+                            <td class="text-nowrap">
                                 @item.StartDateTime.ToString("dd.MM.yyyy HH:mm")
                             </td>
 
-                            <td>
+                            <td class="text-nowrap">
                                 @item.EndDateTime.ToString("dd.MM.yyyy HH:mm")
                             </td>
 
                             <td>
-                                @item.Location
+                                <div class="fw-semibold">
+                                    @item.Hall.Name
+                                </div>
+
+                                <div class="small text-muted">
+                                    @item.Hall.Venue.Name
+                                </div>
                             </td>
 
                             <td>
@@ -69,34 +103,33 @@ else
                             </td>
 
                             <td>
-                                @Html.DisplayFor(modelItem => item.Status)
-                            </td>
+                                @Html.DisplayFor(
+                                modelItem => item.Status)
+                    </td>
 
-                            <td class="text-end text-nowrap">
-                                <div class="d-inline-flex gap-1">
+                    <td class="text-end text-nowrap">
 
-                                    <a asp-action="Details"
-                                       asp-route-id="@item.Id"
-                                       class="btn btn-sm btn-outline-secondary">
-                                        Деталі
-                                    </a>
+                        <a asp-action="Details"
+                           asp-route-id="@item.Id"
+                           class="btn btn-sm btn-outline-primary">
+                            Деталі
+                        </a>
 
-                                    <a asp-action="Edit"
-                                       asp-route-id="@item.Id"
-                                       class="btn btn-sm btn-outline-primary">
-                                        Змінити
-                                    </a>
+                        <a asp-action="Edit"
+                           asp-route-id="@item.Id"
+                           class="btn btn-sm btn-outline-secondary">
+                            Змінити
+                        </a>
 
-                                    <a asp-action="Delete"
-                                       asp-route-id="@item.Id"
-                                       class="btn btn-sm btn-outline-danger">
-                                        Видалити
-                                    </a>
+                        <a asp-action="Delete"
+                           asp-route-id="@item.Id"
+                           class="btn btn-sm btn-outline-danger">
+                            Видалити
+                        </a>
 
-                                </div>
-                            </td>
-                        </tr>
-                    }
+                    </td>
+                </tr>
+                                }
                 </tbody>
 
             </table>

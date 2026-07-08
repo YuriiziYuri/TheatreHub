@@ -1,0 +1,181 @@
+﻿@model TheatreHub.Models.Hall
+
+<div asp-validation-summary="All"
+     class="alert alert-danger"
+     role="alert">
+</div>
+
+<div class="mb-3">
+    <label asp-for="VenueId"
+           class="form-label fw-semibold">
+    </label>
+
+    <select asp-for="VenueId"
+            asp-items="ViewBag.VenueId"
+            class="form-select">
+
+        <option value="">
+            Оберіть майданчик
+        </option>
+
+    </select>
+
+    <span asp-validation-for="VenueId"
+          class="text-danger">
+    </span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Name"
+           class="form-label fw-semibold">
+    </label>
+
+    <input asp-for="Name"
+           class="form-control"
+           placeholder="Наприклад: Велика зала" />
+
+    <span asp-validation-for="Name"
+          class="text-danger">
+    </span>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label asp-for="Capacity"
+               class="form-label fw-semibold">
+        </label>
+
+        <input asp-for="Capacity"
+               type="number"
+               min="1"
+               class="form-control" />
+
+        <span asp-validation-for="Capacity"
+              class="text-danger">
+        </span>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <label asp-for="RentalCost"
+               class="form-label fw-semibold">
+        </label>
+
+        <input asp-for="RentalCost"
+               type="number"
+               min="0"
+               step="0.01"
+               class="form-control" />
+
+        <span asp-validation-for="RentalCost"
+              class="text-danger">
+        </span>
+    </div>
+</div>
+
+<h2 class="h5 mt-3 mb-3">
+    Обладнання та приміщення
+</h2>
+
+<div class="row">
+
+    <div class="col-sm-6 col-lg-4">
+        <div class="form-check mb-3">
+            <input asp-for="HasStage"
+                   class="form-check-input" />
+            <label asp-for="HasStage"
+                   class="form-check-label"></label>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-4">
+        <div class="form-check mb-3">
+            <input asp-for="HasCurtains"
+                   class="form-check-input" />
+            <label asp-for="HasCurtains"
+                   class="form-check-label"></label>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-4">
+        <div class="form-check mb-3">
+            <input asp-for="HasDressingRooms"
+                   class="form-check-input" />
+            <label asp-for="HasDressingRooms"
+                   class="form-check-label"></label>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-4">
+        <div class="form-check mb-3">
+            <input asp-for="HasLighting"
+                   class="form-check-input" />
+            <label asp-for="HasLighting"
+                   class="form-check-label"></label>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-4">
+        <div class="form-check mb-3">
+            <input asp-for="HasSound"
+                   class="form-check-input" />
+            <label asp-for="HasSound"
+                   class="form-check-label"></label>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-4">
+        <div class="form-check mb-3">
+            <input asp-for="HasMicrophones"
+                   class="form-check-input" />
+            <label asp-for="HasMicrophones"
+                   class="form-check-label"></label>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-4">
+        <div class="form-check mb-3">
+            <input asp-for="HasProjector"
+                   class="form-check-input" />
+            <label asp-for="HasProjector"
+                   class="form-check-label"></label>
+        </div>
+    </div>
+
+</div>
+
+<div class="mb-3">
+    <label asp-for="EquipmentNotes"
+           class="form-label fw-semibold">
+    </label>
+
+    <textarea asp-for="EquipmentNotes"
+              class="form-control"
+              rows="3"></textarea>
+
+    <span asp-validation-for="EquipmentNotes"
+          class="text-danger">
+    </span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Notes"
+           class="form-label fw-semibold">
+    </label>
+
+    <textarea asp-for="Notes"
+              class="form-control"
+              rows="3"></textarea>
+
+    <span asp-validation-for="Notes"
+          class="text-danger">
+    </span>
+</div>
+
+<div class="form-check mb-4">
+    <input asp-for="IsActive"
+           class="form-check-input" />
+
+    <label asp-for="IsActive"
+           class="form-check-label fw-semibold">
+    </label>
+</div>

@@ -1,0 +1,163 @@
+﻿@model TheatreHub.Models.Hall
+
+@{
+    ViewData["Title"] = "Деталі залу";
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+
+                <div class="d-flex justify-content-between
+                            align-items-start
+                            gap-3
+                            mb-4">
+
+                    <div>
+                        <h1 class="h3 mb-1">@Model.Name</h1>
+                        <p class="text-muted mb-0">
+                            @Model.Venue.Name — @Model.Venue.Address
+                        </p>
+                    </div>
+
+                    @if (Model.IsActive)
+                    {
+                        <span class="badge text-bg-success">
+                            Активний
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge text-bg-secondary">
+                            Неактивний
+                        </span>
+                    }
+                </div>
+
+                <dl class="row">
+                    <dt class="col-sm-4">Місткість</dt>
+                    <dd class="col-sm-8">
+                        @Model.Capacity місць
+                    </dd>
+
+                    <dt class="col-sm-4">Вартість оренди</dt>
+                    <dd class="col-sm-8">
+                        @Model.RentalCost.ToString("N2")
+                    </dd>
+
+                    <dt class="col-sm-4">Додаткове обладнання</dt>
+                    <dd class="col-sm-8">
+                        @(Model.EquipmentNotes ?? "Не вказано")
+                    </dd>
+
+                    <dt class="col-sm-4">Примітки</dt>
+                    <dd class="col-sm-8">
+                        @(Model.Notes ?? "Немає")
+                    </dd>
+                </dl>
+
+                <hr />
+
+                <h2 class="h5 mb-3">
+                    Технічні можливості
+                </h2>
+
+                <div class="row g-2 mb-4">
+                    @{
+                        var options = new[]
+                        {
+                                        ("Сцена", Model.HasStage),
+                                        ("Куліси", Model.HasCurtains),
+                                        ("Гримерки", Model.HasDressingRooms),
+                                        ("Світлове обладнання", Model.HasLighting),
+                                        ("Звукове обладнання", Model.HasSound),
+                                        ("Мікрофони", Model.HasMicrophones),
+                                        ("Проєктор", Model.HasProjector)
+                                        };
+                    }
+
+                    @foreach (var option in options)
+                    {
+                        <div class="col-sm-6 col-lg-4">
+                            <div class="border rounded p-2">
+                                @if (option.Item2)
+                                {
+                                    <span class="text-success">✓</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+
+                                @option.Item1
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <h2 class="h5 mb-3">
+                    Пов’язані репетиції
+                </h2>
+
+                @if (!Model.Rehearsals.Any())
+                {
+                    <div class="alert alert-info">
+                        До залу ще не прив’язано репетицій.
+                    </div>
+                }
+                else
+                {
+                    <ul class="list-group mb-4">
+                        @foreach (var rehearsal in Model.Rehearsals
+                                            .OrderBy(item => item.StartDateTime))
+                        {
+                            <li class="list-group-item">
+                                <strong>
+                                    @rehearsal.Performance.Title
+                                </strong>
+
+                                <span class="text-muted">
+                                    —
+                                    @rehearsal.StartDateTime
+                                    .ToString("dd.MM.yyyy HH:mm")
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                }
+
+                <div class="d-flex flex-wrap gap-2">
+                    <a asp-action="Edit"
+                       asp-route-id="@Model.Id"
+                       class="btn btn-primary">
+                        Редагувати
+                    </a>
+
+                    <a asp-controller="Venues"
+                       asp-action="Details"
+                       asp-route-id="@Model.VenueId"
+                       class="btn btn-outline-secondary">
+                        До майданчика
+                    </a>
+
+                    <a asp-action="Index"
+                       asp-route-venueId="@Model.VenueId"
+                       class="btn btn-outline-dark">
+                        До списку
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>

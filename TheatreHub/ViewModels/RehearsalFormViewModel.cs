@@ -12,6 +12,10 @@ public class RehearsalFormViewModel
     [Display(Name = "Вистава")]
     public int PerformanceId { get; set; }
 
+    [Range(1, int.MaxValue, ErrorMessage = "Оберіть зал")]
+    [Display(Name = "Зал")]
+    public int HallId { get; set; }
+
     [Required(ErrorMessage = "Вкажіть дату та час початку")]
     [Display(Name = "Початок репетиції")]
     public DateTime StartDateTime { get; set; }
@@ -19,11 +23,6 @@ public class RehearsalFormViewModel
     [Required(ErrorMessage = "Вкажіть дату та час завершення")]
     [Display(Name = "Завершення репетиції")]
     public DateTime EndDateTime { get; set; }
-
-    [Required(ErrorMessage = "Вкажіть місце проведення")]
-    [StringLength(150)]
-    [Display(Name = "Місце проведення")]
-    public string Location { get; set; } = string.Empty;
 
     [StringLength(1000)]
     [Display(Name = "Примітки")]
@@ -34,6 +33,8 @@ public class RehearsalFormViewModel
         = RehearsalStatus.Planned;
 
     public List<Performance> Performances { get; set; } = [];
+
+    public List<Hall> Halls { get; set; } = [];
 
     public List<ActorSelectionViewModel> Actors { get; set; } = [];
 }

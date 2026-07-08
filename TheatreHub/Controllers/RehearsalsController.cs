@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using TheatreHub.Data;
 using TheatreHub.Models;
+using TheatreHub.Models.Enums;
 using TheatreHub.ViewModels;
 
 namespace TheatreHub.Controllers;
@@ -15,20 +16,23 @@ public class RehearsalsController : Controller
         _context = context;
     }
 
-    // Список репетицій
+    // GET: Rehearsals
     public async Task<IActionResult> Index()
     {
         var rehearsals = await _context.Rehearsals
-            .Include(r => r.Performance)
-            .Include(r => r.Participants)
-                .ThenInclude(p => p.Actor)
-            .OrderBy(r => r.StartDateTime)
+            .AsNoTracking()
+            .Include(rehearsal => rehearsal.Performance)
+            .Include(rehearsal => rehearsal.Hall)
+                .ThenInclude(hall => hall!.Venue)
+            .Include(rehearsal => rehearsal.Participants)
+                .ThenInclude(participant => participant.Actor)
+            .OrderBy(rehearsal => rehearsal.StartDateTime)
             .ToListAsync();
 
         return View(rehearsals);
     }
 
-    // Деталі репетиції
+    // GET: Rehearsals/Details/5
     public async Task<IActionResult> Details(int? id)
     {
         if (id == null)
@@ -37,10 +41,13 @@ public class RehearsalsController : Controller
         }
 
         var rehearsal = await _context.Rehearsals
-            .Include(r => r.Performance)
-            .Include(r => r.Participants)
-                .ThenInclude(p => p.Actor)
-            .FirstOrDefaultAsync(r => r.Id == id);
+            .AsNoTracking()
+            .Include(item => item.Performance)
+            .Include(item => item.Hall)
+                .ThenInclude(hall => hall!.Venue)
+            .Include(item => item.Participants)
+                .ThenInclude(participant => participant.Actor)
+            .FirstOrDefaultAsync(item => item.Id == id.Value);
 
         if (rehearsal == null)
         {
@@ -50,13 +57,18 @@ public class RehearsalsController : Controller
         return View(rehearsal);
     }
 
-    // Форма створення
+    // GET: Rehearsals/Create
     public async Task<IActionResult> Create()
     {
         var model = new RehearsalFormViewModel
         {
-            StartDateTime = DateTime.Today.AddDays(1).AddHours(16),
-            EndDateTime = DateTime.Today.AddDays(1).AddHours(18)
+            StartDateTime = DateTime.Today
+                .AddDays(1)
+                .AddHours(16),
+
+            EndDateTime = DateTime.Today
+                .AddDays(1)
+                .AddHours(18)
         };
 
         await PopulateFormDataAsync(model);
@@ -64,7 +76,7 @@ public class RehearsalsController : Controller
         return View(model);
     }
 
-    // Створення репетиції
+    // POST: Rehearsals/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(
@@ -72,9 +84,13 @@ public class RehearsalsController : Controller
     {
         ValidateTime(model);
 
+        await ValidatePerformanceAsync(model.PerformanceId);
+        await ValidateHallAsync(model.HallId);
+
         var selectedActorIds = model.Actors
-            .Where(a => a.IsSelected)
-            .Select(a => a.ActorId)
+            .Where(actor => actor.IsSelected)
+            .Select(actor => actor.ActorId)
+            .Distinct()
             .ToList();
 
         if (selectedActorIds.Count == 0)
@@ -82,6 +98,10 @@ public class RehearsalsController : Controller
             ModelState.AddModelError(
                 nameof(model.Actors),
                 "Оберіть хоча б одного учасника репетиції.");
+        }
+        else
+        {
+            await ValidateSelectedActorsAsync(selectedActorIds);
         }
 
         await ValidateConflictsAsync(
@@ -97,13 +117,20 @@ public class RehearsalsController : Controller
             return View(model);
         }
 
+        var selectedHall = await _context.Halls
+            .AsNoTracking()
+            .FirstAsync(hall => hall.Id == model.HallId);
+
         var rehearsal = new Rehearsal
         {
             PerformanceId = model.PerformanceId,
+            HallId = model.HallId,
+
             StartDateTime = model.StartDateTime,
             EndDateTime = model.EndDateTime,
-            Location = model.Location.Trim(),
-            Notes = model.Notes,
+
+            Notes = NormalizeOptionalText(model.Notes),
+
             Status = model.Status
         };
 
@@ -119,10 +146,13 @@ public class RehearsalsController : Controller
         _context.Rehearsals.Add(rehearsal);
         await _context.SaveChangesAsync();
 
+        TempData["SuccessMessage"] =
+            "Репетицію успішно створено.";
+
         return RedirectToAction(nameof(Index));
     }
 
-    // Форма редагування
+    // GET: Rehearsals/Edit/5
     public async Task<IActionResult> Edit(int? id)
     {
         if (id == null)
@@ -131,8 +161,9 @@ public class RehearsalsController : Controller
         }
 
         var rehearsal = await _context.Rehearsals
-            .Include(r => r.Participants)
-            .FirstOrDefaultAsync(r => r.Id == id);
+            .AsNoTracking()
+            .Include(item => item.Participants)
+            .FirstOrDefaultAsync(item => item.Id == id.Value);
 
         if (rehearsal == null)
         {
@@ -140,16 +171,16 @@ public class RehearsalsController : Controller
         }
 
         var selectedActorIds = rehearsal.Participants
-            .Select(p => p.ActorId)
+            .Select(participant => participant.ActorId)
             .ToList();
 
         var model = new RehearsalFormViewModel
         {
             Id = rehearsal.Id,
             PerformanceId = rehearsal.PerformanceId,
+            HallId = rehearsal.HallId,
             StartDateTime = rehearsal.StartDateTime,
             EndDateTime = rehearsal.EndDateTime,
-            Location = rehearsal.Location,
             Notes = rehearsal.Notes,
             Status = rehearsal.Status
         };
@@ -161,7 +192,7 @@ public class RehearsalsController : Controller
         return View(model);
     }
 
-    // Збереження редагування
+    // POST: Rehearsals/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(
@@ -175,9 +206,13 @@ public class RehearsalsController : Controller
 
         ValidateTime(model);
 
+        await ValidatePerformanceAsync(model.PerformanceId);
+        await ValidateHallAsync(model.HallId);
+
         var selectedActorIds = model.Actors
-            .Where(a => a.IsSelected)
-            .Select(a => a.ActorId)
+            .Where(actor => actor.IsSelected)
+            .Select(actor => actor.ActorId)
+            .Distinct()
             .ToList();
 
         if (selectedActorIds.Count == 0)
@@ -186,11 +221,15 @@ public class RehearsalsController : Controller
                 nameof(model.Actors),
                 "Оберіть хоча б одного учасника репетиції.");
         }
+        else
+        {
+            await ValidateSelectedActorsAsync(selectedActorIds);
+        }
 
         await ValidateConflictsAsync(
             model,
             selectedActorIds,
-            id);
+            excludedRehearsalId: id);
 
         if (!ModelState.IsValid)
         {
@@ -201,9 +240,13 @@ public class RehearsalsController : Controller
             return View(model);
         }
 
+        var selectedHall = await _context.Halls
+            .AsNoTracking()
+            .FirstAsync(hall => hall.Id == model.HallId);
+
         var rehearsal = await _context.Rehearsals
-            .Include(r => r.Participants)
-            .FirstOrDefaultAsync(r => r.Id == id);
+            .Include(item => item.Participants)
+            .FirstOrDefaultAsync(item => item.Id == id);
 
         if (rehearsal == null)
         {
@@ -211,29 +254,37 @@ public class RehearsalsController : Controller
         }
 
         rehearsal.PerformanceId = model.PerformanceId;
+        rehearsal.HallId = model.HallId;
         rehearsal.StartDateTime = model.StartDateTime;
         rehearsal.EndDateTime = model.EndDateTime;
-        rehearsal.Location = model.Location.Trim();
-        rehearsal.Notes = model.Notes;
+        rehearsal.Notes = NormalizeOptionalText(model.Notes);
         rehearsal.Status = model.Status;
 
-        _context.RehearsalParticipants.RemoveRange(
-            rehearsal.Participants);
+        var oldParticipants =
+            rehearsal.Participants.ToList();
 
-        rehearsal.Participants = selectedActorIds
-            .Select(actorId => new RehearsalParticipant
-            {
-                RehearsalId = rehearsal.Id,
-                ActorId = actorId
-            })
-            .ToList();
+        _context.RehearsalParticipants.RemoveRange(
+            oldParticipants);
+
+        foreach (var actorId in selectedActorIds)
+        {
+            _context.RehearsalParticipants.Add(
+                new RehearsalParticipant
+                {
+                    RehearsalId = rehearsal.Id,
+                    ActorId = actorId
+                });
+        }
 
         await _context.SaveChangesAsync();
+
+        TempData["SuccessMessage"] =
+            "Репетицію успішно оновлено.";
 
         return RedirectToAction(nameof(Index));
     }
 
-    // Підтвердження видалення
+    // GET: Rehearsals/Delete/5
     public async Task<IActionResult> Delete(int? id)
     {
         if (id == null)
@@ -242,10 +293,13 @@ public class RehearsalsController : Controller
         }
 
         var rehearsal = await _context.Rehearsals
-            .Include(r => r.Performance)
-            .Include(r => r.Participants)
-                .ThenInclude(p => p.Actor)
-            .FirstOrDefaultAsync(r => r.Id == id);
+            .AsNoTracking()
+            .Include(item => item.Performance)
+            .Include(item => item.Hall)
+                .ThenInclude(hall => hall!.Venue)
+            .Include(item => item.Participants)
+                .ThenInclude(participant => participant.Actor)
+            .FirstOrDefaultAsync(item => item.Id == id.Value);
 
         if (rehearsal == null)
         {
@@ -255,19 +309,24 @@ public class RehearsalsController : Controller
         return View(rehearsal);
     }
 
-    // Видалення
+    // POST: Rehearsals/Delete/5
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         var rehearsal = await _context.Rehearsals
-            .FindAsync(id);
+            .FirstOrDefaultAsync(item => item.Id == id);
 
-        if (rehearsal != null)
+        if (rehearsal == null)
         {
-            _context.Rehearsals.Remove(rehearsal);
-            await _context.SaveChangesAsync();
+            return NotFound();
         }
+
+        _context.Rehearsals.Remove(rehearsal);
+        await _context.SaveChangesAsync();
+
+        TempData["SuccessMessage"] =
+            "Репетицію видалено.";
 
         return RedirectToAction(nameof(Index));
     }
@@ -275,7 +334,23 @@ public class RehearsalsController : Controller
     private void ValidateTime(
         RehearsalFormViewModel model)
     {
-        if (model.EndDateTime <= model.StartDateTime)
+        if (model.StartDateTime == default)
+        {
+            ModelState.AddModelError(
+                nameof(model.StartDateTime),
+                "Вкажіть дату та час початку.");
+        }
+
+        if (model.EndDateTime == default)
+        {
+            ModelState.AddModelError(
+                nameof(model.EndDateTime),
+                "Вкажіть дату та час завершення.");
+        }
+
+        if (model.StartDateTime != default &&
+            model.EndDateTime != default &&
+            model.EndDateTime <= model.StartDateTime)
         {
             ModelState.AddModelError(
                 nameof(model.EndDateTime),
@@ -283,33 +358,112 @@ public class RehearsalsController : Controller
         }
     }
 
+    private async Task ValidatePerformanceAsync(
+        int performanceId)
+    {
+        if (performanceId <= 0)
+        {
+            ModelState.AddModelError(
+                nameof(RehearsalFormViewModel.PerformanceId),
+                "Оберіть виставу.");
+
+            return;
+        }
+
+        var performanceExists =
+            await _context.Performances.AnyAsync(
+                performance =>
+                    performance.Id == performanceId);
+
+        if (!performanceExists)
+        {
+            ModelState.AddModelError(
+                nameof(RehearsalFormViewModel.PerformanceId),
+                "Обрана вистава не існує.");
+        }
+    }
+
+    private async Task ValidateHallAsync(int hallId)
+    {
+        if (hallId <= 0)
+        {
+            ModelState.AddModelError(
+                nameof(RehearsalFormViewModel.HallId),
+                "Оберіть зал.");
+
+            return;
+        }
+
+        var hallExists = await _context.Halls
+            .AnyAsync(hall => hall.Id == hallId);
+
+        if (!hallExists)
+        {
+            ModelState.AddModelError(
+                nameof(RehearsalFormViewModel.HallId),
+                "Обраний зал не існує.");
+        }
+    }
+
+    private async Task ValidateSelectedActorsAsync(
+        IReadOnlyCollection<int> selectedActorIds)
+    {
+        var existingActorsCount = await _context.Actors
+            .CountAsync(actor =>
+                selectedActorIds.Contains(actor.Id));
+
+        if (existingActorsCount != selectedActorIds.Count)
+        {
+            ModelState.AddModelError(
+                nameof(RehearsalFormViewModel.Actors),
+                "Один або декілька вибраних акторів не існують.");
+        }
+    }
+
     private async Task ValidateConflictsAsync(
         RehearsalFormViewModel model,
-        List<int> selectedActorIds,
+        IReadOnlyCollection<int> selectedActorIds,
         int? excludedRehearsalId = null)
     {
-        if (model.EndDateTime <= model.StartDateTime)
+        if (model.StartDateTime == default ||
+            model.EndDateTime == default ||
+            model.EndDateTime <= model.StartDateTime)
         {
             return;
         }
 
         var overlappingRehearsals =
             await _context.Rehearsals
-                .Include(r => r.Participants)
-                    .ThenInclude(p => p.Actor)
-                .Where(r =>
+                .AsNoTracking()
+                .Include(rehearsal =>
+                    rehearsal.Participants)
+                    .ThenInclude(participant =>
+                        participant.Actor)
+                .Where(rehearsal =>
+                    rehearsal.Status !=
+                        RehearsalStatus.Cancelled &&
+
                     (!excludedRehearsalId.HasValue ||
-                     r.Id != excludedRehearsalId.Value) &&
-                    r.StartDateTime < model.EndDateTime &&
-                    r.EndDateTime > model.StartDateTime)
+                     rehearsal.Id !=
+                        excludedRehearsalId.Value) &&
+
+                    rehearsal.StartDateTime <
+                        model.EndDateTime &&
+
+                    rehearsal.EndDateTime >
+                        model.StartDateTime)
                 .ToListAsync();
 
         var actorConflicts = overlappingRehearsals
-            .SelectMany(r => r.Participants)
-            .Where(p =>
-                selectedActorIds.Contains(p.ActorId))
-            .Select(p => p.Actor.FullName)
+            .SelectMany(rehearsal =>
+                rehearsal.Participants)
+            .Where(participant =>
+                selectedActorIds.Contains(
+                    participant.ActorId))
+            .Select(participant =>
+                participant.Actor.FullName)
             .Distinct()
+            .OrderBy(name => name)
             .ToList();
 
         if (actorConflicts.Count > 0)
@@ -320,21 +474,18 @@ public class RehearsalsController : Controller
                 string.Join(", ", actorConflicts));
         }
 
-        var normalizedLocation =
-            model.Location?.Trim();
-
-        var locationConflict =
-            overlappingRehearsals.Any(r =>
-                string.Equals(
-                    r.Location.Trim(),
-                    normalizedLocation,
-                    StringComparison.OrdinalIgnoreCase));
-
-        if (locationConflict)
+        if (model.HallId > 0)
         {
-            ModelState.AddModelError(
-                nameof(model.Location),
-                "У цей час вказане місце вже зайняте.");
+            var hallConflict = overlappingRehearsals.Any(
+                rehearsal =>
+                    rehearsal.HallId == model.HallId);
+
+            if (hallConflict)
+            {
+                ModelState.AddModelError(
+                    nameof(model.HallId),
+                    "У цей час обраний зал уже зайнятий.");
+            }
         }
     }
 
@@ -346,24 +497,52 @@ public class RehearsalsController : Controller
             selectedActorIds?.ToHashSet()
             ?? new HashSet<int>();
 
-        model.Performances =
-            await _context.Performances
-                .OrderBy(p => p.Title)
-                .ToListAsync();
+        model.Performances = await _context.Performances
+            .AsNoTracking()
+            .OrderBy(performance =>
+                performance.Title)
+            .ToListAsync();
 
-        model.Actors =
-            await _context.Actors
-                .OrderBy(a => a.LastName)
-                .ThenBy(a => a.FirstName)
-                .Select(a =>
-                    new ActorSelectionViewModel
-                    {
-                        ActorId = a.Id,
-                        FullName =
-                            a.FirstName + " " + a.LastName,
-                        IsSelected =
-                            selectedIds.Contains(a.Id)
-                    })
-                .ToListAsync();
+        model.Halls = await _context.Halls
+            .AsNoTracking()
+            .Include(hall => hall.Venue)
+            .Where(hall =>
+                (hall.IsActive &&
+                 hall.Venue.IsActive) ||
+                hall.Id == model.HallId)
+            .OrderBy(hall =>
+                hall.Venue.Name)
+            .ThenBy(hall =>
+                hall.Name)
+            .ToListAsync();
+
+        model.Actors = await _context.Actors
+            .AsNoTracking()
+            .OrderBy(actor =>
+                actor.LastName)
+            .ThenBy(actor =>
+                actor.FirstName)
+            .Select(actor =>
+                new ActorSelectionViewModel
+                {
+                    ActorId = actor.Id,
+
+                    FullName =
+                        actor.FirstName +
+                        " " +
+                        actor.LastName,
+
+                    IsSelected =
+                        selectedIds.Contains(actor.Id)
+                })
+            .ToListAsync();
+    }
+
+    private static string? NormalizeOptionalText(
+        string? value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? null
+            : value.Trim();
     }
 }

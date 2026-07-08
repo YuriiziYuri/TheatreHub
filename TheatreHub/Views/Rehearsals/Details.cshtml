@@ -5,82 +5,212 @@
 }
 
 <div class="row justify-content-center">
-    <div class="col-lg-8">
+    <div class="col-lg-9">
 
         <div class="card border-0 shadow-sm">
             <div class="card-body p-4">
 
-                <h1 class="h3 mb-4">
-                    Деталі репетиції
-                </h1>
+                <div class="d-flex flex-wrap
+                            justify-content-between
+                            align-items-start
+                            gap-3
+                            mb-4">
 
-                <dl class="row">
-                    <dt class="col-sm-4">Вистава</dt>
+                    <div>
+                        <h1 class="h3 mb-1">
+                            Деталі репетиції
+                        </h1>
+
+                        <p class="text-muted mb-0">
+                            @Model.Performance.Title
+                        </p>
+                    </div>
+
+                    <span class="badge text-bg-primary">
+                        @Html.DisplayFor(model => model.Status)
+                    </span>
+
+                </div>
+
+                <dl class="row mb-4">
+
+                    <dt class="col-sm-4">
+                        Вистава
+                    </dt>
+
                     <dd class="col-sm-8">
-                        @Model.Performance.Title
+                        <a asp-controller="Performances"
+                           asp-action="Details"
+                           asp-route-id="@Model.PerformanceId"
+                           class="text-decoration-none">
+
+                            @Model.Performance.Title
+
+                        </a>
                     </dd>
 
-                    <dt class="col-sm-4">Початок</dt>
+                    <dt class="col-sm-4">
+                        Початок
+                    </dt>
+
                     <dd class="col-sm-8">
                         @Model.StartDateTime.ToString("dd.MM.yyyy HH:mm")
                     </dd>
 
-                    <dt class="col-sm-4">Завершення</dt>
+                    <dt class="col-sm-4">
+                        Завершення
+                    </dt>
+
                     <dd class="col-sm-8">
                         @Model.EndDateTime.ToString("dd.MM.yyyy HH:mm")
                     </dd>
 
-                    <dt class="col-sm-4">Місце</dt>
+                    <dt class="col-sm-4">
+                        Тривалість
+                    </dt>
+
                     <dd class="col-sm-8">
-                        @Model.Location
+                        @{
+                            var duration =
+                            Model.EndDateTime -
+                            Model.StartDateTime;
+                        }
+
+                        @if (duration.TotalMinutes >= 60)
+                        {
+                            <span>
+                                @((int)duration.TotalHours) год
+                                @duration.Minutes хв
+                            </span>
+                        }
+                        else
+                        {
+                            <span>
+                                @((int)duration.TotalMinutes) хв
+                            </span>
+                        }
                     </dd>
 
-                    <dt class="col-sm-4">Статус</dt>
+                    <dt class="col-sm-4">
+                        Зал
+                    </dt>
+
+                    <dd class="col-sm-8">
+                        <div class="fw-semibold">
+                            <a asp-controller="Halls"
+                               asp-action="Details"
+                               asp-route-id="@Model.HallId"
+                               class="text-decoration-none">
+
+                                @Model.Hall.Name
+
+                            </a>
+                        </div>
+
+                        <div class="small text-muted">
+                            @Model.Hall.Venue.Name —
+                            @Model.Hall.Venue.Address
+                        </div>
+                    </dd>
+
+                    <dt class="col-sm-4">
+                        Статус
+                    </dt>
+
                     <dd class="col-sm-8">
                         @Html.DisplayFor(model => model.Status)
                     </dd>
 
-                    <dt class="col-sm-4">Примітки</dt>
+                    <dt class="col-sm-4">
+                        Примітки
+                    </dt>
+
                     <dd class="col-sm-8">
-                        @(string.IsNullOrWhiteSpace(Model.Notes)
-                            ? "Немає"
-                            : Model.Notes)
+                        @if (string.IsNullOrWhiteSpace(Model.Notes))
+                        {
+                            <span class="text-muted">
+                                Приміток немає.
+                            </span>
+                        }
+                        else
+                        {
+                            <span>
+                                @Model.Notes
+                            </span>
+                        }
                     </dd>
+
                 </dl>
 
                 <hr />
 
-                <h2 class="h5 mb-3">Учасники</h2>
+                <div class="d-flex flex-wrap
+                            justify-content-between
+                            align-items-center
+                            gap-2
+                            mb-3">
+
+                    <h2 class="h5 mb-0">
+                        Учасники репетиції
+                    </h2>
+
+                    <span class="badge text-bg-secondary">
+                        @Model.Participants.Count
+                    </span>
+
+                </div>
 
                 @if (!Model.Participants.Any())
                 {
-                    <p class="text-muted">
+                    <div class="alert alert-info">
                         Учасників не додано.
-                    </p>
+                    </div>
                 }
                 else
                 {
-                    <ul class="list-group mb-4">
-                        @foreach (var participant in Model.Participants)
+                    <div class="list-group mb-4">
+
+                        @foreach (var participant in Model.Participants
+                                            .OrderBy(item => item.Actor.LastName)
+                                            .ThenBy(item => item.Actor.FirstName))
                         {
-                            <li class="list-group-item">
-                                @participant.Actor.FullName
-                            </li>
+                            <div class="list-group-item">
+                                <div class="fw-semibold">
+                                    @participant.Actor.FullName
+                                </div>
+
+                                @if (!string.IsNullOrWhiteSpace(
+                                                        participant.Actor.Email))
+                                {
+                                    <div class="small text-muted">
+                                        @participant.Actor.Email
+                                    </div>
+                                }
+                            </div>
                         }
-                    </ul>
+
+                    </div>
                 }
 
-                <div class="d-flex gap-2">
+                <div class="d-flex flex-wrap gap-2">
+
                     <a asp-action="Edit"
                        asp-route-id="@Model.Id"
                        class="btn btn-primary">
                         Редагувати
                     </a>
 
+                    <a asp-action="Delete"
+                       asp-route-id="@Model.Id"
+                       class="btn btn-outline-danger">
+                        Видалити
+                    </a>
+
                     <a asp-action="Index"
                        class="btn btn-outline-secondary">
                         До списку
                     </a>
+
                 </div>
 
             </div>

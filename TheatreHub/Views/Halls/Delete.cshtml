@@ -1,0 +1,68 @@
+﻿@model TheatreHub.Models.Hall
+
+@{
+    ViewData["Title"] = "Видалення залу";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+
+        <div class="card border-danger shadow-sm">
+            <div class="card-body p-4">
+
+                <h1 class="h3 text-danger mb-3">
+                    Видалення залу
+                </h1>
+
+                <p>
+                    Ви дійсно хочете видалити зал
+                    <strong>«@Model.Name»</strong>?
+                </p>
+
+                <dl class="row">
+                    <dt class="col-sm-4">Майданчик</dt>
+                    <dd class="col-sm-8">
+                        @Model.Venue.Name
+                    </dd>
+
+                    <dt class="col-sm-4">Місткість</dt>
+                    <dd class="col-sm-8">
+                        @Model.Capacity місць
+                    </dd>
+
+                    <dt class="col-sm-4">Репетиції</dt>
+                    <dd class="col-sm-8">
+                        @Model.Rehearsals.Count
+                    </dd>
+                </dl>
+
+                @if (Model.Rehearsals.Any())
+                {
+                    <div class="alert alert-warning">
+                        Видалення неможливе: із залом пов’язані репетиції.
+                    </div>
+                }
+
+                <form asp-action="Delete" method="post">
+                    <input type="hidden" asp-for="Id" />
+
+                    @if (!Model.Rehearsals.Any())
+                    {
+                        <button type="submit"
+                                class="btn btn-danger">
+                            Видалити
+                        </button>
+                    }
+
+                    <a asp-action="Index"
+                       asp-route-venueId="@Model.VenueId"
+                       class="btn btn-outline-secondary">
+                        Скасувати
+                    </a>
+                </form>
+
+            </div>
+        </div>
+
+    </div>
+</div>

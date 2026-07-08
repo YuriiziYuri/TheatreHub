@@ -52,6 +52,8 @@ public class HomeController : Controller
                 await _context.Rehearsals
                     .AsNoTracking()
                     .Include(rehearsal => rehearsal.Performance)
+                    .Include(rehearsal => rehearsal.Hall)
+                        .ThenInclude(hall => hall.Venue)
                     .Include(rehearsal => rehearsal.Participants)
                         .ThenInclude(participant => participant.Actor)
                     .Where(rehearsal =>

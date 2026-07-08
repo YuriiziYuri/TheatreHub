@@ -82,14 +82,24 @@
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="Location"
+                        <label asp-for="HallId"
                                class="form-label fw-semibold">
                         </label>
 
-                        <input asp-for="Location"
-                               class="form-control" />
+                        <select asp-for="HallId"
+                                asp-items="@(new SelectList(
+                                                Model.Halls,
+                                                "Id",
+                                                "DisplayName",
+                                                Model.HallId))"
+                                class="form-select">
 
-                        <span asp-validation-for="Location"
+                            <option value="0">
+                                Оберіть зал
+                            </option>
+                        </select>
+
+                        <span asp-validation-for="HallId"
                               class="text-danger">
                         </span>
                     </div>

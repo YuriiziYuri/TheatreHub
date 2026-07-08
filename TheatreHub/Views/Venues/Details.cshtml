@@ -1,0 +1,424 @@
+﻿@model TheatreHub.Models.Venue
+
+@{
+    ViewData["Title"] = "Деталі майданчика";
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show"
+         role="alert">
+
+        @TempData["SuccessMessage"]
+
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Закрити">
+        </button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show"
+         role="alert">
+
+        @TempData["ErrorMessage"]
+
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Закрити">
+        </button>
+    </div>
+}
+
+<div class="row justify-content-center">
+    <div class="col-xl-10">
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+
+                <div class="d-flex flex-wrap
+                            justify-content-between
+                            align-items-start
+                            gap-3
+                            mb-4">
+
+                    <div>
+                        <h1 class="h3 mb-1">
+                            @Model.Name
+                        </h1>
+
+                        <p class="text-muted mb-0">
+                            @Model.Address
+
+                            @if (!string.IsNullOrWhiteSpace(Model.City))
+                            {
+                                <span>, @Model.City</span>
+                            }
+                        </p>
+                    </div>
+
+                    @if (Model.IsActive)
+                    {
+                        <span class="badge text-bg-success fs-6">
+                            Активний
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge text-bg-secondary fs-6">
+                            Неактивний
+                        </span>
+                    }
+
+                </div>
+
+                <div class="row g-4">
+
+                    <div class="col-lg-7">
+
+                        <h2 class="h5 mb-3">
+                            Основна інформація
+                        </h2>
+
+                        <dl class="row mb-0">
+
+                            <dt class="col-sm-4">
+                                Назва
+                            </dt>
+
+                            <dd class="col-sm-8">
+                                @Model.Name
+                            </dd>
+
+                            <dt class="col-sm-4">
+                                Адреса
+                            </dt>
+
+                            <dd class="col-sm-8">
+                                @Model.Address
+                            </dd>
+
+                            <dt class="col-sm-4">
+                                Місто
+                            </dt>
+
+                            <dd class="col-sm-8">
+                                @(string.IsNullOrWhiteSpace(Model.City)
+                                                                ? "Не вказано"
+                                                                : Model.City)
+                            </dd>
+
+                            <dt class="col-sm-4">
+                                Статус
+                            </dt>
+
+                            <dd class="col-sm-8">
+                                @if (Model.IsActive)
+                                {
+                                    <span class="text-success fw-semibold">
+                                        Активний майданчик
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">
+                                        Неактивний майданчик
+                                    </span>
+                                }
+                            </dd>
+
+                        </dl>
+
+                    </div>
+
+                    <div class="col-lg-5">
+
+                        <h2 class="h5 mb-3">
+                            Контактні дані
+                        </h2>
+
+                        <dl class="row mb-0">
+
+                            <dt class="col-sm-5">
+                                Контактна особа
+                            </dt>
+
+                            <dd class="col-sm-7">
+                                @(string.IsNullOrWhiteSpace(Model.ContactPerson)
+                                                                ? "Не вказано"
+                                                                : Model.ContactPerson)
+                            </dd>
+
+                            <dt class="col-sm-5">
+                                Телефон
+                            </dt>
+
+                            <dd class="col-sm-7">
+                                @if (string.IsNullOrWhiteSpace(Model.PhoneNumber))
+                                {
+                                    <span>Не вказано</span>
+                                }
+                                else
+                                {
+                                    <a href="tel:@Model.PhoneNumber"
+                                       class="text-decoration-none">
+                                        @Model.PhoneNumber
+                                    </a>
+                                }
+                            </dd>
+
+                            <dt class="col-sm-5">
+                                Електронна пошта
+                            </dt>
+
+                            <dd class="col-sm-7">
+                                @if (string.IsNullOrWhiteSpace(Model.Email))
+                                {
+                                    <span>Не вказано</span>
+                                }
+                                else
+                                {
+                                    <a href="mailto:@Model.Email"
+                                       class="text-decoration-none">
+                                        @Model.Email
+                                    </a>
+                                }
+                            </dd>
+
+                        </dl>
+
+                    </div>
+
+                </div>
+
+                <hr class="my-4" />
+
+                <h2 class="h5 mb-2">
+                    Примітки
+                </h2>
+
+                @if (string.IsNullOrWhiteSpace(Model.Notes))
+                {
+                    <p class="text-muted mb-0">
+                        Приміток немає.
+                    </p>
+                }
+                else
+                {
+                    <div class="border rounded bg-light p-3">
+                        @Model.Notes
+                    </div>
+                }
+
+                <hr class="my-4" />
+
+                <div class="d-flex flex-wrap
+                            justify-content-between
+                            align-items-center
+                            gap-3
+                            mb-3">
+
+                    <div>
+                        <h2 class="h5 mb-1">
+                            Зали майданчика
+                        </h2>
+
+                        <p class="text-muted small mb-0">
+                            Кількість залів: @Model.Halls.Count
+                        </p>
+                    </div>
+
+                    <a asp-controller="Halls"
+                       asp-action="Create"
+                       asp-route-venueId="@Model.Id"
+                       class="btn btn-primary">
+
+                        Додати зал
+
+                    </a>
+
+                </div>
+
+                @if (!Model.Halls.Any())
+                {
+                    <div class="alert alert-info mb-4">
+                        До цього майданчика ще не додано жодного залу.
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive mb-4">
+
+                        <table class="table table-hover align-middle">
+
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Назва залу</th>
+                                    <th>Місткість</th>
+                                    <th>Вартість оренди</th>
+                                    <th>Обладнання</th>
+                                    <th>Статус</th>
+                                    <th class="text-end">Дії</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                @foreach (var hall in Model.Halls
+                                                            .OrderBy(item => item.Name))
+                                {
+                                    var equipment = new List<string>();
+
+                                    if (hall.HasStage)
+                                    {
+                                        equipment.Add("Сцена");
+                                    }
+
+                                    if (hall.HasLighting)
+                                    {
+                                        equipment.Add("Світло");
+                                    }
+
+                                    if (hall.HasSound)
+                                    {
+                                        equipment.Add("Звук");
+                                    }
+
+                                    if (hall.HasMicrophones)
+                                    {
+                                        equipment.Add("Мікрофони");
+                                    }
+
+                                    if (hall.HasProjector)
+                                    {
+                                        equipment.Add("Проєктор");
+                                    }
+
+                                    <tr>
+
+                                        <td class="fw-semibold">
+
+                                            <a asp-controller="Halls"
+                                               asp-action="Details"
+                                               asp-route-id="@hall.Id"
+                                               class="text-decoration-none">
+
+                                                @hall.Name
+
+                                            </a>
+
+                                        </td>
+
+                                        <td>
+                                            @hall.Capacity місць
+                                        </td>
+
+                                        <td>
+                                            @hall.RentalCost.ToString("N2")
+                                        </td>
+
+                                        <td>
+                                            @if (equipment.Any())
+                                            {
+                                                @string.Join(", ", equipment)
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">
+                                                    Не вказано
+                                                </span>
+                                            }
+                                        </td>
+
+                                        <td>
+                                            @if (hall.IsActive)
+                                            {
+                                                <span class="badge text-bg-success">
+                                                    Активний
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge text-bg-secondary">
+                                                    Неактивний
+                                                </span>
+                                            }
+                                        </td>
+
+                                        <td class="text-end text-nowrap">
+
+                                            <a asp-controller="Halls"
+                                               asp-action="Details"
+                                               asp-route-id="@hall.Id"
+                                               class="btn btn-sm btn-outline-primary">
+
+                                                Деталі
+
+                                            </a>
+
+                                            <a asp-controller="Halls"
+                                               asp-action="Edit"
+                                               asp-route-id="@hall.Id"
+                                               class="btn btn-sm btn-outline-secondary">
+
+                                                Змінити
+
+                                            </a>
+
+                                        </td>
+
+                                    </tr>
+                                }
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+                }
+
+                <div class="d-flex flex-wrap gap-2">
+
+                    <a asp-action="Edit"
+                       asp-route-id="@Model.Id"
+                       class="btn btn-primary">
+
+                        Редагувати майданчик
+
+                    </a>
+
+                    <a asp-controller="Halls"
+                       asp-action="Index"
+                       asp-route-venueId="@Model.Id"
+                       class="btn btn-outline-success">
+
+                        Усі зали майданчика
+
+                    </a>
+
+                    <a asp-action="Index"
+                       class="btn btn-outline-secondary">
+
+                        До списку майданчиків
+
+                    </a>
+
+                    <a asp-action="Delete"
+                       asp-route-id="@Model.Id"
+                       class="btn btn-outline-danger">
+
+                        Видалити
+
+                    </a>
+
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>

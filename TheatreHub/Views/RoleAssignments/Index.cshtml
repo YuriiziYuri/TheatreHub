@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Акторські склади";
     var roleId = ViewBag.CharacterRoleId;
+    var roleName = ViewBag.CharacterRoleName as string;
 }
 
 <div class="d-flex flex-wrap
@@ -16,9 +17,18 @@
             Акторські склади
         </h1>
 
-        <p class="text-muted mb-0">
-            Поточні та попередні виконавці театральних ролей
-        </p>
+        @if (!string.IsNullOrWhiteSpace(roleName))
+        {
+            <p class="text-muted mb-0">
+                @roleName
+            </p>
+        }
+        else
+        {
+            <p class="text-muted mb-0">
+                Поточні та попередні виконавці театральних ролей
+            </p>
+        }
     </div>
 
     <a asp-action="Create"
@@ -40,6 +50,7 @@ else
         <div class="table-responsive">
 
             <table class="table table-hover align-middle mb-0">
+
                 <thead class="table-light">
                     <tr>
                         <th>Вистава</th>
@@ -71,17 +82,16 @@ else
                             </td>
 
                             <td>
-                                @Html.DisplayFor(
-                                modelItem => item.CastType)
-                    </td>
+                                @Html.DisplayFor(modelItem => item.CastType)
+                            </td>
 
-                    <td class="text-nowrap">
-                        @item.StartDate.ToString("dd.MM.yyyy")
+                            <td class="text-nowrap">
+                                @item.StartDate.ToString("dd.MM.yyyy")
 
-                        @if (item.EndDate.HasValue)
+                                @if (item.EndDate.HasValue)
                                 {
                                     <span>
-                                        — @(item.EndDate.Value.ToString("dd.MM.yyyy"))
+                                        — @item.EndDate.Value.ToString("dd.MM.yyyy")
                                     </span>
                                 }
                                 else
@@ -91,12 +101,11 @@ else
                             </td>
 
                             <td>
-                                @Html.DisplayFor(
-                                modelItem => item.Status)
-                    </td>
+                                @Html.DisplayFor(modelItem => item.Status)
+                            </td>
 
-                    <td>
-                        @if (item.IsCurrent)
+                            <td>
+                                @if (item.IsCurrent)
                                 {
                                     <span class="badge text-bg-success">
                                         Так
@@ -119,17 +128,17 @@ else
                                 }
                                 else
                                 {
-                                    <span class="badge text-bg-light">
+                                    <span class="badge text-bg-light border">
                                         Ні
                                     </span>
                                 }
                             </td>
 
                             <td class="text-end text-nowrap">
+
                                 <a asp-action="Edit"
                                    asp-route-id="@item.Id"
-                                   class="btn btn-sm
-                                                  btn-outline-secondary">
+                                   class="btn btn-sm btn-outline-secondary">
                                     Редагувати
                                 </a>
 
@@ -137,21 +146,30 @@ else
                                       asp-route-id="@item.Id"
                                       method="post"
                                       class="d-inline"
-                                      onsubmit="return confirm(
-                                                  'Видалити це призначення?');">
+                                      onsubmit="return confirm('Видалити це призначення?');">
 
                                     <button type="submit"
-                                            class="btn btn-sm
-                                                           btn-outline-danger">
+                                            class="btn btn-sm btn-outline-danger">
                                         Видалити
                                     </button>
+
                                 </form>
+
                             </td>
                         </tr>
                     }
                 </tbody>
+
             </table>
 
         </div>
     </div>
 }
+
+<div class="mt-3">
+    <a asp-controller="CharacterRoles"
+       asp-action="Index"
+       class="btn btn-outline-dark">
+        До списку персонажів
+    </a>
+</div>

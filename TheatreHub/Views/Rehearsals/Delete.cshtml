@@ -5,7 +5,7 @@
 }
 
 <div class="row justify-content-center">
-    <div class="col-lg-7">
+    <div class="col-lg-8">
 
         <div class="card border-danger shadow-sm">
             <div class="card-body p-4">
@@ -14,40 +14,121 @@
                     Видалення репетиції
                 </h1>
 
+                <div class="alert alert-warning">
+                    Після видалення відновити цю репетицію буде неможливо.
+                </div>
+
                 <p>
                     Ви дійсно хочете видалити репетицію вистави
-                    <strong>@Model.Performance.Title</strong>?
+                    <strong>«@Model.Performance.Title»</strong>?
                 </p>
 
-                <dl class="row">
-                    <dt class="col-sm-4">Дата</dt>
+                <dl class="row mb-4">
+
+                    <dt class="col-sm-4">
+                        Вистава
+                    </dt>
+
+                    <dd class="col-sm-8">
+                        @Model.Performance.Title
+                    </dd>
+
+                    <dt class="col-sm-4">
+                        Початок
+                    </dt>
+
                     <dd class="col-sm-8">
                         @Model.StartDateTime.ToString("dd.MM.yyyy HH:mm")
                     </dd>
 
-                    <dt class="col-sm-4">Місце</dt>
+                    <dt class="col-sm-4">
+                        Завершення
+                    </dt>
+
                     <dd class="col-sm-8">
-                        @Model.Location
+                        @Model.EndDateTime.ToString("dd.MM.yyyy HH:mm")
                     </dd>
 
-                    <dt class="col-sm-4">Учасники</dt>
+                    <dt class="col-sm-4">
+                        Зал
+                    </dt>
+
+                    <dd class="col-sm-8">
+                        <div class="fw-semibold">
+                            @Model.Hall.Name
+                        </div>
+
+                        <div class="small text-muted">
+                            @Model.Hall.Venue.Name —
+                            @Model.Hall.Venue.Address
+                        </div>
+                    </dd>
+
+                    <dt class="col-sm-4">
+                        Статус
+                    </dt>
+
+                    <dd class="col-sm-8">
+                        @Html.DisplayFor(model => model.Status)
+                    </dd>
+
+                    <dt class="col-sm-4">
+                        Кількість учасників
+                    </dt>
+
                     <dd class="col-sm-8">
                         @Model.Participants.Count
                     </dd>
+
                 </dl>
 
-                <form asp-action="Delete" method="post">
-                    <input type="hidden" asp-for="Id" />
+                @if (Model.Participants.Any())
+                {
+                    <h2 class="h5 mb-3">
+                        Учасники
+                    </h2>
 
-                    <button type="submit"
-                            class="btn btn-danger">
-                        Видалити
-                    </button>
+                    <ul class="list-group mb-4">
 
-                    <a asp-action="Index"
-                       class="btn btn-outline-secondary">
-                        Скасувати
-                    </a>
+                        @foreach (var participant in Model.Participants
+                                            .OrderBy(item => item.Actor.LastName)
+                                            .ThenBy(item => item.Actor.FirstName))
+                        {
+                            <li class="list-group-item">
+                                @participant.Actor.FullName
+                            </li>
+                        }
+
+                    </ul>
+                }
+
+                <form asp-action="Delete"
+                      asp-route-id="@Model.Id"
+                      method="post">
+
+                    <input type="hidden"
+                           asp-for="Id" />
+
+                    <div class="d-flex flex-wrap gap-2">
+
+                        <button type="submit"
+                                class="btn btn-danger">
+                            Видалити
+                        </button>
+
+                        <a asp-action="Details"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-outline-secondary">
+                            Повернутися до деталей
+                        </a>
+
+                        <a asp-action="Index"
+                           class="btn btn-outline-dark">
+                            До списку
+                        </a>
+
+                    </div>
+
                 </form>
 
             </div>

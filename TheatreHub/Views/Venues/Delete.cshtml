@@ -1,0 +1,59 @@
+﻿@model TheatreHub.Models.Venue
+
+@{
+    ViewData["Title"] = "Видалення майданчика";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+
+        <div class="card border-danger shadow-sm">
+            <div class="card-body p-4">
+
+                <h1 class="h3 text-danger mb-3">
+                    Видалення майданчика
+                </h1>
+
+                <p>
+                    Ви дійсно хочете видалити
+                    <strong>«@Model.Name»</strong>?
+                </p>
+
+                @if (Model.Halls.Any())
+                {
+                    <div class="alert alert-warning">
+                        Видалення неможливе: до майданчика прив’язано
+                        залів — <strong>@Model.Halls.Count</strong>.
+                    </div>
+                }
+
+                <dl class="row">
+                    <dt class="col-sm-4">Адреса</dt>
+                    <dd class="col-sm-8">@Model.Address</dd>
+
+                    <dt class="col-sm-4">Місто</dt>
+                    <dd class="col-sm-8">
+                        @(Model.City ?? "Не вказано")
+                    </dd>
+                </dl>
+
+                <form asp-action="Delete" method="post">
+                    <input type="hidden" asp-for="Id" />
+
+                    <button type="submit"
+                            class="btn btn-danger"
+                            disabled="@Model.Halls.Any()">
+                        Видалити
+                    </button>
+
+                    <a asp-action="Index"
+                       class="btn btn-outline-secondary">
+                        Скасувати
+                    </a>
+                </form>
+
+            </div>
+        </div>
+
+    </div>
+</div>

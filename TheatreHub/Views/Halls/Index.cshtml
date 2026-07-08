@@ -1,0 +1,147 @@
+﻿@model IEnumerable<TheatreHub.Models.Hall>
+
+@{
+    ViewData["Title"] = "Зали";
+    int? venueId = ViewBag.VenueId;
+}
+
+<div class="d-flex flex-wrap
+            justify-content-between
+            align-items-center
+            gap-3
+            mb-4">
+
+    <div>
+        <h1 class="h2 mb-1">
+            Зали
+        </h1>
+
+        <p class="text-muted mb-0">
+            @if (!string.IsNullOrWhiteSpace(ViewBag.VenueName as string))
+            {
+                <span>
+                    Майданчик: @ViewBag.VenueName
+                </span>
+            }
+            else
+            {
+                <span>
+                    Усі театральні та репетиційні зали
+                </span>
+            }
+        </p>
+    </div>
+
+    <a asp-action="Create"
+       asp-route-venueId="@venueId"
+       class="btn btn-primary">
+        Додати зал
+    </a>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        Залів поки немає.
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Зал</th>
+                        <th>Майданчик</th>
+                        <th>Місткість</th>
+                        <th>Вартість оренди</th>
+                        <th>Обладнання</th>
+                        <th>Статус</th>
+                        <th class="text-end">Дії</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        var equipment = new List<string>();
+
+                        if (item.HasStage) equipment.Add("Сцена");
+                        if (item.HasLighting) equipment.Add("Світло");
+                        if (item.HasSound) equipment.Add("Звук");
+                        if (item.HasProjector) equipment.Add("Проєктор");
+
+                        <tr>
+                            <td class="fw-semibold">
+                                @item.Name
+                            </td>
+
+                            <td>
+                                @item.Venue.Name
+                            </td>
+
+                            <td>
+                                @item.Capacity
+                            </td>
+
+                            <td>
+                                @item.RentalCost.ToString("N2")
+                            </td>
+
+                            <td>
+                                @(equipment.Any()
+                                                        ? string.Join(", ", equipment)
+                                                        : "Не вказано")
+                    </td>
+
+                            <td>
+                        @if (item.IsActive)
+                                {
+                                    <span class="badge text-bg-success">
+                                        Активний
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge text-bg-secondary">
+                                        Неактивний
+                                    </span>
+                                }
+                            </td>
+
+                            <td class="text-end text-nowrap">
+                                <a asp-action="Details"
+                                   asp-route-id="@item.Id"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Деталі
+                                </a>
+
+                                <a asp-action="Edit"
+                                   asp-route-id="@item.Id"
+                                   class="btn btn-sm btn-outline-secondary">
+                                    Змінити
+                                </a>
+
+                                <a asp-action="Delete"
+                                   asp-route-id="@item.Id"
+                                   class="btn btn-sm btn-outline-danger">
+                                    Видалити
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+}
