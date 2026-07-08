@@ -1,76 +1,79 @@
 ﻿@model TheatreHub.Models.CharacterRole
 
 @{
-    ViewData["Title"] = "Додавання персонажа";
+    ViewData["Title"] = "Створення персонажа";
 }
 
 <div class="row justify-content-center">
-    <div class="col-md-8 col-lg-6">
+    <div class="col-md-9 col-lg-7">
 
         <div class="card border-0 shadow-sm">
             <div class="card-body p-4">
 
-                <h1 class="h3 mb-1">Новий персонаж</h1>
+                <div class="mb-4">
+                    <h1 class="h3 mb-1">
+                        Створення персонажа
+                    </h1>
 
-                <p class="text-muted mb-4">
-                    Додайте персонажа та за потреби призначте актора.
-                </p>
+                    <p class="text-muted mb-0">
+                        Додайте персонажа до конкретної театральної вистави.
+                    </p>
+                </div>
 
                 <form asp-action="Create" method="post">
 
                     <div asp-validation-summary="ModelOnly"
-                         class="text-danger mb-3">
+                         class="alert alert-danger"
+                         role="alert">
                     </div>
 
                     <div class="mb-3">
                         <label asp-for="Name"
-                               class="form-label fw-semibold"></label>
+                               class="form-label fw-semibold">
+                        </label>
 
                         <input asp-for="Name"
-                               class="form-control" />
+                               class="form-control"
+                               placeholder="Наприклад: Гамлет" />
 
                         <span asp-validation-for="Name"
-                              class="text-danger"></span>
+                              class="text-danger">
+                        </span>
                     </div>
 
                     <div class="mb-3">
                         <label asp-for="Description"
-                               class="form-label fw-semibold"></label>
+                               class="form-label fw-semibold">
+                        </label>
 
                         <textarea asp-for="Description"
                                   class="form-control"
-                                  rows="4"></textarea>
+                                  rows="4"
+                                  placeholder="Короткий опис персонажа"></textarea>
 
                         <span asp-validation-for="Description"
-                              class="text-danger"></span>
+                              class="text-danger">
+                        </span>
                     </div>
 
                     <div class="mb-3">
                         <label asp-for="PerformanceId"
-                               class="form-label fw-semibold"></label>
+                               class="form-label fw-semibold">
+                        </label>
 
                         <select asp-for="PerformanceId"
                                 asp-items="ViewBag.PerformanceId"
                                 class="form-select">
-                            <option value="">Оберіть виставу</option>
+
+                            <option value="">
+                                Оберіть виставу
+                            </option>
+
                         </select>
 
                         <span asp-validation-for="PerformanceId"
-                              class="text-danger"></span>
-                    </div>
-
-                    <div class="mb-3">
-                        <label asp-for="ActorId"
-                               class="form-label fw-semibold"></label>
-
-                        <select asp-for="ActorId"
-                                asp-items="ViewBag.ActorId"
-                                class="form-select">
-                            <option value="">Не призначено</option>
-                        </select>
-
-                        <span asp-validation-for="ActorId"
-                              class="text-danger"></span>
+                              class="text-danger">
+                        </span>
                     </div>
 
                     <div class="form-check mb-4">
@@ -78,19 +81,31 @@
                                class="form-check-input" />
 
                         <label asp-for="IsMainRole"
-                               class="form-check-label"></label>
+                               class="form-check-label fw-semibold">
+                        </label>
+
+                        <div class="form-text">
+                            Позначте, якщо персонаж належить до головних ролей вистави.
+                        </div>
                     </div>
 
-                    <div class="d-flex gap-2">
+                    <div class="alert alert-info">
+                        Акторів можна буде призначити після створення персонажа
+                        через розділ «Акторські склади».
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2">
+
                         <button type="submit"
-                                class="btn btn-primary">
-                            Додати
+                                class="btn btn-primary px-4">
+                            Створити
                         </button>
 
                         <a asp-action="Index"
                            class="btn btn-outline-secondary">
-                            До списку
+                            Скасувати
                         </a>
+
                     </div>
 
                 </form>

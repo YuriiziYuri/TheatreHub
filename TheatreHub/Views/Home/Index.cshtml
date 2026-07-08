@@ -1,4 +1,5 @@
-﻿@model TheatreHub.ViewModels.DashboardViewModel
+﻿@using TheatreHub.Models.Enums
+@model TheatreHub.ViewModels.DashboardViewModel
 
 @{
     ViewData["Title"] = "Головна";
@@ -234,8 +235,11 @@
                                     in Model.ActivePerformances)
                                 {
                                     var assignedRoles =
-                                        performance.CharacterRoles
-                                            .Count(role => role.ActorId != null);
+                                    performance.CharacterRoles.Count(role =>
+                                    role.Assignments.Any(assignment =>
+                                    assignment.IsCurrent &&
+                                    assignment.CastType == CastType.Main &&
+                                    assignment.Status == RoleAssignmentStatus.Approved));
 
                                     var totalRoles =
                                         performance.CharacterRoles.Count;

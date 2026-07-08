@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TheatreHub.Data;
 
@@ -10,9 +11,11 @@ using TheatreHub.Data;
 namespace TheatreHub.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260708143038_AddRoleAssignments")]
+    partial class AddRoleAssignments
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.12");
@@ -56,6 +59,9 @@ namespace TheatreHub.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("ActorId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Description")
                         .HasMaxLength(1000)
                         .HasColumnType("TEXT");
@@ -72,6 +78,8 @@ namespace TheatreHub.Migrations
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ActorId");
 
                     b.HasIndex("PerformanceId");
 
@@ -212,11 +220,18 @@ namespace TheatreHub.Migrations
 
             modelBuilder.Entity("TheatreHub.Models.CharacterRole", b =>
                 {
+                    b.HasOne("TheatreHub.Models.Actor", "Actor")
+                        .WithMany("CharacterRoles")
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("TheatreHub.Models.Performance", "Performance")
                         .WithMany("CharacterRoles")
                         .HasForeignKey("PerformanceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Actor");
 
                     b.Navigation("Performance");
                 });
@@ -272,6 +287,8 @@ namespace TheatreHub.Migrations
 
             modelBuilder.Entity("TheatreHub.Models.Actor", b =>
                 {
+                    b.Navigation("CharacterRoles");
+
                     b.Navigation("RehearsalParticipants");
 
                     b.Navigation("RoleAssignments");

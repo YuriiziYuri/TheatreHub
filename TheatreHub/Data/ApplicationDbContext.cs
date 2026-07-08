@@ -23,6 +23,8 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<RehearsalParticipant> RehearsalParticipants =>
         Set<RehearsalParticipant>();
+    public DbSet<RoleAssignment> RoleAssignments =>
+    Set<RoleAssignment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -33,12 +35,6 @@ public class ApplicationDbContext : DbContext
             .WithMany(performance => performance.CharacterRoles)
             .HasForeignKey(role => role.PerformanceId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<CharacterRole>()
-            .HasOne(role => role.Actor)
-            .WithMany(actor => actor.CharacterRoles)
-            .HasForeignKey(role => role.ActorId)
-            .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<Rehearsal>()
     .HasOne(rehearsal => rehearsal.Performance)
@@ -64,5 +60,32 @@ public class ApplicationDbContext : DbContext
             .WithMany(actor => actor.RehearsalParticipants)
             .HasForeignKey(participant => participant.ActorId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<RoleAssignment>()
+    .HasOne(assignment => assignment.CharacterRole)
+    .WithMany(role => role.Assignments)
+    .HasForeignKey(assignment => assignment.CharacterRoleId)
+    .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<RoleAssignment>()
+            .HasOne(assignment => assignment.Actor)
+            .WithMany(actor => actor.RoleAssignments)
+            .HasForeignKey(assignment => assignment.ActorId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<RoleAssignment>()
+            .HasIndex(assignment => assignment.CharacterRoleId);
+
+        modelBuilder.Entity<RoleAssignment>()
+            .HasIndex(assignment => assignment.ActorId);
+
+        modelBuilder.Entity<RoleAssignment>()
+            .HasIndex(assignment => new
+            {
+                assignment.CharacterRoleId,
+                assignment.ActorId,
+                assignment.StartDate
+            })
+            .IsUnique();
     }
 }

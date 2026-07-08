@@ -1,0 +1,51 @@
+﻿@model TheatreHub.Models.RoleAssignment
+
+@{
+    ViewData["Title"] = "Призначення актора";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+
+                <h1 class="h3 mb-1">
+                    Призначення актора
+                </h1>
+
+                <p class="text-muted mb-4">
+                    Додайте актора до основного або запасного складу.
+                </p>
+
+                <form asp-action="Create" method="post">
+
+                    <partial name="_Form" model="Model" />
+
+                    <div class="d-flex gap-2">
+                        <button type="submit"
+                                class="btn btn-primary">
+                            Створити призначення
+                        </button>
+
+                        <a asp-action="Index"
+                           asp-route-characterRoleId="@Model.CharacterRoleId"
+                           class="btn btn-outline-secondary">
+                            Скасувати
+                        </a>
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync(
+            "_ValidationScriptsPartial");
+    }
+}

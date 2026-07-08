@@ -1,16 +1,21 @@
 ﻿@model IEnumerable<TheatreHub.Models.CharacterRole>
+@using TheatreHub.Models.Enums
 
 @{
     ViewData["Title"] = "Персонажі";
 }
 
-<div class="d-flex justify-content-between
-            align-items-center mb-4">
+<div class="d-flex flex-wrap
+            justify-content-between
+            align-items-center
+            gap-3
+            mb-4">
 
     <div>
         <h1 class="h2 mb-1">Персонажі</h1>
+
         <p class="text-muted mb-0">
-            Персонажі вистав і призначені актори.
+            Персонажі вистав, основний і запасний акторські склади.
         </p>
     </div>
 
@@ -33,39 +38,135 @@
         else
         {
             <div class="table-responsive">
+
                 <table class="table table-hover align-middle mb-0">
 
                     <thead class="table-light">
                         <tr>
                             <th>Персонаж</th>
                             <th>Вистава</th>
-                            <th>Актор</th>
+                            <th>Основний склад</th>
+                            <th>Запасний склад</th>
                             <th>Тип ролі</th>
                             <th class="text-end">Дії</th>
                         </tr>
                     </thead>
 
                     <tbody>
+
                         @foreach (var item in Model)
                         {
+                            var mainAssignments = item.Assignments
+                            .Where(assignment =>
+                            assignment.IsCurrent &&
+                            assignment.CastType == CastType.Main)
+                            .OrderBy(assignment =>
+                            assignment.Actor.LastName)
+                            .ThenBy(assignment =>
+                            assignment.Actor.FirstName)
+                            .ToList();
+
+                            var reserveAssignments = item.Assignments
+                            .Where(assignment =>
+                            assignment.IsCurrent &&
+                            assignment.CastType == CastType.Reserve)
+                            .OrderBy(assignment =>
+                            assignment.Actor.LastName)
+                            .ThenBy(assignment =>
+                            assignment.Actor.FirstName)
+                            .ToList();
+
                             <tr>
+
                                 <td>
                                     <strong>@item.Name</strong>
-                                </td>
 
-                                <td>
-                                    @item.Performance?.Title
-                                </td>
-
-                                <td>
-                                    @if (item.Actor != null)
+                                    @if (!string.IsNullOrWhiteSpace(item.Description))
                                     {
-                                        @item.Actor.FullName
+                                        <div class="small text-muted mt-1">
+                                            @item.Description
+                                        </div>
+                                    }
+                                </td>
+
+                                <td>
+                                    @if (item.Performance != null)
+                                    {
+                                        <a asp-controller="Performances"
+                                           asp-action="Details"
+                                           asp-route-id="@item.PerformanceId"
+                                           class="text-decoration-none">
+
+                                            @item.Performance.Title
+
+                                        </a>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-warning text-dark">
-                                            Вакантно
+                                        <span class="text-muted">
+                                            Виставу не вказано
+                                        </span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @if (mainAssignments.Any())
+                                    {
+                                        <div class="d-flex flex-column gap-2">
+
+                                            @foreach (var assignment
+                                                                            in mainAssignments)
+                                            {
+                                                <div>
+                                                    <div class="fw-semibold">
+                                                        @assignment.Actor.FullName
+                                                    </div>
+
+                                                    <div class="small text-muted">
+                                                        @Html.DisplayFor(
+                                                        modelItem =>
+                                                        assignment.Status)
+                                    </div>
+                                </div>
+                                                                }
+
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge text-bg-warning">
+                                            Не призначено
+                                        </span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @if (reserveAssignments.Any())
+                                    {
+                                        <div class="d-flex flex-column gap-2">
+
+                                            @foreach (var assignment
+                                                                            in reserveAssignments)
+                                            {
+                                                <div>
+                                                    <div class="fw-semibold">
+                                                        @assignment.Actor.FullName
+                                                    </div>
+
+                                                    <div class="small text-muted">
+                                                        @Html.DisplayFor(
+                                                        modelItem =>
+                                                        assignment.Status)
+                                    </div>
+                                </div>
+                                                                }
+
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">
+                                            Немає
                                         </span>
                                     }
                                 </td>
@@ -73,42 +174,77 @@
                                 <td>
                                     @if (item.IsMainRole)
                                     {
-                                        <span class="badge bg-primary">
+                                        <span class="badge text-bg-primary">
                                             Головна
                                         </span>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-secondary">
+                                        <span class="badge text-bg-secondary">
                                             Другорядна
                                         </span>
                                     }
                                 </td>
 
                                 <td class="text-end">
-                                    <a asp-action="Details"
-                                       asp-route-id="@item.Id"
-                                       class="btn btn-sm btn-outline-secondary">
-                                        Деталі
-                                    </a>
 
-                                    <a asp-action="Edit"
-                                       asp-route-id="@item.Id"
-                                       class="btn btn-sm btn-outline-primary">
-                                        Змінити
-                                    </a>
+                                    <div class="d-flex flex-wrap
+                                                        justify-content-end
+                                                        gap-1">
 
-                                    <a asp-action="Delete"
-                                       asp-route-id="@item.Id"
-                                       class="btn btn-sm btn-outline-danger">
-                                        Видалити
-                                    </a>
+                                        <a asp-controller="RoleAssignments"
+                                           asp-action="Index"
+                                           asp-route-characterRoleId="@item.Id"
+                                           class="btn btn-sm btn-outline-primary">
+
+                                            Акторський склад
+
+                                        </a>
+
+                                        <a asp-controller="RoleAssignments"
+                                           asp-action="Create"
+                                           asp-route-characterRoleId="@item.Id"
+                                           class="btn btn-sm btn-outline-success">
+
+                                            Призначити актора
+
+                                        </a>
+
+                                        <a asp-action="Details"
+                                           asp-route-id="@item.Id"
+                                           class="btn btn-sm btn-outline-secondary">
+
+                                            Деталі
+
+                                        </a>
+
+                                        <a asp-action="Edit"
+                                           asp-route-id="@item.Id"
+                                           class="btn btn-sm btn-outline-dark">
+
+                                            Змінити
+
+                                        </a>
+
+                                        <a asp-action="Delete"
+                                           asp-route-id="@item.Id"
+                                           class="btn btn-sm btn-outline-danger">
+
+                                            Видалити
+
+                                        </a>
+
+                                    </div>
+
                                 </td>
+
                             </tr>
                         }
+
                     </tbody>
 
                 </table>
+
             </div>
         }
 

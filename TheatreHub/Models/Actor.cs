@@ -33,9 +33,8 @@ public class Actor
     [Display(Name = "Повне ім’я")]
     public string FullName => $"{FirstName} {LastName}";
 
-    public ICollection<CharacterRole> CharacterRoles { get; set; }
-        = new List<CharacterRole>();
-
     public ICollection<RehearsalParticipant> RehearsalParticipants { get; set; }
     = new List<RehearsalParticipant>();
+    public ICollection<RoleAssignment> RoleAssignments { get; set; }
+    = new List<RoleAssignment>();
 }

@@ -33,44 +33,66 @@ public class HomeController : Controller
             ActorsCount =
                 await _context.Actors.CountAsync(),
 
+            // ¬акантна роль Ч немаЇ затвердженого
+            // поточного виконавц€ основного складу.
             VacantRolesCount =
-                await _context.CharacterRoles
-                    .CountAsync(role => role.ActorId == null),
+                await _context.CharacterRoles.CountAsync(role =>
+                    !role.Assignments.Any(assignment =>
+                        assignment.IsCurrent &&
+                        assignment.CastType == CastType.Main &&
+                        assignment.Status ==
+                            RoleAssignmentStatus.Approved)),
 
             UpcomingRehearsalsCount =
-                await _context.Rehearsals
-                    .CountAsync(rehearsal =>
-                        rehearsal.StartDateTime >= now &&
-                        rehearsal.Status != RehearsalStatus.Cancelled),
+                await _context.Rehearsals.CountAsync(rehearsal =>
+                    rehearsal.StartDateTime >= now &&
+                    rehearsal.Status != RehearsalStatus.Cancelled),
 
             UpcomingRehearsals =
                 await _context.Rehearsals
+                    .AsNoTracking()
                     .Include(rehearsal => rehearsal.Performance)
                     .Include(rehearsal => rehearsal.Participants)
                         .ThenInclude(participant => participant.Actor)
                     .Where(rehearsal =>
                         rehearsal.StartDateTime >= now &&
                         rehearsal.Status != RehearsalStatus.Cancelled)
-                    .OrderBy(rehearsal => rehearsal.StartDateTime)
+                    .OrderBy(rehearsal =>
+                        rehearsal.StartDateTime)
                     .Take(5)
                     .ToListAsync(),
 
             ActivePerformances =
                 await _context.Performances
-                    .Include(performance => performance.CharacterRoles)
+                    .AsNoTracking()
+                    .Include(performance =>
+                        performance.CharacterRoles)
+                        .ThenInclude(role => role.Assignments)
                     .Where(performance =>
-                        performance.Status != PerformanceStatus.Completed &&
-                        performance.Status != PerformanceStatus.Cancelled)
+                        performance.Status !=
+                            PerformanceStatus.Completed &&
+                        performance.Status !=
+                            PerformanceStatus.Cancelled)
                     .OrderBy(performance =>
-                        performance.PremiereDate ?? DateTime.MaxValue)
+                        performance.PremiereDate
+                        ?? DateTime.MaxValue)
                     .Take(5)
                     .ToListAsync(),
 
             VacantRoles =
                 await _context.CharacterRoles
+                    .AsNoTracking()
                     .Include(role => role.Performance)
-                    .Where(role => role.ActorId == null)
-                    .OrderBy(role => role.Performance.Title)
+                    .Include(role => role.Assignments)
+                    .Where(role =>
+                        !role.Assignments.Any(assignment =>
+                            assignment.IsCurrent &&
+                            assignment.CastType ==
+                                CastType.Main &&
+                            assignment.Status ==
+                                RoleAssignmentStatus.Approved))
+                    .OrderBy(role =>
+                        role.Performance.Title)
                     .ThenBy(role => role.Name)
                     .Take(5)
                     .ToListAsync()
@@ -92,7 +114,8 @@ public class HomeController : Controller
     {
         return View(new ErrorViewModel
         {
-            RequestId = Activity.Current?.Id
+            RequestId =
+                Activity.Current?.Id
                 ?? HttpContext.TraceIdentifier
         });
     }

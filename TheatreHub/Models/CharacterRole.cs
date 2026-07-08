@@ -26,9 +26,6 @@ public class CharacterRole
     [ValidateNever]
     public Performance Performance { get; set; } = null!;
 
-    [Display(Name = "Призначений актор")]
-    public int? ActorId { get; set; }
-
-    [ValidateNever]
-    public Actor? Actor { get; set; }
+    public ICollection<RoleAssignment> Assignments { get; set; }
+    = new List<RoleAssignment>();
 }

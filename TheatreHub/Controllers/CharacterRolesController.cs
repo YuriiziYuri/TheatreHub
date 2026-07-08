@@ -16,12 +16,15 @@ public class CharacterRolesController : Controller
     }
 
     // GET: CharacterRoles
+    // Список усіх персонажів разом із виставами
+    // та новими призначеннями акторів.
     public async Task<IActionResult> Index()
     {
         var characterRoles = await _context.CharacterRoles
             .AsNoTracking()
-            .Include(role => role.Actor)
             .Include(role => role.Performance)
+            .Include(role => role.Assignments)
+                .ThenInclude(assignment => assignment.Actor)
             .OrderBy(role => role.Performance.Title)
             .ThenBy(role => role.Name)
             .ToListAsync();
@@ -38,9 +41,11 @@ public class CharacterRolesController : Controller
         }
 
         var characterRole = await _context.CharacterRoles
+            .AsNoTracking()
             .Include(role => role.Performance)
-            .Include(role => role.Actor)
-            .FirstOrDefaultAsync(role => role.Id == id);
+            .Include(role => role.Assignments)
+                .ThenInclude(assignment => assignment.Actor)
+            .FirstOrDefaultAsync(role => role.Id == id.Value);
 
         if (characterRole == null)
         {
@@ -51,33 +56,43 @@ public class CharacterRolesController : Controller
     }
 
     // GET: CharacterRoles/Create
-    public IActionResult Create()
+    public async Task<IActionResult> Create()
     {
-        PrepareSelectLists();
+        await LoadPerformancesAsync();
 
-        return View();
+        return View(new CharacterRole());
     }
 
     // POST: CharacterRoles/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(
-        [Bind("Name,Description,IsMainRole,PerformanceId,ActorId")]
+        [Bind("Name,Description,IsMainRole,PerformanceId")]
         CharacterRole characterRole)
     {
-        if (ModelState.IsValid)
-        {
-            _context.CharacterRoles.Add(characterRole);
-            await _context.SaveChangesAsync();
+        await ValidatePerformanceAsync(characterRole.PerformanceId);
 
-            return RedirectToAction(nameof(Index));
+        if (!ModelState.IsValid)
+        {
+            await LoadPerformancesAsync(characterRole.PerformanceId);
+
+            return View(characterRole);
         }
 
-        PrepareSelectLists(
-            characterRole.PerformanceId,
-            characterRole.ActorId);
+        characterRole.Name = characterRole.Name.Trim();
 
-        return View(characterRole);
+        characterRole.Description =
+            string.IsNullOrWhiteSpace(characterRole.Description)
+                ? null
+                : characterRole.Description.Trim();
+
+        _context.CharacterRoles.Add(characterRole);
+        await _context.SaveChangesAsync();
+
+        TempData["SuccessMessage"] =
+            $"Персонажа «{characterRole.Name}» успішно створено.";
+
+        return RedirectToAction(nameof(Index));
     }
 
     // GET: CharacterRoles/Edit/5
@@ -88,17 +103,16 @@ public class CharacterRolesController : Controller
             return NotFound();
         }
 
-        var characterRole =
-            await _context.CharacterRoles.FindAsync(id);
+        var characterRole = await _context.CharacterRoles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(role => role.Id == id.Value);
 
         if (characterRole == null)
         {
             return NotFound();
         }
 
-        PrepareSelectLists(
-            characterRole.PerformanceId,
-            characterRole.ActorId);
+        await LoadPerformancesAsync(characterRole.PerformanceId);
 
         return View(characterRole);
     }
@@ -108,7 +122,7 @@ public class CharacterRolesController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(
         int id,
-        [Bind("Id,Name,Description,IsMainRole,PerformanceId,ActorId")]
+        [Bind("Id,Name,Description,IsMainRole,PerformanceId")]
         CharacterRole characterRole)
     {
         if (id != characterRole.Id)
@@ -116,29 +130,49 @@ public class CharacterRolesController : Controller
             return NotFound();
         }
 
+        await ValidatePerformanceAsync(characterRole.PerformanceId);
+
         if (!ModelState.IsValid)
         {
-            PrepareSelectLists(
-                characterRole.PerformanceId,
-                characterRole.ActorId);
+            await LoadPerformancesAsync(characterRole.PerformanceId);
 
             return View(characterRole);
         }
 
+        var existingRole = await _context.CharacterRoles
+            .FirstOrDefaultAsync(role => role.Id == id);
+
+        if (existingRole == null)
+        {
+            return NotFound();
+        }
+
+        existingRole.Name = characterRole.Name.Trim();
+
+        existingRole.Description =
+            string.IsNullOrWhiteSpace(characterRole.Description)
+                ? null
+                : characterRole.Description.Trim();
+
+        existingRole.IsMainRole = characterRole.IsMainRole;
+        existingRole.PerformanceId = characterRole.PerformanceId;
+
         try
         {
-            _context.CharacterRoles.Update(characterRole);
             await _context.SaveChangesAsync();
         }
         catch (DbUpdateConcurrencyException)
         {
-            if (!CharacterRoleExists(characterRole.Id))
+            if (!await CharacterRoleExistsAsync(id))
             {
                 return NotFound();
             }
 
             throw;
         }
+
+        TempData["SuccessMessage"] =
+            $"Персонажа «{existingRole.Name}» успішно оновлено.";
 
         return RedirectToAction(nameof(Index));
     }
@@ -153,9 +187,10 @@ public class CharacterRolesController : Controller
 
         var characterRole = await _context.CharacterRoles
             .AsNoTracking()
-            .Include(role => role.Actor)
             .Include(role => role.Performance)
-            .FirstOrDefaultAsync(role => role.Id == id);
+            .Include(role => role.Assignments)
+                .ThenInclude(assignment => assignment.Actor)
+            .FirstOrDefaultAsync(role => role.Id == id.Value);
 
         if (characterRole == null)
         {
@@ -170,42 +205,60 @@ public class CharacterRolesController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
-        var characterRole =
-            await _context.CharacterRoles.FindAsync(id);
+        var characterRole = await _context.CharacterRoles
+            .FirstOrDefaultAsync(role => role.Id == id);
 
-        if (characterRole != null)
+        if (characterRole == null)
         {
-            _context.CharacterRoles.Remove(characterRole);
-            await _context.SaveChangesAsync();
+            return NotFound();
         }
+
+        var roleName = characterRole.Name;
+
+        // Пов’язані RoleAssignment мають видалитися автоматично,
+        // якщо в ApplicationDbContext налаштовано DeleteBehavior.Cascade.
+        _context.CharacterRoles.Remove(characterRole);
+        await _context.SaveChangesAsync();
+
+        TempData["SuccessMessage"] =
+            $"Персонажа «{roleName}» видалено.";
 
         return RedirectToAction(nameof(Index));
     }
 
-    private void PrepareSelectLists(
-        int? selectedPerformanceId = null,
-        int? selectedActorId = null)
+    // Завантажує список вистав для Create та Edit.
+    private async Task LoadPerformancesAsync(
+        int? selectedPerformanceId = null)
     {
-        ViewData["PerformanceId"] = new SelectList(
-            _context.Performances
-                .AsNoTracking()
-                .OrderBy(performance => performance.Title),
-            "Id",
-            "Title",
-            selectedPerformanceId);
+        var performances = await _context.Performances
+            .AsNoTracking()
+            .OrderBy(performance => performance.Title)
+            .ToListAsync();
 
-        ViewData["ActorId"] = new SelectList(
-            _context.Actors
-                .AsNoTracking()
-                .OrderBy(actor => actor.LastName)
-                .ThenBy(actor => actor.FirstName),
-            "Id",
-            "FullName",
-            selectedActorId);
+        ViewData["PerformanceId"] = new SelectList(
+            performances,
+            nameof(Performance.Id),
+            nameof(Performance.Title),
+            selectedPerformanceId);
     }
 
-    private bool CharacterRoleExists(int id)
+    // Перевіряє, чи справді обрана вистава існує.
+    private async Task ValidatePerformanceAsync(int performanceId)
     {
-        return _context.CharacterRoles.Any(role => role.Id == id);
+        var performanceExists = await _context.Performances
+            .AnyAsync(performance => performance.Id == performanceId);
+
+        if (!performanceExists)
+        {
+            ModelState.AddModelError(
+                nameof(CharacterRole.PerformanceId),
+                "Оберіть чинну виставу.");
+        }
+    }
+
+    private Task<bool> CharacterRoleExistsAsync(int id)
+    {
+        return _context.CharacterRoles
+            .AnyAsync(role => role.Id == id);
     }
 }

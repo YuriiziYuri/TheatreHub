@@ -1,135 +1,278 @@
 ﻿@model TheatreHub.Models.CharacterRole
+@using TheatreHub.Models.Enums
 
 @{
     ViewData["Title"] = "Деталі персонажа";
+
+    var mainAssignments = Model.Assignments
+        .Where(assignment =>
+            assignment.CastType == CastType.Main)
+        .OrderByDescending(assignment =>
+            assignment.IsCurrent)
+        .ThenByDescending(assignment =>
+            assignment.StartDate)
+        .ToList();
+
+    var reserveAssignments = Model.Assignments
+        .Where(assignment =>
+            assignment.CastType == CastType.Reserve)
+        .OrderByDescending(assignment =>
+            assignment.IsCurrent)
+        .ThenByDescending(assignment =>
+            assignment.StartDate)
+        .ToList();
 }
 
 <div class="row justify-content-center">
-    <div class="col-lg-8">
+    <div class="col-lg-9">
 
         <div class="card border-0 shadow-sm">
             <div class="card-body p-4">
 
-                <div class="d-flex justify-content-between align-items-start mb-4">
+                <div class="d-flex flex-wrap
+                            justify-content-between
+                            align-items-start
+                            gap-3
+                            mb-4">
+
                     <div>
                         <h1 class="h3 mb-1">
                             @Model.Name
                         </h1>
 
                         <p class="text-muted mb-0">
-                            Інформація про персонажа вистави
+                            @Model.Performance.Title
                         </p>
                     </div>
 
                     @if (Model.IsMainRole)
                     {
-                        <span class="badge bg-primary">
+                        <span class="badge text-bg-primary">
                             Головна роль
                         </span>
                     }
                     else
                     {
-                        <span class="badge bg-secondary">
+                        <span class="badge text-bg-secondary">
                             Другорядна роль
                         </span>
                     }
+
                 </div>
 
                 <dl class="row mb-4">
 
                     <dt class="col-sm-4">
-                        Персонаж
-                    </dt>
-                    <dd class="col-sm-8 fw-semibold">
-                        @Model.Name
-                    </dd>
-
-                    <dt class="col-sm-4">
                         Вистава
                     </dt>
+
                     <dd class="col-sm-8">
-                        @if (Model.Performance != null)
-                        {
-                            <a asp-controller="Performances"
-                               asp-action="Details"
-                               asp-route-id="@Model.PerformanceId"
-                               class="text-decoration-none">
-                                @Model.Performance.Title
-                            </a>
-                        }
-                        else
-                        {
-                            <span class="text-muted">
-                                Не вказано
-                            </span>
-                        }
+                        <a asp-controller="Performances"
+                           asp-action="Details"
+                           asp-route-id="@Model.PerformanceId"
+                           class="text-decoration-none">
+
+                            @Model.Performance.Title
+
+                        </a>
                     </dd>
 
                     <dt class="col-sm-4">
-                        Призначений актор
+                        Опис
                     </dt>
-                    <dd class="col-sm-8">
-                        @if (Model.Actor != null)
-                        {
-                            <a asp-controller="Actors"
-                               asp-action="Details"
-                               asp-route-id="@Model.ActorId"
-                               class="text-decoration-none">
-                                @Model.Actor.FullName
-                            </a>
-                        }
-                        else
-                        {
-                            <span class="badge bg-warning text-dark">
-                                Вакантно
-                            </span>
-                        }
-                    </dd>
 
-                    <dt class="col-sm-4">
-                        Тип ролі
-                    </dt>
                     <dd class="col-sm-8">
-                        @(Model.IsMainRole
-                            ? "Головна"
-                            : "Другорядна")
-                    </dd>
-
-                    <dt class="col-sm-4">
-                        Опис персонажа
-                    </dt>
-                    <dd class="col-sm-8">
-                        @if (string.IsNullOrWhiteSpace(Model.Description))
-                        {
-                            <span class="text-muted">
-                                Опис відсутній
-                            </span>
-                        }
-                        else
-                        {
-                            @Model.Description
-                        }
+                        @(string.IsNullOrWhiteSpace(Model.Description)
+                                                ? "Опис відсутній"
+                                                : Model.Description)
                     </dd>
 
                 </dl>
 
-                <div class="d-flex flex-wrap gap-2">
+                <hr />
+
+                <div class="row g-4">
+
+                    <div class="col-md-6">
+
+                        <h2 class="h5 mb-3">
+                            Основний склад
+                        </h2>
+
+                        @if (!mainAssignments.Any())
+                        {
+                            <div class="alert alert-warning">
+                                Основного виконавця не призначено.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="list-group">
+
+                                @foreach (var assignment
+                                                            in mainAssignments)
+                                {
+                                    <div class="list-group-item">
+
+                                        <div class="d-flex
+                                                            justify-content-between
+                                                            align-items-start
+                                                            gap-2">
+
+                                            <div>
+                                                <div class="fw-semibold">
+                                                    @assignment.Actor.FullName
+                                                </div>
+
+                                                <div class="small text-muted">
+                                                    Від
+                                                    @assignment.StartDate
+                                                    .ToString("dd.MM.yyyy")
+
+                                                    @if (assignment.EndDate.HasValue)
+                                                    {
+                                                        <span>
+                                                            до
+                                                            @assignment.EndDate.Value
+                                                            .ToString("dd.MM.yyyy")
+                                                        </span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>
+                                                            — дотепер
+                                                        </span>
+                                                    }
+                                                </div>
+
+                                                <div class="small mt-1">
+                                                    @Html.DisplayFor(
+                                                    modelItem =>
+                                                    assignment.Status)
+                                        </div>
+                                    </div>
+
+                                    @if (assignment.IsCurrent)
+                                            {
+                                                <span class="badge
+                                                                         text-bg-success">
+                                                    Поточний
+                                                </span>
+                                            }
+
+                                        </div>
+
+                                    </div>
+                                }
+
+                            </div>
+                        }
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <h2 class="h5 mb-3">
+                            Запасний склад
+                        </h2>
+
+                        @if (!reserveAssignments.Any())
+                        {
+                            <div class="alert alert-light border">
+                                Запасного виконавця не призначено.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="list-group">
+
+                                @foreach (var assignment
+                                                            in reserveAssignments)
+                                {
+                                    <div class="list-group-item">
+
+                                        <div class="d-flex
+                                                            justify-content-between
+                                                            align-items-start
+                                                            gap-2">
+
+                                            <div>
+                                                <div class="fw-semibold">
+                                                    @assignment.Actor.FullName
+                                                </div>
+
+                                                <div class="small text-muted">
+                                                    Від
+                                                    @assignment.StartDate
+                                                    .ToString("dd.MM.yyyy")
+
+                                                    @if (assignment.EndDate.HasValue)
+                                                    {
+                                                        <span>
+                                                            до
+                                                            @assignment.EndDate.Value
+                                                            .ToString("dd.MM.yyyy")
+                                                        </span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>
+                                                            — дотепер
+                                                        </span>
+                                                    }
+                                                </div>
+
+                                                <div class="small mt-1">
+                                                    @Html.DisplayFor(
+                                                    modelItem =>
+                                                    assignment.Status)
+                                        </div>
+                                    </div>
+
+                                    @if (assignment.IsCurrent)
+                                            {
+                                                <span class="badge
+                                                                         text-bg-success">
+                                                    Поточний
+                                                </span>
+                                            }
+
+                                        </div>
+
+                                    </div>
+                                }
+
+                            </div>
+                        }
+
+                    </div>
+
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 mt-4">
+
+                    <a asp-controller="RoleAssignments"
+                       asp-action="Index"
+                       asp-route-characterRoleId="@Model.Id"
+                       class="btn btn-primary">
+
+                        Керувати акторським складом
+
+                    </a>
 
                     <a asp-action="Edit"
                        asp-route-id="@Model.Id"
-                       class="btn btn-primary">
-                        Редагувати
-                    </a>
+                       class="btn btn-outline-secondary">
 
-                    <a asp-action="Delete"
-                       asp-route-id="@Model.Id"
-                       class="btn btn-outline-danger">
-                        Видалити
+                        Редагувати персонажа
+
                     </a>
 
                     <a asp-action="Index"
-                       class="btn btn-outline-secondary">
+                       class="btn btn-outline-dark">
+
                         До списку
+
                     </a>
 
                 </div>

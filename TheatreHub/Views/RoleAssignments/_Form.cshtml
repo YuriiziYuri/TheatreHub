@@ -1,0 +1,134 @@
+﻿@model TheatreHub.Models.RoleAssignment
+@using TheatreHub.Models.Enums
+
+<div asp-validation-summary="ModelOnly"
+     class="text-danger mb-3">
+</div>
+
+<div class="mb-3">
+    <label asp-for="CharacterRoleId"
+           class="form-label fw-semibold">
+    </label>
+
+    <select asp-for="CharacterRoleId"
+            asp-items="ViewBag.CharacterRoleId"
+            class="form-select">
+        <option value="">Оберіть роль</option>
+    </select>
+
+    <span asp-validation-for="CharacterRoleId"
+          class="text-danger">
+    </span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="ActorId"
+           class="form-label fw-semibold">
+    </label>
+
+    <select asp-for="ActorId"
+            asp-items="ViewBag.ActorId"
+            class="form-select">
+        <option value="">Оберіть актора</option>
+    </select>
+
+    <span asp-validation-for="ActorId"
+          class="text-danger">
+    </span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="CastType"
+           class="form-label fw-semibold">
+    </label>
+
+    <select asp-for="CastType"
+            asp-items="Html.GetEnumSelectList<CastType>()"
+            class="form-select">
+    </select>
+
+    <span asp-validation-for="CastType"
+          class="text-danger">
+    </span>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label asp-for="StartDate"
+               class="form-label fw-semibold">
+        </label>
+
+        <input asp-for="StartDate"
+               type="date"
+               class="form-control" />
+
+        <span asp-validation-for="StartDate"
+              class="text-danger">
+        </span>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <label asp-for="EndDate"
+               class="form-label fw-semibold">
+        </label>
+
+        <input asp-for="EndDate"
+               type="date"
+               class="form-control" />
+
+        <span asp-validation-for="EndDate"
+              class="text-danger">
+        </span>
+    </div>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Status"
+           class="form-label fw-semibold">
+    </label>
+
+    <select asp-for="Status"
+            asp-items="Html.GetEnumSelectList<RoleAssignmentStatus>()"
+            class="form-select">
+    </select>
+
+    <span asp-validation-for="Status"
+          class="text-danger">
+    </span>
+</div>
+
+<div class="form-check mb-3">
+    <input asp-for="IsCurrent"
+           class="form-check-input" />
+
+    <label asp-for="IsCurrent"
+           class="form-check-label">
+    </label>
+
+    <span asp-validation-for="IsCurrent"
+          class="text-danger d-block">
+    </span>
+</div>
+
+<div class="form-check mb-3">
+    <input asp-for="IsPublic"
+           class="form-check-input" />
+
+    <label asp-for="IsPublic"
+           class="form-check-label">
+    </label>
+</div>
+
+<div class="mb-4">
+    <label asp-for="Notes"
+           class="form-label fw-semibold">
+    </label>
+
+    <textarea asp-for="Notes"
+              class="form-control"
+              rows="3"></textarea>
+
+    <span asp-validation-for="Notes"
+          class="text-danger">
+    </span>
+</div>
