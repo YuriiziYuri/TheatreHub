@@ -1,0 +1,99 @@
+﻿@model IEnumerable<TheatreHub.Models.Actor>
+
+@{
+    ViewData["Title"] = "Актори";
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="h2 mb-1">Актори</h1>
+        <p class="text-muted mb-0">
+            Список акторів театру та їхні контактні дані.
+        </p>
+    </div>
+
+    <a asp-action="Create" class="btn btn-primary">
+        Додати актора
+    </a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        Акторів поки не додано.
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Актор</th>
+                        <th>Електронна пошта</th>
+                        <th>Телефон</th>
+                        <th>Примітки</th>
+                        <th class="text-end">Дії</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var actor in Model)
+                    {
+                        <tr>
+                            <td class="fw-semibold">
+                                @actor.FullName
+                            </td>
+
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(actor.Email))
+                                {
+                                    <a href="mailto:@actor.Email">
+                                        @actor.Email
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Не вказано</span>
+                                }
+                            </td>
+
+                            <td>
+                                @(string.IsNullOrWhiteSpace(actor.PhoneNumber)
+                                    ? "Не вказано"
+                                    : actor.PhoneNumber)
+                            </td>
+
+                            <td>
+                                @(string.IsNullOrWhiteSpace(actor.Notes)
+                                    ? "—"
+                                    : actor.Notes)
+                            </td>
+
+                            <td class="text-end text-nowrap">
+                                <a asp-action="Details"
+                                   asp-route-id="@actor.Id"
+                                   class="btn btn-sm btn-outline-secondary">
+                                    Деталі
+                                </a>
+
+                                <a asp-action="Edit"
+                                   asp-route-id="@actor.Id"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Змінити
+                                </a>
+
+                                <a asp-action="Delete"
+                                   asp-route-id="@actor.Id"
+                                   class="btn btn-sm btn-outline-danger">
+                                    Видалити
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

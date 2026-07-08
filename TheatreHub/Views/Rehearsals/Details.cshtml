@@ -1,0 +1,90 @@
+﻿@model TheatreHub.Models.Rehearsal
+
+@{
+    ViewData["Title"] = "Деталі репетиції";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+
+                <h1 class="h3 mb-4">
+                    Деталі репетиції
+                </h1>
+
+                <dl class="row">
+                    <dt class="col-sm-4">Вистава</dt>
+                    <dd class="col-sm-8">
+                        @Model.Performance.Title
+                    </dd>
+
+                    <dt class="col-sm-4">Початок</dt>
+                    <dd class="col-sm-8">
+                        @Model.StartDateTime.ToString("dd.MM.yyyy HH:mm")
+                    </dd>
+
+                    <dt class="col-sm-4">Завершення</dt>
+                    <dd class="col-sm-8">
+                        @Model.EndDateTime.ToString("dd.MM.yyyy HH:mm")
+                    </dd>
+
+                    <dt class="col-sm-4">Місце</dt>
+                    <dd class="col-sm-8">
+                        @Model.Location
+                    </dd>
+
+                    <dt class="col-sm-4">Статус</dt>
+                    <dd class="col-sm-8">
+                        @Html.DisplayFor(model => model.Status)
+                    </dd>
+
+                    <dt class="col-sm-4">Примітки</dt>
+                    <dd class="col-sm-8">
+                        @(string.IsNullOrWhiteSpace(Model.Notes)
+                            ? "Немає"
+                            : Model.Notes)
+                    </dd>
+                </dl>
+
+                <hr />
+
+                <h2 class="h5 mb-3">Учасники</h2>
+
+                @if (!Model.Participants.Any())
+                {
+                    <p class="text-muted">
+                        Учасників не додано.
+                    </p>
+                }
+                else
+                {
+                    <ul class="list-group mb-4">
+                        @foreach (var participant in Model.Participants)
+                        {
+                            <li class="list-group-item">
+                                @participant.Actor.FullName
+                            </li>
+                        }
+                    </ul>
+                }
+
+                <div class="d-flex gap-2">
+                    <a asp-action="Edit"
+                       asp-route-id="@Model.Id"
+                       class="btn btn-primary">
+                        Редагувати
+                    </a>
+
+                    <a asp-action="Index"
+                       class="btn btn-outline-secondary">
+                        До списку
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>

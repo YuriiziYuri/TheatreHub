@@ -1,0 +1,141 @@
+﻿@model TheatreHub.Models.CharacterRole
+
+@{
+    ViewData["Title"] = "Деталі персонажа";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div>
+                        <h1 class="h3 mb-1">
+                            @Model.Name
+                        </h1>
+
+                        <p class="text-muted mb-0">
+                            Інформація про персонажа вистави
+                        </p>
+                    </div>
+
+                    @if (Model.IsMainRole)
+                    {
+                        <span class="badge bg-primary">
+                            Головна роль
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">
+                            Другорядна роль
+                        </span>
+                    }
+                </div>
+
+                <dl class="row mb-4">
+
+                    <dt class="col-sm-4">
+                        Персонаж
+                    </dt>
+                    <dd class="col-sm-8 fw-semibold">
+                        @Model.Name
+                    </dd>
+
+                    <dt class="col-sm-4">
+                        Вистава
+                    </dt>
+                    <dd class="col-sm-8">
+                        @if (Model.Performance != null)
+                        {
+                            <a asp-controller="Performances"
+                               asp-action="Details"
+                               asp-route-id="@Model.PerformanceId"
+                               class="text-decoration-none">
+                                @Model.Performance.Title
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="text-muted">
+                                Не вказано
+                            </span>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-4">
+                        Призначений актор
+                    </dt>
+                    <dd class="col-sm-8">
+                        @if (Model.Actor != null)
+                        {
+                            <a asp-controller="Actors"
+                               asp-action="Details"
+                               asp-route-id="@Model.ActorId"
+                               class="text-decoration-none">
+                                @Model.Actor.FullName
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="badge bg-warning text-dark">
+                                Вакантно
+                            </span>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-4">
+                        Тип ролі
+                    </dt>
+                    <dd class="col-sm-8">
+                        @(Model.IsMainRole
+                            ? "Головна"
+                            : "Другорядна")
+                    </dd>
+
+                    <dt class="col-sm-4">
+                        Опис персонажа
+                    </dt>
+                    <dd class="col-sm-8">
+                        @if (string.IsNullOrWhiteSpace(Model.Description))
+                        {
+                            <span class="text-muted">
+                                Опис відсутній
+                            </span>
+                        }
+                        else
+                        {
+                            @Model.Description
+                        }
+                    </dd>
+
+                </dl>
+
+                <div class="d-flex flex-wrap gap-2">
+
+                    <a asp-action="Edit"
+                       asp-route-id="@Model.Id"
+                       class="btn btn-primary">
+                        Редагувати
+                    </a>
+
+                    <a asp-action="Delete"
+                       asp-route-id="@Model.Id"
+                       class="btn btn-outline-danger">
+                        Видалити
+                    </a>
+
+                    <a asp-action="Index"
+                       class="btn btn-outline-secondary">
+                        До списку
+                    </a>
+
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>

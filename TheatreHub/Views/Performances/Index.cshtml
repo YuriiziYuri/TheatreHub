@@ -1,0 +1,119 @@
+﻿@model IEnumerable<TheatreHub.Models.Performance>
+@using TheatreHub.Models.Enums
+
+@{
+    ViewData["Title"] = "Вистави";
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="h2 mb-1">Вистави</h1>
+        <p class="text-muted mb-0">
+            Театральні постановки та стан їхньої підготовки.
+        </p>
+    </div>
+
+    <a asp-action="Create"
+       class="btn btn-primary">
+        Додати виставу
+    </a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        Вистав поки не додано.
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+
+                <thead class="table-light">
+                    <tr>
+                        <th>Назва</th>
+                        <th>Жанр</th>
+                        <th>Прем’єра</th>
+                        <th>Тривалість</th>
+                        <th>Статус</th>
+                        <th class="text-end">Дії</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var performance in Model)
+                    {
+                        var statusClass = performance.Status switch
+                        {
+                            PerformanceStatus.Idea => "bg-secondary",
+                            PerformanceStatus.Planning => "bg-info text-dark",
+                            PerformanceStatus.Casting => "bg-warning text-dark",
+                            PerformanceStatus.Rehearsal => "bg-primary",
+                            PerformanceStatus.Ready => "bg-success",
+                            PerformanceStatus.Active => "bg-success",
+                            PerformanceStatus.Completed => "bg-dark",
+                            PerformanceStatus.Cancelled => "bg-danger",
+                            _ => "bg-secondary"
+                        };
+
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">
+                                    @performance.Title
+                                </div>
+
+                                @if (!string.IsNullOrWhiteSpace(performance.Description))
+                                {
+                                    <div class="small text-muted">
+                                        @performance.Description
+                                    </div>
+                                }
+                            </td>
+
+                            <td>@performance.Genre</td>
+
+                            <td>
+                                @(performance.PremiereDate?.ToString("dd.MM.yyyy")
+                                    ?? "Не вказано")
+                            </td>
+
+                            <td>
+                                @performance.DurationMinutes хв
+                            </td>
+
+                            <td>
+                                <span class="badge @statusClass">
+                                    @Html.DisplayFor(
+                                        modelItem => performance.Status)
+                                </span>
+                            </td>
+
+                            <td class="text-end text-nowrap">
+                                <a asp-action="Details"
+                                   asp-route-id="@performance.Id"
+                                   class="btn btn-sm btn-outline-secondary">
+                                    Деталі
+                                </a>
+
+                                <a asp-action="Edit"
+                                   asp-route-id="@performance.Id"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Змінити
+                                </a>
+
+                                <a asp-action="Delete"
+                                   asp-route-id="@performance.Id"
+                                   class="btn btn-sm btn-outline-danger">
+                                    Видалити
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+}

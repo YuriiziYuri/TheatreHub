@@ -1,0 +1,57 @@
+﻿@model TheatreHub.Models.Rehearsal
+
+@{
+    ViewData["Title"] = "Видалення репетиції";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+
+        <div class="card border-danger shadow-sm">
+            <div class="card-body p-4">
+
+                <h1 class="h3 text-danger mb-3">
+                    Видалення репетиції
+                </h1>
+
+                <p>
+                    Ви дійсно хочете видалити репетицію вистави
+                    <strong>@Model.Performance.Title</strong>?
+                </p>
+
+                <dl class="row">
+                    <dt class="col-sm-4">Дата</dt>
+                    <dd class="col-sm-8">
+                        @Model.StartDateTime.ToString("dd.MM.yyyy HH:mm")
+                    </dd>
+
+                    <dt class="col-sm-4">Місце</dt>
+                    <dd class="col-sm-8">
+                        @Model.Location
+                    </dd>
+
+                    <dt class="col-sm-4">Учасники</dt>
+                    <dd class="col-sm-8">
+                        @Model.Participants.Count
+                    </dd>
+                </dl>
+
+                <form asp-action="Delete" method="post">
+                    <input type="hidden" asp-for="Id" />
+
+                    <button type="submit"
+                            class="btn btn-danger">
+                        Видалити
+                    </button>
+
+                    <a asp-action="Index"
+                       class="btn btn-outline-secondary">
+                        Скасувати
+                    </a>
+                </form>
+
+            </div>
+        </div>
+
+    </div>
+</div>

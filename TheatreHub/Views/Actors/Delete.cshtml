@@ -1,0 +1,60 @@
+﻿@model TheatreHub.Models.Actor
+
+@{
+    ViewData["Title"] = "Видалення актора";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+
+        <div class="card border-danger shadow-sm">
+            <div class="card-body p-4">
+
+                <h1 class="h3 text-danger mb-2">
+                    Видалення актора
+                </h1>
+
+                <p class="text-muted mb-4">
+                    Цю дію неможливо скасувати.
+                </p>
+
+                <div class="alert alert-warning">
+                    Ви дійсно хочете видалити актора
+                    <strong>@Model.FullName</strong>?
+                </div>
+
+                <dl class="row">
+                    <dt class="col-sm-4">Електронна пошта</dt>
+                    <dd class="col-sm-8">
+                        @(string.IsNullOrWhiteSpace(Model.Email)
+                            ? "Не вказано"
+                            : Model.Email)
+                    </dd>
+
+                    <dt class="col-sm-4">Телефон</dt>
+                    <dd class="col-sm-8">
+                        @(string.IsNullOrWhiteSpace(Model.PhoneNumber)
+                            ? "Не вказано"
+                            : Model.PhoneNumber)
+                    </dd>
+                </dl>
+
+                <form asp-action="Delete" method="post">
+                    <input type="hidden" asp-for="Id" />
+
+                    <button type="submit"
+                            class="btn btn-danger">
+                        Видалити
+                    </button>
+
+                    <a asp-action="Index"
+                       class="btn btn-outline-secondary">
+                        Скасувати
+                    </a>
+                </form>
+
+            </div>
+        </div>
+
+    </div>
+</div>

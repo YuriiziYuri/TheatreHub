@@ -1,0 +1,106 @@
+﻿@model IEnumerable<TheatreHub.Models.Rehearsal>
+
+@{
+    ViewData["Title"] = "Репетиції";
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="h2 mb-1">Репетиції</h1>
+
+        <p class="text-muted mb-0">
+            Планування та контроль театральних репетицій.
+        </p>
+    </div>
+
+    <a asp-action="Create"
+       class="btn btn-primary">
+        Створити репетицію
+    </a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        Репетицій поки немає.
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+
+                <thead class="table-light">
+                    <tr>
+                        <th>Вистава</th>
+                        <th>Початок</th>
+                        <th>Завершення</th>
+                        <th>Місце</th>
+                        <th>Учасники</th>
+                        <th>Статус</th>
+                        <th class="text-end">Дії</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td class="fw-semibold">
+                                @item.Performance.Title
+                            </td>
+
+                            <td>
+                                @item.StartDateTime.ToString("dd.MM.yyyy HH:mm")
+                            </td>
+
+                            <td>
+                                @item.EndDateTime.ToString("dd.MM.yyyy HH:mm")
+                            </td>
+
+                            <td>
+                                @item.Location
+                            </td>
+
+                            <td>
+                                @item.Participants.Count
+                            </td>
+
+                            <td>
+                                @Html.DisplayFor(modelItem => item.Status)
+                            </td>
+
+                            <td class="text-end text-nowrap">
+                                <div class="d-inline-flex gap-1">
+
+                                    <a asp-action="Details"
+                                       asp-route-id="@item.Id"
+                                       class="btn btn-sm btn-outline-secondary">
+                                        Деталі
+                                    </a>
+
+                                    <a asp-action="Edit"
+                                       asp-route-id="@item.Id"
+                                       class="btn btn-sm btn-outline-primary">
+                                        Змінити
+                                    </a>
+
+                                    <a asp-action="Delete"
+                                       asp-route-id="@item.Id"
+                                       class="btn btn-sm btn-outline-danger">
+                                        Видалити
+                                    </a>
+
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+
+            </table>
+
+        </div>
+    </div>
+}
