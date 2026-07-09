@@ -1,0 +1,71 @@
+﻿@model TheatreHub.Models.Scene
+
+@{
+    ViewData["Title"] = "Видалення сцени";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+
+        <div class="card border-danger shadow-sm">
+            <div class="card-body p-4">
+
+                <h1 class="h3 text-danger mb-3">
+                    Видалення сцени
+                </h1>
+
+                <p>
+                    Ви дійсно хочете видалити сцену
+                    <strong>
+                        «Сцена @Model.Number. @Model.Title»
+                    </strong>?
+                </p>
+
+                <dl class="row">
+                    <dt class="col-sm-4">
+                        Вистава
+                    </dt>
+                    <dd class="col-sm-8">
+                        @Model.Act.Performance.Title
+                    </dd>
+
+                    <dt class="col-sm-4">
+                        Дія
+                    </dt>
+                    <dd class="col-sm-8">
+                        @Model.Act.DisplayName
+                    </dd>
+
+                    <dt class="col-sm-4">
+                        Тривалість
+                    </dt>
+                    <dd class="col-sm-8">
+                        @Model.DurationMinutes хв
+                    </dd>
+                </dl>
+
+                <form asp-action="Delete"
+                      method="post">
+
+                    <input type="hidden"
+                           asp-for="Id" />
+
+                    <button type="submit"
+                            class="btn btn-danger">
+                        Видалити
+                    </button>
+
+                    <a asp-controller="Acts"
+                       asp-action="Details"
+                       asp-route-id="@Model.ActId"
+                       class="btn btn-outline-secondary">
+                        Скасувати
+                    </a>
+
+                </form>
+
+            </div>
+        </div>
+
+    </div>
+</div>

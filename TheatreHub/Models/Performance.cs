@@ -38,4 +38,6 @@ public class Performance
         = new List<CharacterRole>();
     public ICollection<Rehearsal> Rehearsals { get; set; }
     = new List<Rehearsal>();
+    public ICollection<Act> Acts { get; set; }
+    = new List<Act>();
 }

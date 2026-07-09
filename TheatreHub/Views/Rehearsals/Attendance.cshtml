@@ -1,0 +1,159 @@
+﻿@model TheatreHub.ViewModels.RehearsalAttendanceViewModel
+@using TheatreHub.Models.Enums
+
+@{
+    ViewData["Title"] = "Відвідування репетиції";
+}
+
+<div class="mb-4">
+    <h1 class="h2 mb-1">
+        Відвідування репетиції
+    </h1>
+
+    <p class="text-muted mb-1">
+        <strong>@Model.PerformanceTitle</strong>
+    </p>
+
+    <p class="text-muted mb-0">
+        @Model.StartDateTime.ToString("dd.MM.yyyy HH:mm")
+        —
+        @Model.EndDateTime.ToString("HH:mm"),
+        @Model.VenueName — @Model.HallName
+    </p>
+</div>
+
+<form asp-action="Attendance"
+      asp-route-id="@Model.RehearsalId"
+      method="post">
+
+    <input type="hidden"
+           asp-for="RehearsalId" />
+
+    <div asp-validation-summary="ModelOnly"
+         class="alert alert-danger">
+    </div>
+
+    @if (!Model.Participants.Any())
+    {
+        <div class="alert alert-warning">
+            У цій репетиції немає учасників.
+        </div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+
+                <table class="table align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Актор</th>
+                            <th>Підтвердження</th>
+                            <th>Відвідування</th>
+                            <th>Запізнення</th>
+                            <th>Причина відсутності</th>
+                            <th>Коментар</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @for (var i = 0;
+                                            i < Model.Participants.Count;
+                                            i++)
+                        {
+                            <tr>
+                                <td style="min-width: 180px">
+                                    <input type="hidden"
+                                           asp-for="Participants[i].ActorId" />
+
+                                    <input type="hidden"
+                                           asp-for="Participants[i].FullName" />
+
+                                    <strong>
+                                        @Model.Participants[i].FullName
+                                    </strong>
+                                </td>
+
+                                <td style="min-width: 220px">
+                                    <select asp-for="Participants[i].ResponseStatus"
+                                            asp-items="Html.GetEnumSelectList<ParticipationResponseStatus>()"
+                                            class="form-select">
+                                    </select>
+
+                                    <span asp-validation-for="Participants[i].ResponseStatus"
+                                          class="text-danger">
+                                    </span>
+                                </td>
+
+                                <td style="min-width: 210px">
+                                    <select asp-for="Participants[i].AttendanceStatus"
+                                            asp-items="Html.GetEnumSelectList<AttendanceStatus>()"
+                                            class="form-select">
+                                    </select>
+
+                                    <span asp-validation-for="Participants[i].AttendanceStatus"
+                                          class="text-danger">
+                                    </span>
+                                </td>
+
+                                <td style="min-width: 130px">
+                                    <input asp-for="Participants[i].LateMinutes"
+                                           type="number"
+                                           min="0"
+                                           max="600"
+                                           class="form-control" />
+
+                                    <span asp-validation-for="Participants[i].LateMinutes"
+                                          class="text-danger">
+                                    </span>
+                                </td>
+
+                                <td style="min-width: 240px">
+                                    <input asp-for="Participants[i].AbsenceReason"
+                                           class="form-control" />
+
+                                    <span asp-validation-for="Participants[i].AbsenceReason"
+                                          class="text-danger">
+                                    </span>
+                                </td>
+
+                                <td style="min-width: 240px">
+                                    <textarea asp-for="Participants[i].Comment"
+                                              class="form-control"
+                                              rows="2">
+                                            </textarea>
+
+                                    <span asp-validation-for="Participants[i].Comment"
+                                          class="text-danger">
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mt-4">
+            <button type="submit"
+                    class="btn btn-primary">
+                Зберегти відвідування
+            </button>
+
+            <a asp-action="Details"
+               asp-route-id="@Model.RehearsalId"
+               class="btn btn-outline-secondary">
+                Скасувати
+            </a>
+        </div>
+    }
+
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync(
+            "_ValidationScriptsPartial");
+    }
+}

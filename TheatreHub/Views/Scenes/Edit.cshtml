@@ -1,0 +1,70 @@
+﻿@model TheatreHub.Models.Scene
+
+@{
+    ViewData["Title"] = "Редагування сцени";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+
+                <h1 class="h3 mb-1">
+                    Редагування сцени
+                </h1>
+
+                <p class="text-muted mb-1">
+                    Вистава:
+                    <strong>@ViewBag.PerformanceTitle</strong>
+                </p>
+
+                <p class="text-muted mb-4">
+                    Дія:
+                    <strong>@ViewBag.ActName</strong>
+                </p>
+
+                <form asp-action="Edit"
+                      asp-route-id="@Model.Id"
+                      method="post">
+
+                    <input type="hidden"
+                           asp-for="Id" />
+
+                    <partial name="_Form"
+                             model="Model" />
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="submit"
+                                class="btn btn-primary">
+                            Зберегти
+                        </button>
+
+                        <a asp-action="Details"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-outline-secondary">
+                            Деталі
+                        </a>
+
+                        <a asp-controller="Acts"
+                           asp-action="Details"
+                           asp-route-id="@Model.ActId"
+                           class="btn btn-outline-dark">
+                            До дії
+                        </a>
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync(
+            "_ValidationScriptsPartial");
+    }
+}

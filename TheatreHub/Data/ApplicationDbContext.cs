@@ -35,6 +35,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<Hall> Halls =>
         Set<Hall>();
 
+    public DbSet<Act> Acts => Set<Act>();
+
+    public DbSet<Scene> Scenes => Set<Scene>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -44,6 +48,7 @@ public class ApplicationDbContext : DbContext
         ConfigureRehearsals(modelBuilder);
         ConfigureRehearsalParticipants(modelBuilder);
         ConfigureVenuesAndHalls(modelBuilder);
+        ConfigureActsAndScenes(modelBuilder);
     }
 
     private static void ConfigureCharacterRoles(
@@ -165,5 +170,36 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<Venue>()
             .HasIndex(venue => venue.Name);
+    }
+    private static void ConfigureActsAndScenes(
+        ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Act>()
+            .HasOne(act => act.Performance)
+            .WithMany(performance => performance.Acts)
+            .HasForeignKey(act => act.PerformanceId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Act>()
+            .HasIndex(act => new
+            {
+                act.PerformanceId,
+                act.Number
+            })
+            .IsUnique();
+
+        modelBuilder.Entity<Scene>()
+            .HasOne(scene => scene.Act)
+            .WithMany(act => act.Scenes)
+            .HasForeignKey(scene => scene.ActId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Scene>()
+            .HasIndex(scene => new
+            {
+                scene.ActId,
+                scene.Number
+            })
+            .IsUnique();
     }
 }

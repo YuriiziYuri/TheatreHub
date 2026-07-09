@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TheatreHub.Data;
 
@@ -10,43 +11,14 @@ using TheatreHub.Data;
 namespace TheatreHub.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260708214049_AddRehearsalAttendanceFields")]
+    partial class AddRehearsalAttendanceFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.12");
-
-            modelBuilder.Entity("TheatreHub.Models.Act", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(2000)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Number")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("PerformanceId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Position")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Title")
-                        .HasMaxLength(150)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PerformanceId", "Number")
-                        .IsUnique();
-
-                    b.ToTable("Acts");
-                });
 
             modelBuilder.Entity("TheatreHub.Models.Actor", b =>
                 {
@@ -321,41 +293,6 @@ namespace TheatreHub.Migrations
                     b.ToTable("RoleAssignments");
                 });
 
-            modelBuilder.Entity("TheatreHub.Models.Scene", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("ActId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("DurationMinutes")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Number")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Position")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Synopsis")
-                        .HasMaxLength(3000)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ActId", "Number")
-                        .IsUnique();
-
-                    b.ToTable("Scenes");
-                });
-
             modelBuilder.Entity("TheatreHub.Models.Venue", b =>
                 {
                     b.Property<int>("Id")
@@ -400,17 +337,6 @@ namespace TheatreHub.Migrations
                     b.HasIndex("Name");
 
                     b.ToTable("Venues");
-                });
-
-            modelBuilder.Entity("TheatreHub.Models.Act", b =>
-                {
-                    b.HasOne("TheatreHub.Models.Performance", "Performance")
-                        .WithMany("Acts")
-                        .HasForeignKey("PerformanceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Performance");
                 });
 
             modelBuilder.Entity("TheatreHub.Models.CharacterRole", b =>
@@ -492,22 +418,6 @@ namespace TheatreHub.Migrations
                     b.Navigation("CharacterRole");
                 });
 
-            modelBuilder.Entity("TheatreHub.Models.Scene", b =>
-                {
-                    b.HasOne("TheatreHub.Models.Act", "Act")
-                        .WithMany("Scenes")
-                        .HasForeignKey("ActId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Act");
-                });
-
-            modelBuilder.Entity("TheatreHub.Models.Act", b =>
-                {
-                    b.Navigation("Scenes");
-                });
-
             modelBuilder.Entity("TheatreHub.Models.Actor", b =>
                 {
                     b.Navigation("RehearsalParticipants");
@@ -527,8 +437,6 @@ namespace TheatreHub.Migrations
 
             modelBuilder.Entity("TheatreHub.Models.Performance", b =>
                 {
-                    b.Navigation("Acts");
-
                     b.Navigation("CharacterRoles");
 
                     b.Navigation("Rehearsals");

@@ -6,27 +6,63 @@
 
     var statusClass = Model.Status switch
     {
-        PerformanceStatus.Idea => "bg-secondary",
-        PerformanceStatus.Planning => "bg-info text-dark",
-        PerformanceStatus.Casting => "bg-warning text-dark",
-        PerformanceStatus.RehearsalPeriod => "bg-primary",
-        PerformanceStatus.ReadyForPremiere => "bg-success",
-        PerformanceStatus.InRepertoire => "bg-success",
-        PerformanceStatus.Completed => "bg-dark",
-        PerformanceStatus.Cancelled => "bg-danger",
-        _ => "bg-secondary"
+        PerformanceStatus.Idea =>
+            "bg-secondary",
+
+        PerformanceStatus.Planning =>
+            "bg-info text-dark",
+
+        PerformanceStatus.Casting =>
+            "bg-warning text-dark",
+
+        PerformanceStatus.RehearsalPeriod =>
+            "bg-primary",
+
+        PerformanceStatus.TechnicalPreparation =>
+            "bg-primary",
+
+        PerformanceStatus.ReadyForPremiere =>
+            "bg-success",
+
+        PerformanceStatus.InRepertoire =>
+            "bg-success",
+
+        PerformanceStatus.Completed =>
+            "bg-dark",
+
+        PerformanceStatus.Cancelled =>
+            "bg-danger",
+
+        _ =>
+            "bg-secondary"
     };
 }
 
-<div class="row justify-content-center">
-    <div class="col-lg-8">
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
 
-        <div class="card border-0 shadow-sm">
+<div class="row justify-content-center">
+    <div class="col-xl-10">
+
+        <!-- Основна інформація про виставу -->
+        <div class="card border-0 shadow-sm mb-4">
             <div class="card-body p-4">
 
-                <div class="d-flex justify-content-between align-items-start mb-4">
+                <div class="d-flex flex-wrap
+                            justify-content-between
+                            align-items-start
+                            gap-3
+                            mb-4">
+
                     <div>
-                        <h1 class="h3 mb-1">@Model.Title</h1>
+                        <h1 class="h3 mb-1">
+                            @Model.Title
+                        </h1>
+
                         <p class="text-muted mb-0">
                             Інформація про театральну постановку
                         </p>
@@ -35,48 +71,311 @@
                     <span class="badge @statusClass">
                         @Html.DisplayFor(model => model.Status)
                     </span>
+
                 </div>
 
                 <dl class="row mb-4">
-                    <dt class="col-sm-4">Опис</dt>
+
+                    <dt class="col-sm-4">
+                        Опис
+                    </dt>
+
                     <dd class="col-sm-8">
-                        @(string.IsNullOrWhiteSpace(Model.Description)
-                            ? "Опис відсутній"
-                            : Model.Description)
+                        @if (string.IsNullOrWhiteSpace(
+                                                Model.Description))
+                        {
+                            <span class="text-muted">
+                                Опис відсутній
+                            </span>
+                        }
+                        else
+                        {
+                            @Model.Description
+                        }
                     </dd>
 
-                    <dt class="col-sm-4">Жанр</dt>
-                    <dd class="col-sm-8">@Model.Genre</dd>
+                    <dt class="col-sm-4">
+                        Жанр
+                    </dt>
 
-                    <dt class="col-sm-4">Дата прем’єри</dt>
+                    <dd class="col-sm-8">
+                        @if (string.IsNullOrWhiteSpace(
+                                                Model.Genre))
+                        {
+                            <span class="text-muted">
+                                Не вказано
+                            </span>
+                        }
+                        else
+                        {
+                            @Model.Genre
+                        }
+                    </dd>
+
+                    <dt class="col-sm-4">
+                        Дата прем’єри
+                    </dt>
+
                     <dd class="col-sm-8">
                         @(Model.PremiereDate?.ToString("dd.MM.yyyy")
-                            ?? "Не вказано")
+                                                ?? "Не вказано")
                     </dd>
 
-                    <dt class="col-sm-4">Тривалість</dt>
+                    <dt class="col-sm-4">
+                        Тривалість
+                    </dt>
+
                     <dd class="col-sm-8">
                         @Model.DurationMinutes хв
                     </dd>
 
-                    <dt class="col-sm-4">Дата створення запису</dt>
+                    <dt class="col-sm-4">
+                        Дата створення запису
+                    </dt>
+
                     <dd class="col-sm-8">
-                        @Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")
+                        @Model.CreatedAt.ToString(
+                                                "dd.MM.yyyy HH:mm")
                     </dd>
+
                 </dl>
 
                 <div class="d-flex flex-wrap gap-2">
+
                     <a asp-action="Edit"
                        asp-route-id="@Model.Id"
                        class="btn btn-primary">
                         Редагувати
                     </a>
 
+                    <a asp-controller="Acts"
+                       asp-action="Index"
+                       asp-route-performanceId="@Model.Id"
+                       class="btn btn-outline-primary">
+                        Відкрити структуру
+                    </a>
+
                     <a asp-action="Index"
                        class="btn btn-outline-secondary">
                         До списку
                     </a>
+
                 </div>
+
+            </div>
+        </div>
+
+        <!-- Структура вистави -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+
+                <div class="d-flex flex-wrap
+                            justify-content-between
+                            align-items-center
+                            gap-3
+                            mb-4">
+
+                    <div>
+                        <h2 class="h4 mb-1">
+                            Структура вистави
+                        </h2>
+
+                        <p class="text-muted mb-0">
+                            Дії та сцени постановки
+                        </p>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2">
+
+                        <a asp-controller="Acts"
+                           asp-action="Create"
+                           asp-route-performanceId="@Model.Id"
+                           class="btn btn-primary">
+                            Додати дію
+                        </a>
+
+                        <a asp-controller="Acts"
+                           asp-action="Index"
+                           asp-route-performanceId="@Model.Id"
+                           class="btn btn-outline-primary">
+                            Відкрити повну структуру
+                        </a>
+
+                    </div>
+
+                </div>
+
+                @if (!Model.Acts.Any())
+                {
+                    <div class="alert alert-info mb-0">
+                        Структуру вистави ще не створено.
+                        Додайте першу дію.
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex flex-column gap-3">
+
+                        @foreach (var act in Model.Acts
+                                            .OrderBy(item => item.Position)
+                                            .ThenBy(item => item.Number))
+                        {
+                            <div class="border rounded">
+
+                                <!-- Заголовок дії -->
+                                <div class="p-3 bg-light border-bottom">
+
+                                    <div class="d-flex flex-wrap
+                                                        justify-content-between
+                                                        align-items-start
+                                                        gap-3">
+
+                                        <div>
+                                            <h3 class="h5 mb-1">
+                                                @act.DisplayName
+                                            </h3>
+
+                                            <div class="small text-muted">
+                                                Сцен: @act.Scenes.Count
+                                                · Позиція: @act.Position
+                                            </div>
+
+                                            @if (!string.IsNullOrWhiteSpace(
+                                                                                act.Description))
+                                            {
+                                                <div class="mt-2">
+                                                    @act.Description
+                                                </div>
+                                            }
+                                        </div>
+
+                                        <div class="d-flex
+                                                            flex-wrap
+                                                            gap-2">
+
+                                            <a asp-controller="Acts"
+                                               asp-action="Details"
+                                               asp-route-id="@act.Id"
+                                               class="btn btn-sm btn-outline-primary">
+                                                Деталі
+                                            </a>
+
+                                            <a asp-controller="Scenes"
+                                               asp-action="Create"
+                                               asp-route-actId="@act.Id"
+                                               class="btn btn-sm btn-primary">
+                                                Додати сцену
+                                            </a>
+
+                                            <a asp-controller="Acts"
+                                               asp-action="Edit"
+                                               asp-route-id="@act.Id"
+                                               class="btn btn-sm btn-outline-secondary">
+                                                Редагувати
+                                            </a>
+
+                                            <a asp-controller="Acts"
+                                               asp-action="Delete"
+                                               asp-route-id="@act.Id"
+                                               class="btn btn-sm btn-outline-danger">
+                                                Видалити
+                                            </a>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                                <!-- Сцени дії -->
+                                <div class="p-3">
+
+                                    @if (!act.Scenes.Any())
+                                    {
+                                        <div class="text-muted">
+                                            У цій дії ще немає сцен.
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="list-group">
+
+                                            @foreach (var scene in act.Scenes
+                                                                            .OrderBy(item => item.Position)
+                                                                            .ThenBy(item => item.Number))
+                                            {
+                                                <div class="list-group-item">
+
+                                                    <div class="d-flex
+                                                                                flex-wrap
+                                                                                justify-content-between
+                                                                                align-items-start
+                                                                                gap-3">
+
+                                                        <div>
+                                                            <strong>
+                                                                Сцена @scene.Number.
+                                                                @scene.Title
+                                                            </strong>
+
+                                                            <div class="small text-muted">
+                                                                Тривалість:
+                                                                @scene.DurationMinutes хв
+                                                                · Позиція:
+                                                                @scene.Position
+                                                            </div>
+
+                                                            @if (!string.IsNullOrWhiteSpace(
+                                                                                                        scene.Synopsis))
+                                                            {
+                                                                <div class="small mt-2">
+                                                                    @scene.Synopsis
+                                                                </div>
+                                                            }
+                                                        </div>
+
+                                                        <div class="d-flex
+                                                                                    flex-wrap
+                                                                                    gap-2">
+
+                                                            <a asp-controller="Scenes"
+                                                               asp-action="Details"
+                                                               asp-route-id="@scene.Id"
+                                                               class="btn btn-sm btn-outline-primary">
+                                                                Деталі
+                                                            </a>
+
+                                                            <a asp-controller="Scenes"
+                                                               asp-action="Edit"
+                                                               asp-route-id="@scene.Id"
+                                                               class="btn btn-sm btn-outline-secondary">
+                                                                Редагувати
+                                                            </a>
+
+                                                            <a asp-controller="Scenes"
+                                                               asp-action="Delete"
+                                                               asp-route-id="@scene.Id"
+                                                               class="btn btn-sm btn-outline-danger">
+                                                                Видалити
+                                                            </a>
+
+                                                        </div>
+
+                                                    </div>
+
+                                                </div>
+                                            }
+
+                                        </div>
+                                    }
+
+                                </div>
+
+                            </div>
+                        }
+
+                    </div>
+                }
 
             </div>
         </div>

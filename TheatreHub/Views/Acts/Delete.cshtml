@@ -1,0 +1,59 @@
+﻿@model TheatreHub.Models.Act
+
+@{
+    ViewData["Title"] = "Видалення дії";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+
+        <div class="card border-danger shadow-sm">
+            <div class="card-body p-4">
+
+                <h1 class="h3 text-danger mb-3">
+                    Видалення дії
+                </h1>
+
+                <p>
+                    Ви дійсно хочете видалити
+                    <strong>
+                        «@Model.DisplayName»
+                    </strong>?
+                </p>
+
+                <p class="text-muted">
+                    Вистава:
+                    @Model.Performance.Title
+                </p>
+
+                @if (Model.Scenes.Any())
+                {
+                    <div class="alert alert-warning">
+                        Разом із дією буде видалено
+                        сцен: <strong>@Model.Scenes.Count</strong>.
+                    </div>
+                }
+
+                <form asp-action="Delete"
+                      method="post">
+
+                    <input type="hidden"
+                           asp-for="Id" />
+
+                    <button type="submit"
+                            class="btn btn-danger">
+                        Видалити
+                    </button>
+
+                    <a asp-action="Index"
+                       asp-route-performanceId="@Model.PerformanceId"
+                       class="btn btn-outline-secondary">
+                        Скасувати
+                    </a>
+                </form>
+
+            </div>
+        </div>
+
+    </div>
+</div>

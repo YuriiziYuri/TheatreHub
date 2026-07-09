@@ -5,76 +5,97 @@
     ViewData["Title"] = "Редагування вистави";
 }
 
-<div class="row justify-content-center">
-    <div class="col-lg-7">
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
 
-        <div class="card border-0 shadow-sm">
+<div class="row justify-content-center">
+    <div class="col-xl-10">
+
+        <div class="card border-0 shadow-sm mb-4">
             <div class="card-body p-4">
 
-                <h1 class="h3 mb-1">Редагування вистави</h1>
+                <h1 class="h3 mb-1">
+                    Редагування вистави
+                </h1>
 
                 <p class="text-muted mb-4">
-                    Змініть необхідні дані та збережіть результат.
+                    Змініть основні дані вистави.
                 </p>
 
-                <form asp-action="Edit" method="post">
+                <form asp-action="Edit"
+                      asp-route-id="@Model.Id"
+                      method="post">
 
-                    <input type="hidden" asp-for="Id" />
+                    <input type="hidden"
+                           asp-for="Id" />
 
                     <div asp-validation-summary="ModelOnly"
-                         class="text-danger mb-3">
+                         class="alert alert-danger">
                     </div>
 
                     <div class="mb-3">
                         <label asp-for="Title"
-                               class="form-label fw-semibold"></label>
+                               class="form-label fw-semibold">
+                        </label>
 
                         <input asp-for="Title"
                                class="form-control" />
 
                         <span asp-validation-for="Title"
-                              class="text-danger"></span>
+                              class="text-danger">
+                        </span>
                     </div>
 
                     <div class="mb-3">
                         <label asp-for="Description"
-                               class="form-label fw-semibold"></label>
+                               class="form-label fw-semibold">
+                        </label>
 
                         <textarea asp-for="Description"
                                   class="form-control"
                                   rows="4"></textarea>
 
                         <span asp-validation-for="Description"
-                              class="text-danger"></span>
+                              class="text-danger">
+                        </span>
                     </div>
 
                     <div class="mb-3">
                         <label asp-for="Genre"
-                               class="form-label fw-semibold"></label>
+                               class="form-label fw-semibold">
+                        </label>
 
                         <input asp-for="Genre"
                                class="form-control" />
 
                         <span asp-validation-for="Genre"
-                              class="text-danger"></span>
+                              class="text-danger">
+                        </span>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label asp-for="PremiereDate"
-                                   class="form-label fw-semibold"></label>
+                                   class="form-label fw-semibold">
+                            </label>
 
                             <input asp-for="PremiereDate"
                                    class="form-control"
                                    type="date" />
 
                             <span asp-validation-for="PremiereDate"
-                                  class="text-danger"></span>
+                                  class="text-danger">
+                            </span>
                         </div>
 
                         <div class="col-md-6 mb-3">
                             <label asp-for="DurationMinutes"
-                                   class="form-label fw-semibold"></label>
+                                   class="form-label fw-semibold">
+                            </label>
 
                             <input asp-for="DurationMinutes"
                                    class="form-control"
@@ -83,13 +104,15 @@
                                    max="600" />
 
                             <span asp-validation-for="DurationMinutes"
-                                  class="text-danger"></span>
+                                  class="text-danger">
+                            </span>
                         </div>
                     </div>
 
                     <div class="mb-4">
                         <label asp-for="Status"
-                               class="form-label fw-semibold"></label>
+                               class="form-label fw-semibold">
+                        </label>
 
                         <select asp-for="Status"
                                 asp-items="Html.GetEnumSelectList<PerformanceStatus>()"
@@ -97,13 +120,24 @@
                         </select>
 
                         <span asp-validation-for="Status"
-                              class="text-danger"></span>
+                              class="text-danger">
+                        </span>
                     </div>
 
                     <div class="d-flex flex-wrap gap-2">
+
                         <button type="submit"
+                                name="submitAction"
+                                value="save"
                                 class="btn btn-primary px-4">
                             Зберегти
+                        </button>
+
+                        <button type="submit"
+                                name="submitAction"
+                                value="structure"
+                                class="btn btn-outline-primary">
+                            Зберегти й відкрити структуру
                         </button>
 
                         <a asp-action="Details"
@@ -116,9 +150,211 @@
                            class="btn btn-outline-dark">
                             До списку
                         </a>
+
                     </div>
 
                 </form>
+
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+
+                <div class="d-flex flex-wrap
+                            justify-content-between
+                            align-items-center
+                            gap-3
+                            mb-4">
+
+                    <div>
+                        <h2 class="h4 mb-1">
+                            Структура вистави
+                        </h2>
+
+                        <p class="text-muted mb-0">
+                            Дії та сцени постановки
+                        </p>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2">
+
+                        <a asp-controller="Acts"
+                           asp-action="Create"
+                           asp-route-performanceId="@Model.Id"
+                           class="btn btn-primary">
+                            Додати дію
+                        </a>
+
+                        <a asp-controller="Acts"
+                           asp-action="Index"
+                           asp-route-performanceId="@Model.Id"
+                           class="btn btn-outline-primary">
+                            Відкрити повну структуру
+                        </a>
+
+                    </div>
+                </div>
+
+                @if (!Model.Acts.Any())
+                {
+                    <div class="alert alert-info mb-0">
+                        Структуру вистави ще не створено.
+                        Додайте першу дію.
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex flex-column gap-3">
+
+                        @foreach (var act in Model.Acts
+                                            .OrderBy(item => item.Position)
+                                            .ThenBy(item => item.Number))
+                        {
+                            <div class="border rounded">
+
+                                <div class="p-3 bg-light border-bottom">
+
+                                    <div class="d-flex flex-wrap
+                                                        justify-content-between
+                                                        align-items-start
+                                                        gap-3">
+
+                                        <div>
+                                            <h3 class="h5 mb-1">
+                                                @act.DisplayName
+                                            </h3>
+
+                                            <div class="small text-muted">
+                                                Сцен: @act.Scenes.Count
+                                                · Позиція: @act.Position
+                                            </div>
+
+                                            @if (!string.IsNullOrWhiteSpace(
+                                                                                act.Description))
+                                            {
+                                                <div class="mt-2">
+                                                    @act.Description
+                                                </div>
+                                            }
+                                        </div>
+
+                                        <div class="d-flex
+                                                            flex-wrap
+                                                            gap-2">
+
+                                            <a asp-controller="Scenes"
+                                               asp-action="Create"
+                                               asp-route-actId="@act.Id"
+                                               class="btn btn-sm btn-primary">
+                                                Додати сцену
+                                            </a>
+
+                                            <a asp-controller="Acts"
+                                               asp-action="Edit"
+                                               asp-route-id="@act.Id"
+                                               class="btn btn-sm btn-outline-secondary">
+                                                Редагувати
+                                            </a>
+
+                                            <a asp-controller="Acts"
+                                               asp-action="Delete"
+                                               asp-route-id="@act.Id"
+                                               class="btn btn-sm btn-outline-danger">
+                                                Видалити
+                                            </a>
+
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <div class="p-3">
+
+                                    @if (!act.Scenes.Any())
+                                    {
+                                        <div class="text-muted">
+                                            У цій дії ще немає сцен.
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="list-group">
+
+                                            @foreach (var scene in act.Scenes
+                                                                            .OrderBy(item => item.Position)
+                                                                            .ThenBy(item => item.Number))
+                                            {
+                                                <div class="list-group-item">
+
+                                                    <div class="d-flex flex-wrap
+                                                                                justify-content-between
+                                                                                align-items-start
+                                                                                gap-3">
+
+                                                        <div>
+                                                            <strong>
+                                                                Сцена @scene.Number.
+                                                                @scene.Title
+                                                            </strong>
+
+                                                            <div class="small text-muted">
+                                                                Тривалість:
+                                                                @scene.DurationMinutes хв
+                                                                · Позиція:
+                                                                @scene.Position
+                                                            </div>
+
+                                                            @if (!string.IsNullOrWhiteSpace(
+                                                                                                        scene.Synopsis))
+                                                            {
+                                                                <div class="small mt-2">
+                                                                    @scene.Synopsis
+                                                                </div>
+                                                            }
+                                                        </div>
+
+                                                        <div class="d-flex
+                                                                                    flex-wrap
+                                                                                    gap-2">
+
+                                                            <a asp-controller="Scenes"
+                                                               asp-action="Details"
+                                                               asp-route-id="@scene.Id"
+                                                               class="btn btn-sm btn-outline-primary">
+                                                                Деталі
+                                                            </a>
+
+                                                            <a asp-controller="Scenes"
+                                                               asp-action="Edit"
+                                                               asp-route-id="@scene.Id"
+                                                               class="btn btn-sm btn-outline-secondary">
+                                                                Редагувати
+                                                            </a>
+
+                                                            <a asp-controller="Scenes"
+                                                               asp-action="Delete"
+                                                               asp-route-id="@scene.Id"
+                                                               class="btn btn-sm btn-outline-danger">
+                                                                Видалити
+                                                            </a>
+
+                                                        </div>
+                                                    </div>
+
+                                                </div>
+                                            }
+
+                                        </div>
+                                    }
+
+                                </div>
+                            </div>
+                        }
+
+                    </div>
+                }
+
             </div>
         </div>
 
@@ -127,6 +363,7 @@
 
 @section Scripts {
     @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+        await Html.RenderPartialAsync(
+            "_ValidationScriptsPartial");
     }
 }

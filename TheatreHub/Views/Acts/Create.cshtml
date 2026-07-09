@@ -1,0 +1,56 @@
+﻿@model TheatreHub.Models.Act
+
+@{
+    ViewData["Title"] = "Створення дії";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+
+                <h1 class="h3 mb-1">
+                    Створення дії
+                </h1>
+
+                <p class="text-muted mb-4">
+                    Вистава:
+                    <strong>
+                        @ViewBag.PerformanceTitle
+                    </strong>
+                </p>
+
+                <form asp-action="Create"
+                      method="post">
+
+                    <partial name="_Form"
+                             model="Model" />
+
+                    <div class="d-flex gap-2">
+                        <button type="submit"
+                                class="btn btn-primary">
+                            Створити
+                        </button>
+
+                        <a asp-action="Index"
+                           asp-route-performanceId="@Model.PerformanceId"
+                           class="btn btn-outline-secondary">
+                            Скасувати
+                        </a>
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync(
+            "_ValidationScriptsPartial");
+    }
+}

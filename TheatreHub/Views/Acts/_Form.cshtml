@@ -1,0 +1,76 @@
+﻿@model TheatreHub.Models.Act
+
+<div asp-validation-summary="ModelOnly"
+     class="alert alert-danger">
+</div>
+
+<input type="hidden"
+       asp-for="PerformanceId" />
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label asp-for="Number"
+               class="form-label fw-semibold">
+        </label>
+
+        <input asp-for="Number"
+               type="number"
+               min="1"
+               max="100"
+               class="form-control" />
+
+        <span asp-validation-for="Number"
+              class="text-danger">
+        </span>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <label asp-for="Position"
+               class="form-label fw-semibold">
+        </label>
+
+        <input asp-for="Position"
+               type="number"
+               min="1"
+               max="1000"
+               class="form-control" />
+
+        <span asp-validation-for="Position"
+              class="text-danger">
+        </span>
+
+        <div class="form-text">
+            Визначає порядок відображення дії.
+        </div>
+    </div>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Title"
+           class="form-label fw-semibold">
+    </label>
+
+    <input asp-for="Title"
+           class="form-control"
+           placeholder="Наприклад: Зустріч героїв" />
+
+    <span asp-validation-for="Title"
+          class="text-danger">
+    </span>
+</div>
+
+<div class="mb-4">
+    <label asp-for="Description"
+           class="form-label fw-semibold">
+    </label>
+
+    <textarea asp-for="Description"
+              class="form-control"
+              rows="6"
+              placeholder="Коротко опишіть зміст дії">
+    </textarea>
+
+    <span asp-validation-for="Description"
+          class="text-danger">
+    </span>
+</div>

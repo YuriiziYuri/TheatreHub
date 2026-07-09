@@ -121,6 +121,12 @@ else
                             Змінити
                         </a>
 
+                        <a asp-action="Attendance"
+                           asp-route-id="@item.Id"
+                           class="btn btn-sm btn-outline-success">
+                            Відвідування
+                        </a>
+
                         <a asp-action="Delete"
                            asp-route-id="@item.Id"
                            class="btn btn-sm btn-outline-danger">

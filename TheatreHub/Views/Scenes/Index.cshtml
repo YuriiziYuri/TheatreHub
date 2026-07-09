@@ -1,0 +1,133 @@
+﻿@model IEnumerable<TheatreHub.Models.Scene>
+
+@{
+    ViewData["Title"] = "Сцени";
+    var actId = (int)ViewBag.ActId;
+}
+
+<div class="d-flex flex-wrap
+            justify-content-between
+            align-items-center
+            gap-3
+            mb-4">
+
+    <div>
+        <h1 class="h2 mb-1">
+            Сцени
+        </h1>
+
+        <p class="text-muted mb-1">
+            Вистава:
+            <strong>@ViewBag.PerformanceTitle</strong>
+        </p>
+
+        <p class="text-muted mb-0">
+            @ViewBag.ActName
+        </p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-action="Create"
+           asp-route-actId="@actId"
+           class="btn btn-primary">
+            Додати сцену
+        </a>
+
+        <a asp-controller="Acts"
+           asp-action="Details"
+           asp-route-id="@actId"
+           class="btn btn-outline-secondary">
+            До дії
+        </a>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        У цій дії ще немає сцен.
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Сцена</th>
+                        <th>Порядок</th>
+                        <th>Тривалість</th>
+                        <th>Короткий зміст</th>
+                        <th class="text-end">Дії</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var scene in Model)
+                    {
+                        <tr>
+                            <td>
+                                <strong>
+                                    Сцена @scene.Number.
+                                    @scene.Title
+                                </strong>
+                            </td>
+
+                            <td>
+                                @scene.Position
+                            </td>
+
+                            <td>
+                                @scene.DurationMinutes хв
+                            </td>
+
+                            <td>
+                                @if (string.IsNullOrWhiteSpace(
+                                                        scene.Synopsis))
+                                {
+                                    <span class="text-muted">
+                                        Не вказано
+                                    </span>
+                                }
+                                else
+                                {
+                                    @scene.Synopsis
+                                }
+                            </td>
+
+                            <td class="text-end text-nowrap">
+                                <a asp-action="Details"
+                                   asp-route-id="@scene.Id"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Деталі
+                                </a>
+
+                                <a asp-action="Edit"
+                                   asp-route-id="@scene.Id"
+                                   class="btn btn-sm btn-outline-secondary">
+                                    Змінити
+                                </a>
+
+                                <a asp-action="Delete"
+                                   asp-route-id="@scene.Id"
+                                   class="btn btn-sm btn-outline-danger">
+                                    Видалити
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+}

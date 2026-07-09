@@ -1,0 +1,93 @@
+﻿@model TheatreHub.Models.Scene
+
+@{
+    ViewData["Title"] = "Деталі сцени";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+
+                <div class="d-flex flex-wrap
+                            justify-content-between
+                            align-items-start
+                            gap-3
+                            mb-4">
+
+                    <div>
+                        <h1 class="h3 mb-1">
+                            Сцена @Model.Number.
+                            @Model.Title
+                        </h1>
+
+                        <p class="text-muted mb-1">
+                            @Model.Act.Performance.Title
+                        </p>
+
+                        <p class="text-muted mb-0">
+                            @Model.Act.DisplayName
+                        </p>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <a asp-action="Edit"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-primary">
+                            Редагувати
+                        </a>
+
+                        <a asp-controller="Acts"
+                           asp-action="Details"
+                           asp-route-id="@Model.ActId"
+                           class="btn btn-outline-secondary">
+                            До дії
+                        </a>
+                    </div>
+                </div>
+
+                <dl class="row">
+                    <dt class="col-sm-4">
+                        Номер сцени
+                    </dt>
+                    <dd class="col-sm-8">
+                        @Model.Number
+                    </dd>
+
+                    <dt class="col-sm-4">
+                        Порядок
+                    </dt>
+                    <dd class="col-sm-8">
+                        @Model.Position
+                    </dd>
+
+                    <dt class="col-sm-4">
+                        Тривалість
+                    </dt>
+                    <dd class="col-sm-8">
+                        @Model.DurationMinutes хв
+                    </dd>
+
+                    <dt class="col-sm-4">
+                        Короткий зміст
+                    </dt>
+                    <dd class="col-sm-8">
+                        @(Model.Synopsis ??
+                                                "Короткий зміст не вказано")
+                    </dd>
+                </dl>
+
+                <div class="mt-4">
+                    <a asp-action="Delete"
+                       asp-route-id="@Model.Id"
+                       class="btn btn-outline-danger">
+                        Видалити сцену
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>

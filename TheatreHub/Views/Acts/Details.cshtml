@@ -1,0 +1,140 @@
+﻿@model TheatreHub.Models.Act
+
+@{
+    ViewData["Title"] = "Деталі дії";
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+
+        <div class="d-flex flex-wrap
+                    justify-content-between
+                    align-items-start
+                    gap-3
+                    mb-4">
+
+            <div>
+                <h1 class="h3 mb-1">
+                    @Model.DisplayName
+                </h1>
+
+                <p class="text-muted mb-0">
+                    @Model.Performance.Title
+                </p>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                <a asp-action="Edit"
+                   asp-route-id="@Model.Id"
+                   class="btn btn-primary">
+                    Редагувати
+                </a>
+
+                <a asp-action="Index"
+                   asp-route-performanceId="@Model.PerformanceId"
+                   class="btn btn-outline-secondary">
+                    До структури
+                </a>
+            </div>
+        </div>
+
+        <dl class="row">
+            <dt class="col-sm-3">Номер</dt>
+            <dd class="col-sm-9">@Model.Number</dd>
+
+            <dt class="col-sm-3">Порядок</dt>
+            <dd class="col-sm-9">@Model.Position</dd>
+
+            <dt class="col-sm-3">Опис</dt>
+            <dd class="col-sm-9">
+                @(Model.Description ?? "Опис відсутній")
+            </dd>
+        </dl>
+
+        <hr />
+
+        <div class="d-flex flex-wrap
+                    justify-content-between
+                    align-items-center
+                    gap-2
+                    mb-3">
+
+            <h2 class="h4 mb-0">
+                Сцени
+            </h2>
+
+            <a asp-controller="Scenes"
+               asp-action="Create"
+               asp-route-actId="@Model.Id"
+               class="btn btn-sm btn-primary">
+                Додати сцену
+            </a>
+        </div>
+
+        @if (!Model.Scenes.Any())
+        {
+            <div class="alert alert-info mb-0">
+                У цій дії ще немає сцен.
+            </div>
+        }
+        else
+        {
+            <div class="list-group">
+                @foreach (var scene in Model.Scenes)
+                {
+                    <div class="list-group-item">
+                        <div class="d-flex
+                                            justify-content-between
+                                            align-items-start
+                                            gap-3">
+
+                            <div>
+                                <strong>
+                                    Сцена @scene.Number.
+                                    @scene.Title
+                                </strong>
+
+                                <div class="small text-muted">
+                                    Тривалість:
+                                    @scene.DurationMinutes хв
+                                    · Позиція: @scene.Position
+                                </div>
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-2">
+                                <a asp-controller="Scenes"
+                                   asp-action="Details"
+                                   asp-route-id="@scene.Id"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Деталі
+                                </a>
+
+                                <a asp-controller="Scenes"
+                                   asp-action="Edit"
+                                   asp-route-id="@scene.Id"
+                                   class="btn btn-sm btn-outline-secondary">
+                                    Редагувати
+                                </a>
+
+                                <a asp-controller="Scenes"
+                                   asp-action="Delete"
+                                   asp-route-id="@scene.Id"
+                                   class="btn btn-sm btn-outline-danger">
+                                    Видалити
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+    </div>
+</div>
