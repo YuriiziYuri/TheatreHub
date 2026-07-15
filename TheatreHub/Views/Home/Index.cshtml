@@ -1,350 +1,430 @@
-﻿@using TheatreHub.Models.Enums
-@model TheatreHub.ViewModels.DashboardViewModel
+﻿@model TheatreHub.ViewModels.DashboardViewModel
 
 @{
-    ViewData["Title"] = "Головна";
+    ViewData["Title"] = "Панель керування";
 }
 
-<div class="mb-4">
-    <h1 class="display-6 fw-bold mb-1">
-        TheatreHub
-    </h1>
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+        <h1 class="h3 mb-1">
+            Панель керування
+        </h1>
 
-    <p class="text-muted mb-0">
-        Інформаційна система керування театром
-    </p>
+        <p class="text-muted mb-0">
+            Коротке зведення по виставах, репетиціях, завданнях і постановочних елементах.
+        </p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-controller="Performances"
+           asp-action="Create"
+           class="btn btn-primary">
+            Створити виставу
+        </a>
+
+        <a asp-controller="Rehearsals"
+           asp-action="Create"
+           class="btn btn-outline-primary">
+            Створити репетицію
+        </a>
+    </div>
 </div>
 
-<div class="row g-3 mb-4">
+<div class="row g-4 mb-4">
 
-    <div class="col-sm-6 col-xl-3">
+    <div class="col-md-6 col-xl-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body">
-                <div class="text-muted small mb-1">
+                <div class="text-muted small">
                     Вистави
                 </div>
 
-                <div class="display-6 fw-semibold">
+                <div class="fs-3 fw-semibold">
                     @Model.PerformancesCount
                 </div>
 
-                <a asp-controller="Performances"
-                   asp-action="Index"
-                   class="small text-decoration-none">
-                    Переглянути вистави
-                </a>
+                <div class="small text-muted">
+                    У підготовці: @Model.PerformancesInPreparationCount
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="col-sm-6 col-xl-3">
+    <div class="col-md-6 col-xl-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body">
-                <div class="text-muted small mb-1">
+                <div class="text-muted small">
                     Актори
                 </div>
 
-                <div class="display-6 fw-semibold">
-                    @Model.ActorsCount
+                <div class="fs-3 fw-semibold">
+                    @Model.ActiveActorsCount
                 </div>
 
-                <a asp-controller="Actors"
-                   asp-action="Index"
-                   class="small text-decoration-none">
-                    Переглянути акторів
-                </a>
+                <div class="small text-muted">
+                    Доступні для призначень
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="col-sm-6 col-xl-3">
+    <div class="col-md-6 col-xl-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body">
-                <div class="text-muted small mb-1">
-                    Вакантні ролі
+                <div class="text-muted small">
+                    Найближчі репетиції
                 </div>
 
-                <div class="display-6 fw-semibold">
-                    @Model.VacantRolesCount
-                </div>
-
-                <a asp-controller="CharacterRoles"
-                   asp-action="Index"
-                   class="small text-decoration-none">
-                    Розподілити ролі
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-sm-6 col-xl-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="text-muted small mb-1">
-                    Майбутні репетиції
-                </div>
-
-                <div class="display-6 fw-semibold">
+                <div class="fs-3 fw-semibold">
                     @Model.UpcomingRehearsalsCount
                 </div>
 
-                <a asp-controller="Rehearsals"
-                   asp-action="Index"
-                   class="small text-decoration-none">
-                    Переглянути розклад
-                </a>
+                <div class="small text-muted">
+                    Заплановані від сьогодні
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">
+                    Відкриті завдання
+                </div>
+
+                <div class="fs-3 fw-semibold">
+                    @Model.OpenTasksCount
+                </div>
+
+                <div class="small text-muted">
+                    Прострочено: @Model.OverdueTasksCount · Критичні: @Model.CriticalTasksCount
+                </div>
             </div>
         </div>
     </div>
 
 </div>
 
-<div class="row g-4">
+<div class="row g-4 mb-4">
 
-    <div class="col-lg-8">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
 
-        <div class="card border-0 shadow-sm mb-4">
-
-            <div class="card-header bg-white border-0 pt-4 px-4">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h2 class="h5 mb-1">
-                            Найближчі репетиції
-                        </h2>
-
-                        <p class="text-muted small mb-0">
-                            П’ять найближчих запланованих репетицій
-                        </p>
-                    </div>
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <h2 class="h4 mb-0">
+                        Найближчі репетиції
+                    </h2>
 
                     <a asp-controller="Rehearsals"
-                       asp-action="Create"
-                       class="btn btn-sm btn-primary">
-                        Додати
+                       asp-action="Calendar"
+                       class="btn btn-sm btn-outline-secondary">
+                        Календар
                     </a>
                 </div>
-            </div>
-
-            <div class="card-body px-4 pb-4">
 
                 @if (!Model.UpcomingRehearsals.Any())
                 {
                     <div class="alert alert-info mb-0">
-                        Майбутніх репетицій поки немає.
+                        Найближчих репетицій немає.
                     </div>
                 }
                 else
                 {
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Вистава</th>
-                                    <th>Дата і час</th>
-                                    <th>Місце</th>
-                                    <th>Учасники</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-                                @foreach (var rehearsal
-                                    in Model.UpcomingRehearsals)
-                                {
-                                    <tr>
-                                        <td class="fw-semibold">
-                                            @rehearsal.Performance.Title
-                                        </td>
-
-                                        <td>
-                                            @(rehearsal.StartDateTime.ToString("dd.MM.yyyy HH:mm"))
-                                        </td>
-
-                                        <td>
-                                            <div>@rehearsal.Hall.Name</div>
-                                            <div class="small text-muted">
-                                                @rehearsal.Hall.Venue.Name
-                                            </div>
-                                        </td>
-
-                                        <td>
-                                            @rehearsal.Participants.Count
-                                        </td>
-
-                                        <td class="text-end">
-                                            <a asp-controller="Rehearsals"
-                                               asp-action="Details"
-                                               asp-route-id="@rehearsal.Id"
-                                               class="btn btn-sm btn-outline-primary">
-                                                Відкрити
-                                            </a>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                }
-
-            </div>
-        </div>
-
-        <div class="card border-0 shadow-sm">
-
-            <div class="card-header bg-white border-0 pt-4 px-4">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h2 class="h5 mb-1">
-                            Активні вистави
-                        </h2>
-
-                        <p class="text-muted small mb-0">
-                            Вистави, робота над якими ще триває
-                        </p>
-                    </div>
-
-                    <a asp-controller="Performances"
-                       asp-action="Create"
-                       class="btn btn-sm btn-primary">
-                        Додати
-                    </a>
-                </div>
-            </div>
-
-            <div class="card-body px-4 pb-4">
-
-                @if (!Model.ActivePerformances.Any())
-                {
-                    <div class="alert alert-info mb-0">
-                        Активних вистав поки немає.
-                    </div>
-                }
-                else
-                {
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Назва</th>
-                                    <th>Жанр</th>
-                                    <th>Статус</th>
-                                    <th>Ролі</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-                                @foreach (var performance
-                                    in Model.ActivePerformances)
-                                {
-                                    var assignedRoles =
-                                    performance.CharacterRoles.Count(role =>
-                                    role.Assignments.Any(assignment =>
-                                    assignment.IsCurrent &&
-                                    assignment.CastType == CastType.Main &&
-                                    assignment.Status == RoleAssignmentStatus.Approved));
-
-                                    var totalRoles =
-                                        performance.CharacterRoles.Count;
-
-                                    <tr>
-                                        <td class="fw-semibold">
-                                            @performance.Title
-                                        </td>
-
-                                        <td>
-                                            @performance.Genre
-                                        </td>
-
-                                        <td>
-                                            @Html.DisplayFor(
-                                                modelItem =>
-                                                    performance.Status)
-                                        </td>
-
-                                        <td>
-                                            @assignedRoles / @totalRoles
-                                        </td>
-
-                                        <td class="text-end">
-                                            <a asp-controller="Performances"
-                                               asp-action="Details"
-                                               asp-route-id="@performance.Id"
-                                               class="btn btn-sm btn-outline-primary">
-                                                Відкрити
-                                            </a>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                }
-
-            </div>
-        </div>
-
-    </div>
-
-    <div class="col-lg-4">
-
-        <div class="card border-0 shadow-sm">
-
-            <div class="card-header bg-white border-0 pt-4 px-4">
-                <h2 class="h5 mb-1">
-                    Вакантні ролі
-                </h2>
-
-                <p class="text-muted small mb-0">
-                    Персонажі без призначеного актора
-                </p>
-            </div>
-
-            <div class="card-body px-4 pb-4">
-
-                @if (!Model.VacantRoles.Any())
-                {
-                    <div class="alert alert-success mb-0">
-                        Усі ролі розподілені.
-                    </div>
-                }
-                else
-                {
-                    <div class="list-group list-group-flush">
-
-                        @foreach (var role in Model.VacantRoles)
+                    <div class="list-group">
+                        @foreach (var rehearsal in Model.UpcomingRehearsals)
                         {
-                            <a asp-controller="CharacterRoles"
-                               asp-action="Edit"
-                               asp-route-id="@role.Id"
-                               class="list-group-item
-                                      list-group-item-action
-                                      px-0">
+                            <a asp-controller="Rehearsals"
+                               asp-action="Details"
+                               asp-route-id="@rehearsal.Id"
+                               class="list-group-item list-group-item-action">
 
-                                <div class="fw-semibold">
-                                    @role.Name
+                                <div class="d-flex flex-wrap justify-content-between gap-2">
+                                    <strong>
+                                        @rehearsal.StartDateTime.ToString("dd.MM.yyyy HH:mm")
+                                        —
+                                        @rehearsal.EndDateTime.ToString("HH:mm")
+                                    </strong>
+
+                                    <span class="badge text-bg-secondary">
+                                        @rehearsal.StatusText
+                                    </span>
                                 </div>
 
                                 <div class="small text-muted">
-                                    @role.Performance.Title
+                                    @rehearsal.PerformanceTitle
+                                </div>
+
+                                <div class="small text-muted">
+                                    @rehearsal.TargetText
+                                </div>
+
+                                <div class="small text-muted">
+                                    @rehearsal.HallText
                                 </div>
                             </a>
                         }
-
-                    </div>
-
-                    <div class="mt-3">
-                        <a asp-controller="CharacterRoles"
-                           asp-action="Index"
-                           class="btn btn-outline-secondary w-100">
-                            Усі персонажі
-                        </a>
                     </div>
                 }
 
             </div>
         </div>
-
     </div>
 
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+
+                <h2 class="h4 mb-3">
+                    Постановочні елементи
+                </h2>
+
+                <div class="fs-3 fw-semibold">
+                    @Model.ProblemProductionItemsCount
+                </div>
+
+                <div class="text-muted mb-3">
+                    Проблемні або прострочені елементи
+                </div>
+
+                <a asp-controller="ProductionItems"
+                   asp-action="Index"
+                   class="btn btn-outline-primary">
+                    Відкрити реквізит
+                </a>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="row g-4 mb-4">
+
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <h2 class="h4 mb-0">
+                        Завдання, які потребують уваги
+                    </h2>
+
+                    <a asp-controller="TheatreTasks"
+                       asp-action="Index"
+                       class="btn btn-sm btn-outline-secondary">
+                        Усі завдання
+                    </a>
+                </div>
+
+                @if (!Model.AttentionTasks.Any())
+                {
+                    <div class="alert alert-success mb-0">
+                        Немає прострочених або критичних відкритих завдань.
+                    </div>
+                }
+                else
+                {
+                    <div class="list-group">
+                        @foreach (var task in Model.AttentionTasks)
+                        {
+                            <a asp-controller="TheatreTasks"
+                               asp-action="Details"
+                               asp-route-id="@task.Id"
+                               class="list-group-item list-group-item-action">
+
+                                <div class="d-flex flex-wrap justify-content-between gap-2">
+                                    <strong>@task.Title</strong>
+
+                                    <span>
+                                        @if (task.IsOverdue)
+                                        {
+                                            <span class="badge text-bg-danger">
+                                                Прострочено
+                                            </span>
+                                        }
+
+                                    <span class="badge text-bg-secondary">
+                                        @task.PriorityText
+                                    </span>
+                                </span>
+                            </div>
+
+                            <div class="small text-muted">
+                                @task.PerformanceTitle
+                            </div>
+
+                            <div class="small text-muted">
+                                @task.TargetText
+                            </div>
+
+                            <div class="small text-muted">
+                                Дедлайн:
+                                @(task.Deadline.HasValue
+                                                            ? task.Deadline.Value.ToString("dd.MM.yyyy HH:mm")
+                                                            : "не вказано")
+                        </div>
+                    </a>
+                                        }
+                    </div>
+                }
+
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <h2 class="h4 mb-0">
+                        Реквізит / костюми / грим
+                    </h2>
+
+                    <a asp-controller="ProductionItems"
+                       asp-action="Index"
+                       class="btn btn-sm btn-outline-secondary">
+                        Усі елементи
+                    </a>
+                </div>
+
+                @if (!Model.ProblemProductionItems.Any())
+                {
+                    <div class="alert alert-success mb-0">
+                        Немає проблемних або прострочених постановочних елементів.
+                    </div>
+                }
+                else
+                {
+                    <div class="list-group">
+                        @foreach (var item in Model.ProblemProductionItems)
+                        {
+                            <a asp-controller="ProductionItems"
+                               asp-action="Details"
+                               asp-route-id="@item.Id"
+                               class="list-group-item list-group-item-action">
+
+                                <div class="d-flex flex-wrap justify-content-between gap-2">
+                                    <strong>@item.Name</strong>
+
+                                    <span>
+                                        @if (item.IsOverdue)
+                                        {
+                                            <span class="badge text-bg-danger">
+                                                Прострочено
+                                            </span>
+                                        }
+
+                                    <span class="badge text-bg-secondary">
+                                        @item.TypeText
+                                    </span>
+                                </span>
+                            </div>
+
+                            <div class="small text-muted">
+                                @item.PerformanceTitle
+                            </div>
+
+                            <div class="small text-muted">
+                                Статус: @item.StatusText
+                            </div>
+
+                            <div class="small text-muted">
+                                Потрібно до:
+                                @(item.NeededBy.HasValue
+                                                            ? item.NeededBy.Value.ToString("dd.MM.yyyy HH:mm")
+                                                            : "не вказано")
+                        </div>
+                    </a>
+                                        }
+                    </div>
+                }
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+
+        <h2 class="h4 mb-3">
+            Вистави, які потребують уваги
+        </h2>
+
+        @if (!Model.AttentionPerformances.Any())
+        {
+            <div class="alert alert-success mb-0">
+                Немає вистав із помітними проблемами підготовки.
+            </div>
+        }
+        else
+        {
+            <div class="list-group">
+                @foreach (var performance in Model.AttentionPerformances)
+                {
+                    <div class="list-group-item">
+
+                        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+
+                            <div>
+                                <h3 class="h5 mb-1">
+                                    @performance.Title
+                                </h3>
+
+                                <div class="small text-muted">
+                                    Статус: @performance.StatusText
+                                </div>
+
+                                <div class="small text-muted">
+                                    Прем’єра:
+                                    @(performance.PremiereDate.HasValue
+                                                                ? performance.PremiereDate.Value.ToString("dd.MM.yyyy")
+                                                                : "не вказано")
+                                                                           </div>
+
+                                <div class="small text-muted">
+                                    Наступна репетиція:
+                                    @(string.IsNullOrWhiteSpace(performance.NextRehearsalText)
+                                                                ? "не заплановано"
+                                                                : performance.NextRehearsalText)
+                        </div>
+
+                                <div class="small mt-2">
+                                    Ролі без основного актора:
+                                    <strong>@performance.RolesWithoutMainCast</strong>
+                                    · Відкриті завдання:
+                                    <strong>@performance.OpenTasksCount</strong>
+                                    · Проблемний реквізит:
+                                    <strong>@performance.ProblemProductionItemsCount</strong>
+                                </div>
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-2">
+                                <a asp-controller="Performances"
+                                   asp-action="Preparation"
+                                   asp-route-id="@performance.Id"
+                                   class="btn btn-sm btn-outline-secondary">
+                                    Контроль
+                                </a>
+
+                                <a asp-controller="Performances"
+                                   asp-action="Details"
+                                   asp-route-id="@performance.Id"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Вистава
+                                </a>
+                            </div>
+
+                        </div>
+
+                    </div>
+                        }
+            </div>
+        }
+
+    </div>
 </div>

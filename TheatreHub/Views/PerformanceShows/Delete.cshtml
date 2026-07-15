@@ -1,0 +1,82 @@
+@model TheatreHub.Models.PerformanceShow
+
+@{
+    ViewData["Title"] = "Видалити показ";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+
+                <h1 class="h3 mb-3">
+                    Видалити показ?
+                </h1>
+
+                <div class="alert alert-warning">
+                    Ви дійсно хочете видалити цей показ?
+                    Цю дію не можна буде скасувати.
+                </div>
+
+                <dl class="row">
+                    <dt class="col-sm-4">Вистава</dt>
+                    <dd class="col-sm-8">@Model.Performance.Title</dd>
+
+                    <dt class="col-sm-4">Початок</dt>
+                    <dd class="col-sm-8">
+                        @Model.StartDateTime.ToString("dd.MM.yyyy HH:mm")
+                    </dd>
+
+                    <dt class="col-sm-4">Завершення</dt>
+                    <dd class="col-sm-8">
+                        @Model.EndDateTime.ToString("dd.MM.yyyy HH:mm")
+                    </dd>
+
+                    <dt class="col-sm-4">Локація</dt>
+                    <dd class="col-sm-8">
+                        @if (Model.Hall != null)
+                        {
+                            <span>
+                                @(Model.Hall.Venue == null
+                                                            ? Model.Hall.Name
+                                                            : $"{Model.Hall.Venue.Name} — {Model.Hall.Name}")
+                        </span>
+                                                }
+                        else
+                        {
+                            <span>
+                                @(string.IsNullOrWhiteSpace(Model.ExternalLocation)
+                                                            ? "Не вказано"
+                                                            : Model.ExternalLocation)
+                        </span>
+                                                }
+                    </dd>
+                </dl>
+
+                <form asp-action="Delete"
+                      method="post">
+
+                    <input type="hidden"
+                           asp-for="Id" />
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="submit"
+                                class="btn btn-danger">
+                            Видалити
+                        </button>
+
+                        <a asp-action="Details"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-outline-secondary">
+                            Скасувати
+                        </a>
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+
+    </div>
+</div>

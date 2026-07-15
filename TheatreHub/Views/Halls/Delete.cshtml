@@ -1,7 +1,10 @@
-﻿@model TheatreHub.Models.Hall
+@model TheatreHub.Models.Hall
 
 @{
     ViewData["Title"] = "Видалення залу";
+
+    var hasRehearsals =
+        Model.Rehearsals.Any();
 }
 
 <div class="row justify-content-center">
@@ -36,30 +39,43 @@
                     </dd>
                 </dl>
 
-                @if (Model.Rehearsals.Any())
+                @if (hasRehearsals)
                 {
                     <div class="alert alert-warning">
-                        Видалення неможливе: із залом пов’язані репетиції.
+                        Зал не можна видалити, бо з ним пов’язані
+                        репетиції. Спочатку перенесіть або видаліть
+                        ці репетиції.
                     </div>
-                }
 
-                <form asp-action="Delete" method="post">
-                    <input type="hidden" asp-for="Id" />
-
-                    @if (!Model.Rehearsals.Any())
-                    {
-                        <button type="submit"
-                                class="btn btn-danger">
-                            Видалити
-                        </button>
-                    }
+                    <a asp-action="Details"
+                       asp-route-id="@Model.Id"
+                       class="btn btn-outline-primary">
+                        До залу
+                    </a>
 
                     <a asp-action="Index"
                        asp-route-venueId="@Model.VenueId"
                        class="btn btn-outline-secondary">
-                        Скасувати
+                        До списку
                     </a>
-                </form>
+                }
+                else
+                {
+                    <form asp-action="Delete" method="post">
+                        <input type="hidden" asp-for="Id" />
+
+                        <button type="submit"
+                                class="btn btn-danger">
+                            Видалити
+                        </button>
+
+                        <a asp-action="Index"
+                           asp-route-venueId="@Model.VenueId"
+                           class="btn btn-outline-secondary">
+                            Скасувати
+                        </a>
+                    </form>
+                }
 
             </div>
         </div>

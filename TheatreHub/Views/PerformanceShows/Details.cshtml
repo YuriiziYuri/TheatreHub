@@ -1,0 +1,163 @@
+@model TheatreHub.Models.PerformanceShow
+@using TheatreHub.Models.Enums
+
+@{
+    ViewData["Title"] = "Деталі показу";
+}
+
+@functions {
+    private static string GetTypeText(PerformanceShowType type)
+    {
+        return type switch
+        {
+            PerformanceShowType.Premiere => "Прем’єра",
+            PerformanceShowType.Regular => "Звичайний показ",
+            PerformanceShowType.Touring => "Виїзний показ",
+            PerformanceShowType.Closed => "Закритий показ",
+            PerformanceShowType.Charity => "Благодійний показ",
+            PerformanceShowType.Other => "Інше",
+            _ => type.ToString()
+        };
+    }
+
+    private static string GetStatusText(PerformanceShowStatus status)
+    {
+        return status switch
+        {
+            PerformanceShowStatus.Planned => "Заплановано",
+            PerformanceShowStatus.Confirmed => "Підтверджено",
+            PerformanceShowStatus.Completed => "Проведено",
+            PerformanceShowStatus.Cancelled => "Скасовано",
+            PerformanceShowStatus.Postponed => "Перенесено",
+            _ => status.ToString()
+        };
+    }
+
+    private static string GetStatusClass(PerformanceShowStatus status)
+    {
+        return status switch
+        {
+            PerformanceShowStatus.Planned => "text-bg-secondary",
+            PerformanceShowStatus.Confirmed => "text-bg-primary",
+            PerformanceShowStatus.Completed => "text-bg-success",
+            PerformanceShowStatus.Cancelled => "text-bg-dark",
+            PerformanceShowStatus.Postponed => "text-bg-warning",
+            _ => "text-bg-secondary"
+        };
+    }
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+                    <div>
+                        <h1 class="h3 mb-1">
+                            Деталі показу
+                        </h1>
+
+                        <p class="text-muted mb-0">
+                            @Model.Performance.Title
+                        </p>
+                    </div>
+
+                    <span class="badge @GetStatusClass(Model.Status)">
+                        @GetStatusText(Model.Status)
+                    </span>
+                </div>
+
+                <dl class="row">
+                    <dt class="col-sm-4">Вистава</dt>
+                    <dd class="col-sm-8">@Model.Performance.Title</dd>
+
+                    <dt class="col-sm-4">Тип показу</dt>
+                    <dd class="col-sm-8">@GetTypeText(Model.Type)</dd>
+
+                    <dt class="col-sm-4">Статус</dt>
+                    <dd class="col-sm-8">@GetStatusText(Model.Status)</dd>
+
+                    <dt class="col-sm-4">Початок</dt>
+                    <dd class="col-sm-8">
+                        @Model.StartDateTime.ToString("dd.MM.yyyy HH:mm")
+                    </dd>
+
+                    <dt class="col-sm-4">Завершення</dt>
+                    <dd class="col-sm-8">
+                        @Model.EndDateTime.ToString("dd.MM.yyyy HH:mm")
+                    </dd>
+
+                    <dt class="col-sm-4">Локація</dt>
+                    <dd class="col-sm-8">
+                        @if (Model.Hall != null)
+                        {
+                            <span>
+                                @(Model.Hall.Venue == null
+                                                            ? Model.Hall.Name
+                                                            : $"{Model.Hall.Venue.Name} — {Model.Hall.Name}")
+                        </span>
+                                                }
+                        else
+                        {
+                            <span>
+                                @(string.IsNullOrWhiteSpace(Model.ExternalLocation)
+                                                            ? "Не вказано"
+                                                            : Model.ExternalLocation)
+                        </span>
+                                                }
+                    </dd>
+
+                    <dt class="col-sm-4">Очікувана кількість глядачів</dt>
+                    <dd class="col-sm-8">
+                        @(Model.ExpectedAudienceCount?.ToString() ?? "Не вказано")
+                    </dd>
+
+                    <dt class="col-sm-4">Фактична кількість глядачів</dt>
+                    <dd class="col-sm-8">
+                        @(Model.ActualAudienceCount?.ToString() ?? "Не вказано")
+                    </dd>
+
+                    <dt class="col-sm-4">Примітки</dt>
+                    <dd class="col-sm-8">
+                        @(string.IsNullOrWhiteSpace(Model.Notes)
+                                                ? "Примітки не вказано"
+                                                : Model.Notes)
+                    </dd>
+                </dl>
+
+                <div class="d-flex flex-wrap gap-2 mt-4">
+
+                    <a asp-action="Edit"
+                       asp-route-id="@Model.Id"
+                       class="btn btn-primary">
+                        Редагувати
+                    </a>
+
+                    <a asp-controller="Performances"
+                       asp-action="Details"
+                       asp-route-id="@Model.PerformanceId"
+                       class="btn btn-outline-secondary">
+                        До вистави
+                    </a>
+
+                    <a asp-action="Index"
+                       class="btn btn-outline-dark">
+                        До списку
+                    </a>
+
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>

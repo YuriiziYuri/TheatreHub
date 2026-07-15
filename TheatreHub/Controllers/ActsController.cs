@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using TheatreHub.Data;
 using TheatreHub.Models;
+using TheatreHub.Models.Enums;
 
 namespace TheatreHub.Controllers;
 
@@ -54,6 +55,13 @@ public class ActsController : Controller
             .AsNoTracking()
             .Include(item => item.Performance)
             .Include(item => item.Scenes)
+            .Include(item => item.Rehearsals)
+                .ThenInclude(rehearsal => rehearsal.Scene)
+            .Include(item => item.Rehearsals)
+                .ThenInclude(rehearsal => rehearsal.Hall)
+                    .ThenInclude(hall => hall.Venue)
+            .Include(item => item.Rehearsals)
+                .ThenInclude(rehearsal => rehearsal.Participants)
             .FirstOrDefaultAsync(item =>
                 item.Id == id.Value);
 
@@ -65,6 +73,43 @@ public class ActsController : Controller
         act.Scenes = act.Scenes
             .OrderBy(scene => scene.Position)
             .ThenBy(scene => scene.Number)
+            .ToList();
+        ViewBag.Tasks = await _context.TheatreTasks
+.AsNoTracking()
+.Include(task => task.Performance)
+.Include(task => task.Act)
+.Include(task => task.Scene)
+.Where(task =>
+    task.ActId == act.Id)
+.OrderBy(task =>
+    task.Status == TheatreTaskStatus.Done ||
+    task.Status == TheatreTaskStatus.Cancelled)
+.ThenBy(task =>
+    task.Deadline ?? DateTime.MaxValue)
+.ThenByDescending(task =>
+    task.Priority)
+.ToListAsync();
+
+        ViewBag.ProductionItems = await _context.ProductionItems
+    .AsNoTracking()
+    .Include(item => item.Performance)
+    .Include(item => item.Act)
+    .Include(item => item.Scene)
+    .Where(item =>
+        item.ActId == act.Id)
+    .OrderBy(item =>
+        item.Status == ProductionItemStatus.Ready ||
+        item.Status == ProductionItemStatus.Cancelled)
+    .ThenBy(item =>
+        item.NeededBy ?? DateTime.MaxValue)
+    .ThenBy(item =>
+        item.Type)
+    .ThenBy(item =>
+        item.Name)
+    .ToListAsync();
+
+        act.Rehearsals = act.Rehearsals
+            .OrderBy(rehearsal => rehearsal.StartDateTime)
             .ToList();
 
         return View(act);
@@ -266,6 +311,8 @@ public class ActsController : Controller
             .AsNoTracking()
             .Include(item => item.Performance)
             .Include(item => item.Scenes)
+                .ThenInclude(scene => scene.Rehearsals)
+            .Include(item => item.Rehearsals)
             .FirstOrDefaultAsync(item =>
                 item.Id == id.Value);
 
@@ -285,12 +332,46 @@ public class ActsController : Controller
     {
         var act = await _context.Acts
             .Include(item => item.Scenes)
+                .ThenInclude(scene => scene.Rehearsals)
+            .Include(item => item.Rehearsals)
             .FirstOrDefaultAsync(item =>
                 item.Id == id);
 
         if (act == null)
         {
             return NotFound();
+        }
+
+        var hasScenes =
+            act.Scenes.Any();
+
+        var hasDirectRehearsals =
+            act.Rehearsals.Any();
+
+        var hasSceneRehearsals =
+            act.Scenes.Any(scene =>
+                scene.Rehearsals.Any());
+
+        var hasTasks =
+    await _context.TheatreTasks.AnyAsync(task =>
+        task.ActId == act.Id);
+
+        var hasProductionItems =
+            await _context.ProductionItems.AnyAsync(item =>
+                item.ActId == act.Id);
+
+        if (hasScenes ||
+            hasDirectRehearsals ||
+            hasSceneRehearsals ||
+            hasTasks ||
+            hasProductionItems)
+        {
+            TempData["ErrorMessage"] =
+                "Неможливо видалити дію, бо вона має сцени, репетиції, завдання або постановочні елементи. Спочатку видаліть або перенесіть ці дані.";
+
+            return RedirectToAction(
+                nameof(Details),
+                new { id = act.Id });
         }
 
         var performanceId = act.PerformanceId;
@@ -300,7 +381,7 @@ public class ActsController : Controller
         await _context.SaveChangesAsync();
 
         TempData["SuccessMessage"] =
-            $"Дію «{actName}» та її сцени видалено.";
+            $"Дію «{actName}» видалено.";
 
         return RedirectToAction(
             nameof(Index),

@@ -50,4 +50,9 @@ public class Scene
 
     [ValidateNever]
     public Act Act { get; set; } = null!;
+    public ICollection<SceneRole> SceneRoles { get; set; }
+    = new List<SceneRole>();
+
+    public ICollection<Rehearsal> Rehearsals { get; set; }
+    = new List<Rehearsal>();
 }

@@ -1,0 +1,236 @@
+@model TheatreHub.Models.ProductionItem
+@using TheatreHub.Models.Enums
+
+@{
+    ViewData["Title"] = "Деталі постановочного елемента";
+}
+
+@functions {
+    private static string GetTypeText(ProductionItemType type)
+    {
+        return type switch
+        {
+            ProductionItemType.Prop => "Реквізит",
+            ProductionItemType.Costume => "Костюм",
+            ProductionItemType.Makeup => "Грим",
+            ProductionItemType.Decoration => "Декорація",
+            ProductionItemType.Equipment => "Обладнання",
+            ProductionItemType.Other => "Інше",
+            _ => type.ToString()
+        };
+    }
+
+    private static string GetStatusText(ProductionItemStatus status)
+    {
+        return status switch
+        {
+            ProductionItemStatus.Needed => "Потрібно",
+            ProductionItemStatus.InProgress => "У роботі",
+            ProductionItemStatus.Ready => "Готово",
+            ProductionItemStatus.Missing => "Проблема",
+            ProductionItemStatus.Cancelled => "Скасовано",
+            _ => status.ToString()
+        };
+    }
+
+    private static string GetStatusClass(ProductionItemStatus status)
+    {
+        return status switch
+        {
+            ProductionItemStatus.Needed => "text-bg-secondary",
+            ProductionItemStatus.InProgress => "text-bg-primary",
+            ProductionItemStatus.Ready => "text-bg-success",
+            ProductionItemStatus.Missing => "text-bg-danger",
+            ProductionItemStatus.Cancelled => "text-bg-dark",
+            _ => "text-bg-secondary"
+        };
+    }
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+                    <div>
+                        <h1 class="h3 mb-1">
+                            @Model.Name
+                        </h1>
+
+                        <p class="text-muted mb-0">
+                            @GetTypeText(Model.Type)
+                        </p>
+                    </div>
+
+                    <span class="badge @GetStatusClass(Model.Status)">
+                        @GetStatusText(Model.Status)
+                    </span>
+                </div>
+
+                <dl class="row">
+                    <dt class="col-sm-4">Вистава</dt>
+                    <dd class="col-sm-8">
+                        <a asp-controller="Performances"
+                           asp-action="Details"
+                           asp-route-id="@Model.PerformanceId">
+                            @Model.Performance.Title
+                        </a>
+                    </dd>
+
+                    <dt class="col-sm-4">Дія</dt>
+                    <dd class="col-sm-8">
+                        @if (Model.Act == null)
+                        {
+                            <span class="text-muted">Не вказано</span>
+                        }
+                        else
+                        {
+                            <a asp-controller="Acts"
+                               asp-action="Details"
+                               asp-route-id="@Model.ActId">
+                                @Model.Act.DisplayName
+                            </a>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-4">Сцена</dt>
+                    <dd class="col-sm-8">
+                        @if (Model.Scene == null)
+                        {
+                            <span class="text-muted">Не вказано</span>
+                        }
+                        else
+                        {
+                            <a asp-controller="Scenes"
+                               asp-action="Details"
+                               asp-route-id="@Model.SceneId">
+                                Сцена @Model.Scene.Number. @Model.Scene.Title
+                            </a>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-4">Кількість</dt>
+                    <dd class="col-sm-8">@Model.Quantity</dd>
+
+                    <dt class="col-sm-4">Відповідальний</dt>
+                    <dd class="col-sm-8">
+                        @(string.IsNullOrWhiteSpace(Model.ResponsibleName)
+                                                ? "Не вказано"
+                                                : Model.ResponsibleName)
+                    </dd>
+
+                    <dt class="col-sm-4">Місце зберігання</dt>
+                    <dd class="col-sm-8">
+                        @(string.IsNullOrWhiteSpace(Model.StorageLocation)
+                                                ? "Не вказано"
+                                                : Model.StorageLocation)
+                    </dd>
+
+                    <dt class="col-sm-4">Потрібно до</dt>
+                    <dd class="col-sm-8">
+                        @(Model.NeededBy.HasValue
+                                                ? Model.NeededBy.Value.ToString("dd.MM.yyyy HH:mm")
+                                                : "Не вказано")
+                    </dd>
+
+                    <dt class="col-sm-4">Створено</dt>
+                    <dd class="col-sm-8">
+                        @Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")
+                    </dd>
+
+                    <dt class="col-sm-4">Опис</dt>
+                    <dd class="col-sm-8">
+                        @(string.IsNullOrWhiteSpace(Model.Description)
+                                                ? "Опис не вказано"
+                                                : Model.Description)
+                    </dd>
+
+                    <dt class="col-sm-4">Примітки</dt>
+                    <dd class="col-sm-8">
+                        @(string.IsNullOrWhiteSpace(Model.Notes)
+                                                ? "Примітки не вказано"
+                                                : Model.Notes)
+                    </dd>
+                </dl>
+
+                <div class="d-flex flex-wrap gap-2 mt-4">
+
+                    <a asp-action="Edit"
+                       asp-route-id="@Model.Id"
+                       class="btn btn-primary">
+                        Редагувати
+                    </a>
+
+                    @if (Model.Status != ProductionItemStatus.InProgress)
+                    {
+                        <form asp-action="ChangeStatus"
+                              method="post">
+                            <input type="hidden"
+                                   name="id"
+                                   value="@Model.Id" />
+
+                            <input type="hidden"
+                                   name="status"
+                                   value="@ProductionItemStatus.InProgress" />
+
+                            <input type="hidden"
+                                   name="returnUrl"
+                                   value="@Context.Request.Path@Context.Request.QueryString" />
+
+                            <button type="submit"
+                                    class="btn btn-outline-primary">
+                                У роботу
+                            </button>
+                        </form>
+                    }
+
+                    @if (Model.Status != ProductionItemStatus.Ready)
+                    {
+                        <form asp-action="ChangeStatus"
+                              method="post">
+                            <input type="hidden"
+                                   name="id"
+                                   value="@Model.Id" />
+
+                            <input type="hidden"
+                                   name="status"
+                                   value="@ProductionItemStatus.Ready" />
+
+                            <input type="hidden"
+                                   name="returnUrl"
+                                   value="@Context.Request.Path@Context.Request.QueryString" />
+
+                            <button type="submit"
+                                    class="btn btn-outline-success">
+                                Готово
+                            </button>
+                        </form>
+                    }
+
+                    <a asp-action="Delete"
+                       asp-route-id="@Model.Id"
+                       class="btn btn-outline-danger">
+                        Видалити
+                    </a>
+
+                    <a asp-action="Index"
+                       class="btn btn-outline-secondary">
+                        До списку
+                    </a>
+
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>

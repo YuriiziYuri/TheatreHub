@@ -1,7 +1,16 @@
-﻿@model TheatreHub.Models.Performance
+@model TheatreHub.Models.Performance
 
 @{
     ViewData["Title"] = "Видалення вистави";
+
+    var performanceShowsCount =
+    ViewBag.PerformanceShowsCount as int? ?? 0;
+
+    var cannotDelete =
+        Model.Acts.Any() ||
+        Model.CharacterRoles.Any() ||
+        Model.Rehearsals.Any() ||
+        performanceShowsCount > 0;
 }
 
 <div class="row justify-content-center">
@@ -23,11 +32,6 @@
                     <strong>@Model.Title</strong>?
                 </div>
 
-                <p class="text-danger">
-                    Разом із виставою можуть бути видалені пов’язані
-                    персонажі та репетиції.
-                </p>
-
                 <dl class="row">
                     <dt class="col-sm-4">Жанр</dt>
                     <dd class="col-sm-8">@Model.Genre</dd>
@@ -42,21 +46,69 @@
                     <dd class="col-sm-8">
                         @Model.DurationMinutes хв
                     </dd>
+
+                    <dt class="col-sm-4">Дії</dt>
+                    <dd class="col-sm-8">
+                        @Model.Acts.Count
+                    </dd>
+
+                    <dt class="col-sm-4">Ролі</dt>
+                    <dd class="col-sm-8">
+                        @Model.CharacterRoles.Count
+                    </dd>
+
+                    <dt class="col-sm-4">Репетиції</dt>
+                    <dd class="col-sm-8">
+                        @Model.Rehearsals.Count
+                    </dd>
+                    <dt class="col-sm-4">Покази</dt>
+                    <dd class="col-sm-8">
+                        @performanceShowsCount
+                    </dd>
                 </dl>
 
-                <form asp-action="Delete" method="post">
-                    <input type="hidden" asp-for="Id" />
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-danger">
+                        @TempData["ErrorMessage"]
+                    </div>
+                }
 
-                    <button type="submit"
-                            class="btn btn-danger">
-                        Видалити
-                    </button>
+                @if (cannotDelete)
+                {
+                    <div class="alert alert-danger">
+                        Виставу не можна видалити, бо вона вже має
+                        структуру, ролі, репетиції або покази. Спочатку
+                        видаліть або перенесіть пов’язані дані.
+                    </div>
+
+                    <a asp-action="Details"
+                       asp-route-id="@Model.Id"
+                       class="btn btn-outline-primary">
+                        До вистави
+                    </a>
 
                     <a asp-action="Index"
                        class="btn btn-outline-secondary">
-                        Скасувати
+                        До списку
                     </a>
-                </form>
+                }
+                else
+                {
+                    <form asp-action="Delete" method="post">
+                        <input type="hidden" asp-for="Id" />
+
+                        <button type="submit"
+                                class="btn btn-danger">
+                            Видалити
+                        </button>
+
+                        <a asp-action="Index"
+                           class="btn btn-outline-secondary">
+                            Скасувати
+                        </a>
+                    </form>
+                }
 
             </div>
         </div>

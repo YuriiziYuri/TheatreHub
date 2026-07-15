@@ -1,0 +1,462 @@
+﻿@model TheatreHub.ViewModels.PerformancePreparationViewModel
+
+@{
+    ViewData["Title"] = "Контроль підготовки";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+        <h1 class="h3 mb-1">
+            Контроль підготовки
+        </h1>
+
+        <p class="text-muted mb-0">
+            @Model.PerformanceTitle
+        </p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-action="Details"
+           asp-route-id="@Model.PerformanceId"
+           class="btn btn-outline-secondary">
+            До вистави
+        </a>
+
+        <a asp-controller="TheatreTasks"
+           asp-action="Index"
+           asp-route-performanceId="@Model.PerformanceId"
+           class="btn btn-outline-primary">
+            Завдання
+        </a>
+
+        <a asp-controller="ProductionItems"
+           asp-action="Index"
+           asp-route-performanceId="@Model.PerformanceId"
+           class="btn btn-outline-primary">
+            Реквізит
+        </a>
+    </div>
+</div>
+
+@if (Model.HasAttentionItems)
+{
+    <div class="alert alert-warning">
+        <h2 class="h5">
+            Потребує уваги
+        </h2>
+
+        <ul class="mb-0">
+            @foreach (var item in Model.AttentionItems)
+            {
+                <li>@item</li>
+            }
+        </ul>
+    </div>
+}
+else
+{
+    <div class="alert alert-success">
+        Критичних проблем у підготовці вистави не знайдено.
+    </div>
+}
+
+<div class="row g-4 mb-4">
+
+    <div class="col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <h2 class="h6 text-muted">
+                    Ролі
+                </h2>
+
+                <div class="fs-4 fw-semibold">
+                    @Model.RolesWithMainCast / @Model.RolesTotal
+                </div>
+
+                <div class="small text-muted">
+                    Призначено основний склад
+                </div>
+
+                <hr />
+
+                <div class="small">
+                    Без основного актора:
+                    <strong>@Model.RolesWithoutMainCast</strong>
+                </div>
+
+                <div class="small">
+                    Без запасного складу:
+                    <strong>@Model.RolesWithoutReserveCast</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <h2 class="h6 text-muted">
+                    Сцени
+                </h2>
+
+                <div class="fs-4 fw-semibold">
+                    @Model.ScenesWithRoles / @Model.ScenesTotal
+                </div>
+
+                <div class="small text-muted">
+                    Сцени з прив’язаними ролями
+                </div>
+
+                <hr />
+
+                <div class="small">
+                    Сцен без ролей:
+                    <strong>@Model.ScenesWithoutRoles</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <h2 class="h6 text-muted">
+                    Репетиції
+                </h2>
+
+                <div class="fs-4 fw-semibold">
+                    @Model.RehearsalsTotal
+                </div>
+
+                <div class="small text-muted">
+                    Усього репетицій
+                </div>
+
+                <hr />
+
+                <div class="small">
+                    Проведено:
+                    <strong>@Model.RehearsalsCompleted</strong>
+                </div>
+
+                <div class="small">
+                    Скасовано:
+                    <strong>@Model.RehearsalsCancelled</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <h2 class="h6 text-muted">
+                    Завдання
+                </h2>
+
+                <div class="fs-4 fw-semibold">
+                    @Model.TasksDone / @Model.TasksTotal
+                </div>
+
+                <div class="small text-muted">
+                    Виконано
+                </div>
+
+                <hr />
+
+                <div class="small">
+                    У роботі:
+                    <strong>@Model.TasksInProgress</strong>
+                </div>
+
+                <div class="small">
+                    Прострочено:
+                    <strong>@Model.TasksOverdue</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="row g-4 mb-4">
+
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h2 class="h4 mb-3">
+                    Реквізит / костюми / грим
+                </h2>
+
+                <dl class="row mb-0">
+                    <dt class="col-sm-7">Усього елементів</dt>
+                    <dd class="col-sm-5">@Model.ProductionItemsTotal</dd>
+
+                    <dt class="col-sm-7">Готово</dt>
+                    <dd class="col-sm-5">@Model.ProductionItemsReady</dd>
+
+                    <dt class="col-sm-7">У роботі</dt>
+                    <dd class="col-sm-5">@Model.ProductionItemsInProgress</dd>
+
+                    <dt class="col-sm-7">Проблема / відсутнє</dt>
+                    <dd class="col-sm-5">@Model.ProductionItemsMissing</dd>
+
+                    <dt class="col-sm-7">Прострочено</dt>
+                    <dd class="col-sm-5">@Model.ProductionItemsOverdue</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h2 class="h4 mb-3">
+                    Найближча репетиція
+                </h2>
+
+                @if (string.IsNullOrWhiteSpace(Model.NextRehearsalText))
+                {
+                    <div class="alert alert-info mb-0">
+                        Найближчих репетицій не заплановано.
+                    </div>
+                }
+                else
+                {
+                    <p class="mb-0">
+                        @Model.NextRehearsalText
+                    </p>
+                }
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <h2 class="h4 mb-3">
+            Проблеми з ролями
+        </h2>
+
+        @if (!Model.RoleIssues.Any())
+        {
+            <div class="alert alert-success mb-0">
+                Усі ролі мають основного актора.
+            </div>
+        }
+        else
+        {
+            <div class="list-group">
+                @foreach (var issue in Model.RoleIssues)
+                {
+                    <a href="@issue.Url"
+                       class="list-group-item list-group-item-action">
+                        <strong>@issue.Title</strong>
+                        <div class="small text-muted">
+                            @issue.Text
+                        </div>
+                    </a>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <h2 class="h4 mb-3">
+            Сцени, які треба перевірити
+        </h2>
+
+        @if (!Model.SceneIssues.Any())
+        {
+            <div class="alert alert-success mb-0">
+                Усі сцени мають прив’язані ролі.
+            </div>
+        }
+        else
+        {
+            <div class="list-group">
+                @foreach (var issue in Model.SceneIssues)
+                {
+                    <a href="@issue.Url"
+                       class="list-group-item list-group-item-action">
+                        <strong>@issue.Title</strong>
+                        <div class="small text-muted">
+                            @issue.Text
+                        </div>
+                    </a>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <h2 class="h4 mb-3">
+            Найближчі репетиції
+        </h2>
+
+        @if (!Model.UpcomingRehearsals.Any())
+        {
+            <div class="alert alert-info mb-0">
+                Найближчих репетицій немає.
+            </div>
+        }
+        else
+        {
+            <div class="list-group">
+                @foreach (var rehearsal in Model.UpcomingRehearsals)
+                {
+                    <a asp-controller="Rehearsals"
+                       asp-action="Details"
+                       asp-route-id="@rehearsal.Id"
+                       class="list-group-item list-group-item-action">
+
+                        <div class="d-flex flex-wrap justify-content-between gap-2">
+                            <strong>
+                                @rehearsal.StartDateTime.ToString("dd.MM.yyyy HH:mm")
+                                —
+                                @rehearsal.EndDateTime.ToString("HH:mm")
+                            </strong>
+
+                            <span class="badge text-bg-secondary">
+                                @rehearsal.StatusText
+                            </span>
+                        </div>
+
+                        <div class="small text-muted">
+                            @rehearsal.TargetText
+                        </div>
+
+                        <div class="small text-muted">
+                            @rehearsal.HallText
+                        </div>
+                    </a>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <h2 class="h4 mb-3">
+            Завдання, які потребують уваги
+        </h2>
+
+        @if (!Model.ProblemTasks.Any())
+        {
+            <div class="alert alert-success mb-0">
+                Немає прострочених або критичних відкритих завдань.
+            </div>
+        }
+        else
+        {
+            <div class="list-group">
+                @foreach (var task in Model.ProblemTasks)
+                {
+                    <a asp-controller="TheatreTasks"
+                       asp-action="Details"
+                       asp-route-id="@task.Id"
+                       class="list-group-item list-group-item-action">
+
+                        <div class="d-flex flex-wrap justify-content-between gap-2">
+                            <strong>@task.Title</strong>
+
+                            <span>
+                                @if (task.IsOverdue)
+                                {
+                                    <span class="badge text-bg-danger">
+                                        Прострочено
+                                    </span>
+                                }
+
+                            <span class="badge text-bg-secondary">
+                                @task.PriorityText
+                            </span>
+                        </span>
+                    </div>
+
+                    <div class="small text-muted">
+                        @task.TargetText
+                    </div>
+
+                    <div class="small text-muted">
+                        Статус: @task.StatusText
+                    </div>
+
+                    <div class="small text-muted">
+                        Дедлайн:
+                        @(task.Deadline.HasValue
+                                            ? task.Deadline.Value.ToString("dd.MM.yyyy HH:mm")
+                                            : "не вказано")
+                </div>
+            </a>
+                        }
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <h2 class="h4 mb-3">
+            Постановочні елементи, які потребують уваги
+        </h2>
+
+        @if (!Model.ProblemProductionItems.Any())
+        {
+            <div class="alert alert-success mb-0">
+                Немає проблемних або прострочених постановочних елементів.
+            </div>
+        }
+        else
+        {
+            <div class="list-group">
+                @foreach (var item in Model.ProblemProductionItems)
+                {
+                    <a asp-controller="ProductionItems"
+                       asp-action="Details"
+                       asp-route-id="@item.Id"
+                       class="list-group-item list-group-item-action">
+
+                        <div class="d-flex flex-wrap justify-content-between gap-2">
+                            <strong>@item.Name</strong>
+
+                            <span>
+                                @if (item.IsOverdue)
+                                {
+                                    <span class="badge text-bg-danger">
+                                        Прострочено
+                                    </span>
+                                }
+
+                            <span class="badge text-bg-secondary">
+                                @item.TypeText
+                            </span>
+                        </span>
+                    </div>
+
+                    <div class="small text-muted">
+                        @item.TargetText
+                    </div>
+
+                    <div class="small text-muted">
+                        Статус: @item.StatusText
+                    </div>
+
+                    <div class="small text-muted">
+                        Потрібно до:
+                        @(item.NeededBy.HasValue
+                                            ? item.NeededBy.Value.ToString("dd.MM.yyyy HH:mm")
+                                            : "не вказано")
+                </div>
+            </a>
+                        }
+            </div>
+        }
+    </div>
+</div>

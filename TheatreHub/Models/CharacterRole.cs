@@ -28,4 +28,6 @@ public class CharacterRole
 
     public ICollection<RoleAssignment> Assignments { get; set; }
     = new List<RoleAssignment>();
+    public ICollection<SceneRole> SceneRoles { get; set; }
+    = new List<SceneRole>();
 }

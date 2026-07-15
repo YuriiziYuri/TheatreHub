@@ -1,0 +1,87 @@
+@model TheatreHub.Models.TheatreTask
+@using TheatreHub.Models.Enums
+
+@{
+    ViewData["Title"] = "Видалити завдання";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+
+                <h1 class="h3 mb-3">
+                    Видалити завдання?
+                </h1>
+
+                <div class="alert alert-warning">
+                    Ви дійсно хочете видалити це завдання?
+                    Цю дію не можна буде скасувати.
+                </div>
+
+                <dl class="row">
+                    <dt class="col-sm-4">
+                        Назва
+                    </dt>
+                    <dd class="col-sm-8">
+                        @Model.Title
+                    </dd>
+
+                    <dt class="col-sm-4">
+                        Вистава
+                    </dt>
+                    <dd class="col-sm-8">
+                        @Model.Performance.Title
+                    </dd>
+
+                    <dt class="col-sm-4">
+                        Дія
+                    </dt>
+                    <dd class="col-sm-8">
+                        @(Model.Act == null
+                                                ? "Не вказано"
+                                                : Model.Act.DisplayName)
+                    </dd>
+
+                    <dt class="col-sm-4">
+                        Сцена
+                    </dt>
+                    <dd class="col-sm-8">
+                        @(Model.Scene == null
+                                                ? "Не вказано"
+                                                : $"Сцена {Model.Scene.Number}. {Model.Scene.Title}")
+                    </dd>
+
+                    <dt class="col-sm-4">
+                        Дедлайн
+                    </dt>
+                    <dd class="col-sm-8">
+                        @(Model.Deadline.HasValue
+                                                ? Model.Deadline.Value.ToString("dd.MM.yyyy HH:mm")
+                                                : "Не вказано")
+                    </dd>
+                </dl>
+
+                <form asp-action="Delete" method="post">
+                    <input type="hidden" asp-for="Id" />
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="submit"
+                                class="btn btn-danger">
+                            Видалити
+                        </button>
+
+                        <a asp-action="Details"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-outline-secondary">
+                            Скасувати
+                        </a>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+
+    </div>
+</div>

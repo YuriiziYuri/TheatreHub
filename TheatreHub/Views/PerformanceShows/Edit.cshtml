@@ -1,0 +1,208 @@
+﻿@model TheatreHub.Models.PerformanceShow
+
+@{
+    ViewData["Title"] = "Редагувати показ";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+
+                <h1 class="h3 mb-1">
+                    Редагувати показ
+                </h1>
+
+                <p class="text-muted mb-4">
+                    Оновлення даних про показ вистави.
+                </p>
+
+                <form asp-action="Edit" method="post">
+                    asp-route-id="@Model.Id"
+                    method="post">
+
+                    <input type="hidden" asp-for="Id" />
+
+                    <div asp-validation-summary="ModelOnly"
+                         class="text-danger mb-3">
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="PerformanceId"
+                               class="form-label">
+                            Вистава
+                        </label>
+
+                        <select asp-for="PerformanceId"
+                                asp-items="ViewBag.PerformanceOptions"
+                                class="form-select">
+                        </select>
+
+                        <span asp-validation-for="PerformanceId"
+                              class="text-danger">
+                        </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="HallId"
+                               class="form-label">
+                            Зал
+                        </label>
+
+                        <select asp-for="HallId"
+                                asp-items="ViewBag.HallOptions"
+                                class="form-select">
+                        </select>
+
+                        <span asp-validation-for="HallId"
+                              class="text-danger">
+                        </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="ExternalLocation"
+                               class="form-label">
+                            Зовнішня локація
+                        </label>
+
+                        <input asp-for="ExternalLocation"
+                               class="form-control" />
+
+                        <span asp-validation-for="ExternalLocation"
+                              class="text-danger">
+                        </span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="StartDateTime"
+                                   class="form-label">
+                                Початок
+                            </label>
+
+                            <input asp-for="StartDateTime"
+                                   type="datetime-local"
+                                   value="@Model.StartDateTime.ToString("yyyy-MM-ddTHH:mm")"
+                                   class="form-control" />
+
+                            <span asp-validation-for="StartDateTime"
+                                  class="text-danger">
+                            </span>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="EndDateTime"
+                                   class="form-label">
+                                Завершення
+                            </label>
+
+                            <input asp-for="EndDateTime"
+                                   type="datetime-local"
+                                   value="@Model.EndDateTime.ToString("yyyy-MM-ddTHH:mm")"
+                                   class="form-control" />
+
+                            <span asp-validation-for="EndDateTime"
+                                  class="text-danger">
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Type"
+                                   class="form-label">
+                                Тип показу
+                            </label>
+
+                            <select asp-for="Type"
+                                    asp-items="ViewBag.TypeOptions"
+                                    class="form-select">
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Status"
+                                   class="form-label">
+                                Статус
+                            </label>
+
+                            <select asp-for="Status"
+                                    asp-items="ViewBag.StatusOptions"
+                                    class="form-select">
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="ExpectedAudienceCount"
+                                   class="form-label">
+                                Очікувана кількість глядачів
+                            </label>
+
+                            <input asp-for="ExpectedAudienceCount"
+                                   class="form-control" />
+
+                            <span asp-validation-for="ExpectedAudienceCount"
+                                  class="text-danger">
+                            </span>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="ActualAudienceCount"
+                                   class="form-label">
+                                Фактична кількість глядачів
+                            </label>
+
+                            <input asp-for="ActualAudienceCount"
+                                   class="form-control" />
+
+                            <span asp-validation-for="ActualAudienceCount"
+                                  class="text-danger">
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Notes"
+                               class="form-label">
+                            Примітки
+                        </label>
+
+                        <textarea asp-for="Notes"
+                                  class="form-control"
+                                  rows="3"></textarea>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="submit"
+                                class="btn btn-primary">
+                            Зберегти
+                        </button>
+
+                        <a asp-action="Details"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-outline-secondary">
+                            Деталі
+                        </a>
+
+                        <a asp-action="Index"
+                           class="btn btn-outline-dark">
+                            До списку
+                        </a>
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

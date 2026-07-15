@@ -18,6 +18,13 @@
                     Змініть дані та збережіть результат.
                 </p>
 
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success">
+                        @TempData["SuccessMessage"]
+                    </div>
+                }
+
                 <form asp-action="Edit"
                       asp-route-id="@Model.Id"
                       method="post">
@@ -35,10 +42,10 @@
 
                         <select asp-for="PerformanceId"
                                 asp-items="@(new SelectList(
-                                    Model.Performances,
-                                    "Id",
-                                    "Title",
-                                    Model.PerformanceId))"
+                                                                    Model.Performances,
+                                                                    "Id",
+                                                                    "Title",
+                                                                    Model.PerformanceId))"
                                 class="form-select">
 
                             <option value="0">
@@ -49,6 +56,68 @@
                         <span asp-validation-for="PerformanceId"
                               class="text-danger">
                         </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="ActId"
+                               class="form-label fw-semibold">
+                        </label>
+
+                        <select asp-for="ActId"
+                                class="form-select">
+
+                            <option value="">
+                                Уся вистава / не обрано
+                            </option>
+
+                            @foreach (var act in Model.Acts)
+                            {
+                                <option value="@act.Id">
+                                    @act.Performance.Title — @act.DisplayName
+                                </option>
+                            }
+
+                        </select>
+
+                        <span asp-validation-for="ActId"
+                              class="text-danger">
+                        </span>
+
+                        <div class="form-text">
+                            Оберіть дію, якщо репетиція стосується конкретної частини вистави.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="SceneId"
+                               class="form-label fw-semibold">
+                        </label>
+
+                        <select asp-for="SceneId"
+                                class="form-select">
+
+                            <option value="">
+                                Уся дія / не обрано
+                            </option>
+
+                            @foreach (var scene in Model.Scenes)
+                            {
+                                <option value="@scene.Id">
+                                    @scene.Act.Performance.Title —
+                                    @scene.Act.DisplayName —
+                                    Сцена @scene.Number. @scene.Title
+                                </option>
+                            }
+
+                        </select>
+
+                        <span asp-validation-for="SceneId"
+                              class="text-danger">
+                        </span>
+
+                        <div class="form-text">
+                            Якщо вибрати сцену, дія буде визначена автоматично.
+                        </div>
                     </div>
 
                     <div class="row">
@@ -88,10 +157,10 @@
 
                         <select asp-for="HallId"
                                 asp-items="@(new SelectList(
-                                                Model.Halls,
-                                                "Id",
-                                                "DisplayName",
-                                                Model.HallId))"
+                                                                    Model.Halls,
+                                                                    "Id",
+                                                                    "DisplayName",
+                                                                    Model.HallId))"
                                 class="form-select">
 
                             <option value="0">
@@ -142,29 +211,48 @@
                               class="text-danger d-block mb-2">
                         </span>
 
-                        <div class="border rounded p-3">
-                            @for (var i = 0; i < Model.Actors.Count; i++)
-                            {
-                                <input type="hidden"
-                                       asp-for="Actors[i].ActorId" />
+                        @if (Model.Actors.Count == 0)
+                        {
+                            <div class="alert alert-warning">
+                                У системі ще немає акторів.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="border rounded p-3">
 
-                                <input type="hidden"
-                                       asp-for="Actors[i].FullName" />
+                                @for (var i = 0; i < Model.Actors.Count; i++)
+                                {
+                                    <input type="hidden"
+                                           asp-for="Actors[i].ActorId" />
 
-                                <div class="form-check mb-2">
-                                    <input asp-for="Actors[i].IsSelected"
-                                           class="form-check-input" />
+                                    <input type="hidden"
+                                           asp-for="Actors[i].FullName" />
 
-                                    <label class="form-check-label"
-                                           asp-for="Actors[i].IsSelected">
-                                        @Model.Actors[i].FullName
-                                    </label>
-                                </div>
-                            }
-                        </div>
+                                    <div class="form-check mb-2">
+                                        <input asp-for="Actors[i].IsSelected"
+                                               class="form-check-input" />
+
+                                        <label class="form-check-label"
+                                               asp-for="Actors[i].IsSelected">
+                                            @Model.Actors[i].FullName
+                                        </label>
+                                    </div>
+                                }
+
+                            </div>
+                        }
                     </div>
 
                     <div class="d-flex flex-wrap gap-2">
+
+                        <button type="submit"
+                                name="submitAction"
+                                value="fillActors"
+                                class="btn btn-outline-success">
+                            Підставити акторів за сценою
+                        </button>
+
                         <button type="submit"
                                 class="btn btn-primary px-4">
                             Зберегти

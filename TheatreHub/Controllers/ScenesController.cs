@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TheatreHub.Data;
 using TheatreHub.Models;
+using TheatreHub.Models.Enums;
+using TheatreHub.ViewModels;
 
 namespace TheatreHub.Controllers;
 
@@ -14,7 +16,6 @@ public class ScenesController : Controller
         _context = context;
     }
 
-    // GET: Scenes?actId=5
     public async Task<IActionResult> Index(int actId)
     {
         var act = await _context.Acts
@@ -42,7 +43,6 @@ public class ScenesController : Controller
         return View(scenes);
     }
 
-    // GET: Scenes/Details/5
     public async Task<IActionResult> Details(int? id)
     {
         if (id == null)
@@ -54,6 +54,18 @@ public class ScenesController : Controller
             .AsNoTracking()
             .Include(item => item.Act)
                 .ThenInclude(act => act.Performance)
+            .Include(item => item.SceneRoles)
+                .ThenInclude(sceneRole =>
+                    sceneRole.CharacterRole)
+                    .ThenInclude(role =>
+                        role.Assignments)
+                        .ThenInclude(assignment =>
+                            assignment.Actor)
+            .Include(item => item.Rehearsals)
+                .ThenInclude(rehearsal => rehearsal.Hall)
+                    .ThenInclude(hall => hall.Venue)
+            .Include(item => item.Rehearsals)
+                .ThenInclude(rehearsal => rehearsal.Participants)
             .FirstOrDefaultAsync(item => item.Id == id.Value);
 
         if (scene == null)
@@ -61,10 +73,54 @@ public class ScenesController : Controller
             return NotFound();
         }
 
+        scene.SceneRoles = scene.SceneRoles
+            .OrderBy(sceneRole =>
+                sceneRole.CharacterRole.IsMainRole ? 0 : 1)
+            .ThenBy(sceneRole =>
+                sceneRole.CharacterRole.Name)
+            .ToList();
+
+        scene.Rehearsals = scene.Rehearsals
+            .OrderBy(rehearsal => rehearsal.StartDateTime)
+            .ToList();
+
+        ViewBag.Tasks = await _context.TheatreTasks
+    .AsNoTracking()
+    .Include(task => task.Performance)
+    .Include(task => task.Act)
+    .Include(task => task.Scene)
+    .Where(task =>
+        task.SceneId == scene.Id)
+    .OrderBy(task =>
+        task.Status == TheatreTaskStatus.Done ||
+        task.Status == TheatreTaskStatus.Cancelled)
+    .ThenBy(task =>
+        task.Deadline ?? DateTime.MaxValue)
+    .ThenByDescending(task =>
+        task.Priority)
+    .ToListAsync();
+
+        ViewBag.ProductionItems = await _context.ProductionItems
+            .AsNoTracking()
+            .Include(item => item.Performance)
+            .Include(item => item.Act)
+            .Include(item => item.Scene)
+            .Where(item =>
+                item.SceneId == scene.Id)
+            .OrderBy(item =>
+                item.Status == ProductionItemStatus.Ready ||
+                item.Status == ProductionItemStatus.Cancelled)
+            .ThenBy(item =>
+                item.NeededBy ?? DateTime.MaxValue)
+            .ThenBy(item =>
+                item.Type)
+            .ThenBy(item =>
+                item.Name)
+            .ToListAsync();
+
         return View(scene);
     }
 
-    // GET: Scenes/Create?actId=5
     public async Task<IActionResult> Create(int actId)
     {
         var act = await _context.Acts
@@ -99,7 +155,6 @@ public class ScenesController : Controller
         return View(model);
     }
 
-    // POST: Scenes/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(
@@ -145,7 +200,6 @@ public class ScenesController : Controller
             new { id = scene.ActId });
     }
 
-    // GET: Scenes/Edit/5
     public async Task<IActionResult> Edit(int? id)
     {
         if (id == null)
@@ -169,7 +223,6 @@ public class ScenesController : Controller
         return View(scene);
     }
 
-    // POST: Scenes/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(
@@ -205,7 +258,6 @@ public class ScenesController : Controller
             return NotFound();
         }
 
-        // Дію через форму редагування не змінюємо.
         if (existingScene.ActId != scene.ActId)
         {
             return BadRequest();
@@ -241,7 +293,6 @@ public class ScenesController : Controller
             new { id = existingScene.ActId });
     }
 
-    // GET: Scenes/Delete/5
     public async Task<IActionResult> Delete(int? id)
     {
         if (id == null)
@@ -253,6 +304,7 @@ public class ScenesController : Controller
             .AsNoTracking()
             .Include(item => item.Act)
                 .ThenInclude(act => act.Performance)
+            .Include(item => item.Rehearsals)
             .FirstOrDefaultAsync(item => item.Id == id.Value);
 
         if (scene == null)
@@ -263,17 +315,45 @@ public class ScenesController : Controller
         return View(scene);
     }
 
-    // POST: Scenes/Delete/5
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         var scene = await _context.Scenes
+            .Include(item => item.Rehearsals)
             .FirstOrDefaultAsync(item => item.Id == id);
 
         if (scene == null)
         {
             return NotFound();
+        }
+
+        if (scene.Rehearsals.Any())
+        {
+            TempData["ErrorMessage"] =
+                "Неможливо видалити сцену, бо до неї вже прив’язані репетиції.";
+
+            return RedirectToAction(
+                nameof(Details),
+                new { id = scene.Id });
+        }
+
+        var hasTasks =
+    await _context.TheatreTasks.AnyAsync(task =>
+        task.SceneId == scene.Id);
+
+        var hasProductionItems =
+            await _context.ProductionItems.AnyAsync(item =>
+                item.SceneId == scene.Id);
+
+        if (hasTasks || hasProductionItems)
+        {
+            TempData["ErrorMessage"] =
+                "Неможливо видалити сцену, бо до неї прив’язані завдання або постановочні елементи.";
+
+            return RedirectToAction(
+                nameof(Details),
+                new { id = scene.Id });
         }
 
         var actId = scene.ActId;
@@ -289,6 +369,179 @@ public class ScenesController : Controller
             "Details",
             "Acts",
             new { id = actId });
+    }
+
+    public async Task<IActionResult> Roles(int? id)
+    {
+        if (id == null)
+        {
+            return NotFound();
+        }
+
+        var scene = await _context.Scenes
+            .AsNoTracking()
+            .Include(item => item.Act)
+                .ThenInclude(act => act.Performance)
+            .Include(item => item.SceneRoles)
+            .FirstOrDefaultAsync(item => item.Id == id.Value);
+
+        if (scene == null)
+        {
+            return NotFound();
+        }
+
+        var roles = await _context.CharacterRoles
+            .AsNoTracking()
+            .Include(role => role.Assignments)
+                .ThenInclude(assignment => assignment.Actor)
+            .Where(role =>
+                role.PerformanceId == scene.Act.PerformanceId)
+            .OrderBy(role => role.IsMainRole ? 0 : 1)
+            .ThenBy(role => role.Name)
+            .ToListAsync();
+
+        var existingSceneRoles = scene.SceneRoles
+            .ToDictionary(
+                sceneRole => sceneRole.CharacterRoleId);
+
+        var model = new SceneRolesViewModel
+        {
+            SceneId = scene.Id,
+
+            SceneTitle =
+                $"Сцена {scene.Number}. {scene.Title}",
+
+            ActName = scene.Act.DisplayName,
+
+            PerformanceId = scene.Act.PerformanceId,
+
+            PerformanceTitle =
+                scene.Act.Performance.Title,
+
+            Roles = roles.Select(role =>
+            {
+                existingSceneRoles.TryGetValue(
+                    role.Id,
+                    out var existingSceneRole);
+
+                return new SceneRoleSelectionViewModel
+                {
+                    CharacterRoleId = role.Id,
+
+                    RoleName = role.Name,
+
+                    IsMainRole = role.IsMainRole,
+
+                    AssignedActorsText =
+                        GetAssignedActorsText(role),
+
+                    IsSelected =
+                        existingSceneRole != null,
+
+                    IsRequired =
+                        existingSceneRole?.IsRequired ?? true,
+
+                    Notes =
+                        existingSceneRole?.Notes
+                };
+            }).ToList()
+        };
+
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Roles(
+        int id,
+        SceneRolesViewModel model)
+    {
+        if (id != model.SceneId)
+        {
+            return NotFound();
+        }
+
+        var scene = await _context.Scenes
+            .Include(item => item.Act)
+                .ThenInclude(act => act.Performance)
+            .Include(item => item.SceneRoles)
+            .FirstOrDefaultAsync(item => item.Id == id);
+
+        if (scene == null)
+        {
+            return NotFound();
+        }
+
+        var validRoleIds = await _context.CharacterRoles
+            .Where(role =>
+                role.PerformanceId == scene.Act.PerformanceId)
+            .Select(role => role.Id)
+            .ToListAsync();
+
+        var validRoleIdSet = validRoleIds.ToHashSet();
+
+        var submittedRoles = model.Roles
+            .Where(role =>
+                validRoleIdSet.Contains(role.CharacterRoleId))
+            .ToList();
+
+        var selectedRoles = submittedRoles
+            .Where(role => role.IsSelected)
+            .ToList();
+
+        var selectedRoleIds = selectedRoles
+            .Select(role => role.CharacterRoleId)
+            .ToHashSet();
+
+        var rolesToRemove = scene.SceneRoles
+            .Where(sceneRole =>
+                !selectedRoleIds.Contains(
+                    sceneRole.CharacterRoleId))
+            .ToList();
+
+        _context.SceneRoles.RemoveRange(rolesToRemove);
+
+        foreach (var submittedRole in selectedRoles)
+        {
+            var existingSceneRole = scene.SceneRoles
+                .FirstOrDefault(sceneRole =>
+                    sceneRole.CharacterRoleId ==
+                    submittedRole.CharacterRoleId);
+
+            if (existingSceneRole == null)
+            {
+                scene.SceneRoles.Add(
+                    new SceneRole
+                    {
+                        SceneId = scene.Id,
+                        CharacterRoleId =
+                            submittedRole.CharacterRoleId,
+                        IsRequired =
+                            submittedRole.IsRequired,
+                        Notes =
+                            NormalizeOptionalText(
+                                submittedRole.Notes)
+                    });
+            }
+            else
+            {
+                existingSceneRole.IsRequired =
+                    submittedRole.IsRequired;
+
+                existingSceneRole.Notes =
+                    NormalizeOptionalText(
+                        submittedRole.Notes);
+            }
+        }
+
+        await _context.SaveChangesAsync();
+
+        TempData["SuccessMessage"] =
+            "Ролі сцени успішно оновлено.";
+
+        return RedirectToAction(
+            nameof(Details),
+            new { id = scene.Id });
     }
 
     private async Task ValidateSceneAsync(
@@ -358,5 +611,36 @@ public class ScenesController : Controller
         return string.IsNullOrWhiteSpace(value)
             ? null
             : value.Trim();
+    }
+
+    private static string GetAssignedActorsText(
+        CharacterRole role)
+    {
+        var assignments = role.Assignments
+            .Where(assignment =>
+                assignment.IsCurrent &&
+                assignment.Status ==
+                    RoleAssignmentStatus.Approved)
+            .OrderBy(assignment =>
+                assignment.CastType)
+            .ThenBy(assignment =>
+                assignment.Actor.LastName)
+            .ThenBy(assignment =>
+                assignment.Actor.FirstName)
+            .Select(assignment =>
+            {
+                var castTypeText =
+                    assignment.CastType == CastType.Main
+                        ? "основний склад"
+                        : "запасний склад";
+
+                return
+                    $"{assignment.Actor.FullName} — {castTypeText}";
+            })
+            .ToList();
+
+        return assignments.Any()
+            ? string.Join("; ", assignments)
+            : "Актор ще не призначений";
     }
 }

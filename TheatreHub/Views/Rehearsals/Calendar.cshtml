@@ -1,0 +1,302 @@
+﻿@model TheatreHub.ViewModels.RehearsalCalendarViewModel
+
+@{
+    ViewData["Title"] = "Календар репетицій і показів";
+}
+
+<div class="d-flex flex-wrap
+            justify-content-between
+            align-items-start
+            gap-3
+            mb-4">
+
+    <div>
+        <h1 class="h3 mb-1">
+            Календар репетицій і показів
+        </h1>
+
+        <p class="text-muted mb-0">
+            Перегляд репетицій та показів за датами, виставами, акторами та залами.
+        </p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-controller="Rehearsals"
+           asp-action="Create"
+           class="btn btn-primary">
+            Створити репетицію
+        </a>
+
+        <a asp-controller="PerformanceShows"
+           asp-action="Create"
+           class="btn btn-outline-primary">
+            Створити показ
+        </a>
+
+        <a asp-controller="Rehearsals"
+           asp-action="Index"
+           class="btn btn-outline-secondary">
+            Список репетицій
+        </a>
+    </div>
+
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+
+        <form asp-controller="Rehearsals"
+              asp-action="Calendar"
+              method="get"
+              class="row g-3 align-items-end">
+
+            <div class="col-md-2">
+                <label class="form-label">
+                    Від
+                </label>
+
+                <input type="date"
+                       name="startDate"
+                       value="@Model.StartDate.ToString("yyyy-MM-dd")"
+                       class="form-control" />
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">
+                    До
+                </label>
+
+                <input type="date"
+                       name="endDate"
+                       value="@Model.EndDate.ToString("yyyy-MM-dd")"
+                       class="form-control" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">
+                    Вистава
+                </label>
+
+                <select name="performanceId"
+                        class="form-select">
+
+                    <option value="">
+                        Усі вистави
+                    </option>
+
+                    @foreach (var performance in Model.Performances)
+                    {
+                        <option value="@performance.Id"
+                                selected="@(Model.PerformanceId == performance.Id ? "selected" : null)">
+                            @performance.Title
+                        </option>
+                    }
+
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">
+                    Актор
+                </label>
+
+                <select name="actorId"
+                        class="form-select">
+
+                    <option value="">
+                        Усі актори
+                    </option>
+
+                    @foreach (var actor in Model.Actors)
+                    {
+                        <option value="@actor.Id"
+                                selected="@(Model.ActorId == actor.Id ? "selected" : null)">
+                            @actor.FullName
+                        </option>
+                    }
+
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">
+                    Зал
+                </label>
+
+                <select name="hallId"
+                        class="form-select">
+
+                    <option value="">
+                        Усі зали
+                    </option>
+
+                    @foreach (var hall in Model.Halls)
+                    {
+                        <option value="@hall.Id"
+                                selected="@(Model.HallId == hall.Id ? "selected" : null)">
+                            @hall.Venue.Name — @hall.Name
+                        </option>
+                    }
+
+                </select>
+            </div>
+
+            <div class="col-12 d-flex flex-wrap gap-2">
+                <button type="submit"
+                        class="btn btn-primary">
+                    Застосувати фільтри
+                </button>
+
+                <a asp-controller="Rehearsals"
+                   asp-action="Calendar"
+                   class="btn btn-outline-secondary">
+                    Скинути
+                </a>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+@if (!Model.Days.Any(day => day.Rehearsals.Any()))
+{
+    <div class="alert alert-info">
+        У вибраному періоді репетицій або показів немає.
+    </div>
+}
+else
+{
+    <div class="d-flex flex-column gap-3">
+
+        @foreach (var day in Model.Days)
+        {
+            <div class="card border-0 shadow-sm">
+
+                <div class="card-header bg-white">
+                    <div class="d-flex flex-wrap
+                                        justify-content-between
+                                        align-items-center
+                                        gap-2">
+
+                        <h2 class="h5 mb-0">
+                            @day.Date.ToString("dd.MM.yyyy")
+                        </h2>
+
+                        <span class="badge text-bg-light">
+                            Подій: @day.Rehearsals.Count
+                        </span>
+
+                    </div>
+                </div>
+
+                <div class="card-body">
+
+                    @if (!day.Rehearsals.Any())
+                    {
+                        <p class="text-muted mb-0">
+                            На цей день репетицій або показів немає.
+                        </p>
+                    }
+                    else
+                    {
+                        <div class="list-group">
+
+                            @foreach (var item in day.Rehearsals)
+                            {
+                                <div class="list-group-item">
+
+                                    <div class="d-flex flex-wrap
+                                                                justify-content-between
+                                                                align-items-start
+                                                                gap-3">
+
+                                        <div>
+                                            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                                                <div class="fw-semibold">
+                                                    @item.StartDateTime.ToString("HH:mm")
+                                                    —
+                                                    @item.EndDateTime.ToString("HH:mm")
+                                                </div>
+
+                                                <span class="badge @item.EventBadgeClass">
+                                                    @item.EventTypeText
+                                                </span>
+
+                                                <span class="badge text-bg-secondary">
+                                                    @item.StatusText
+                                                </span>
+                                            </div>
+
+                                            <div class="fw-semibold">
+                                                @item.PerformanceTitle
+                                            </div>
+
+                                            <div class="small text-muted">
+                                                @item.TargetText
+                                            </div>
+
+                                            <div class="small text-muted">
+                                                @item.HallText
+                                            </div>
+
+                                            @if (!item.IsPerformanceShow)
+                                            {
+                                                <div class="small text-muted">
+                                                    Учасників: @item.ParticipantsCount
+                                                </div>
+                                            }
+                                        </div>
+
+                                        <div class="d-flex flex-wrap gap-2">
+
+                                            <a asp-controller="@item.DetailsController"
+                                               asp-action="Details"
+                                               asp-route-id="@item.Id"
+                                               class="btn btn-sm btn-outline-primary">
+                                                Деталі
+                                            </a>
+
+                                            @if (!item.IsPerformanceShow)
+                                            {
+                                                <a asp-controller="Rehearsals"
+                                                   asp-action="Attendance"
+                                                   asp-route-id="@item.Id"
+                                                   class="btn btn-sm btn-outline-success">
+                                                    Відвідування
+                                                </a>
+
+                                                <a asp-controller="Rehearsals"
+                                                   asp-action="Edit"
+                                                   asp-route-id="@item.Id"
+                                                   class="btn btn-sm btn-outline-secondary">
+                                                    Редагувати
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <a asp-controller="PerformanceShows"
+                                                   asp-action="Edit"
+                                                   asp-route-id="@item.Id"
+                                                   class="btn btn-sm btn-outline-secondary">
+                                                    Редагувати
+                                                </a>
+                                            }
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+                            }
+
+                        </div>
+                    }
+
+                </div>
+
+            </div>
+        }
+
+    </div>
+}

@@ -1,0 +1,346 @@
+﻿@model TheatreHub.ViewModels.PerformanceShowCalendarViewModel
+@using TheatreHub.Models.Enums
+
+@{
+    ViewData["Title"] = "Календар показів";
+
+    var previousStart = Model.StartDate.AddDays(-14);
+    var previousEnd = Model.EndDate.AddDays(-14);
+
+    var nextStart = Model.StartDate.AddDays(14);
+    var nextEnd = Model.EndDate.AddDays(14);
+}
+
+@functions {
+    private static string GetDayName(DateTime date)
+    {
+        return date.DayOfWeek switch
+        {
+            DayOfWeek.Monday => "Понеділок",
+            DayOfWeek.Tuesday => "Вівторок",
+            DayOfWeek.Wednesday => "Середа",
+            DayOfWeek.Thursday => "Четвер",
+            DayOfWeek.Friday => "П’ятниця",
+            DayOfWeek.Saturday => "Субота",
+            DayOfWeek.Sunday => "Неділя",
+            _ => date.DayOfWeek.ToString()
+        };
+    }
+
+    private static string GetTypeText(PerformanceShowType type)
+    {
+        return type switch
+        {
+            PerformanceShowType.Premiere => "Прем’єра",
+            PerformanceShowType.Regular => "Звичайний показ",
+            PerformanceShowType.Touring => "Виїзний показ",
+            PerformanceShowType.Closed => "Закритий показ",
+            PerformanceShowType.Charity => "Благодійний показ",
+            PerformanceShowType.Other => "Інше",
+            _ => type.ToString()
+        };
+    }
+
+    private static string GetStatusText(PerformanceShowStatus status)
+    {
+        return status switch
+        {
+            PerformanceShowStatus.Planned => "Заплановано",
+            PerformanceShowStatus.Confirmed => "Підтверджено",
+            PerformanceShowStatus.Completed => "Проведено",
+            PerformanceShowStatus.Cancelled => "Скасовано",
+            PerformanceShowStatus.Postponed => "Перенесено",
+            _ => status.ToString()
+        };
+    }
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+        <h1 class="h3 mb-1">
+            Календар показів
+        </h1>
+
+        <p class="text-muted mb-0">
+            Перегляд запланованих, підтверджених, проведених або перенесених показів.
+        </p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-action="Index"
+           class="btn btn-outline-secondary">
+            Список показів
+        </a>
+
+        <a asp-action="Create"
+           class="btn btn-primary">
+            Додати показ
+        </a>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+
+        <form asp-action="Calendar"
+              method="get"
+              class="row g-3 align-items-end">
+
+            <div class="col-md-3">
+                <label class="form-label">
+                    Початок
+                </label>
+
+                <input type="date"
+                       name="startDate"
+                       value="@Model.StartDate.ToString("yyyy-MM-dd")"
+                       class="form-control" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">
+                    Кінець
+                </label>
+
+                <input type="date"
+                       name="endDate"
+                       value="@Model.EndDate.ToString("yyyy-MM-dd")"
+                       class="form-control" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">
+                    Вистава
+                </label>
+
+                <select name="performanceId"
+                        class="form-select">
+
+                    <option value="">
+                        Усі вистави
+                    </option>
+
+                    @foreach (var performance in Model.Performances)
+                    {
+                        <option value="@performance.Id"
+                                selected="@(Model.PerformanceId == performance.Id ? "selected" : null)">
+                            @performance.Title
+                        </option>
+                    }
+
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">
+                    Зал
+                </label>
+
+                <select name="hallId"
+                        class="form-select">
+
+                    <option value="">
+                        Усі зали і зовнішні локації
+                    </option>
+
+                    @foreach (var hall in Model.Halls)
+                    {
+                        <option value="@hall.Id"
+                                selected="@(Model.HallId == hall.Id ? "selected" : null)">
+                            @(hall.Venue == null
+                                                    ? hall.Name
+                                                    : $"{hall.Venue.Name} — {hall.Name}")
+                    </option>
+                                        }
+
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">
+                    Тип показу
+                </label>
+
+                <select name="type"
+                        class="form-select">
+
+                    <option value="">
+                        Усі типи
+                    </option>
+
+                    @foreach (var type in Enum.GetValues<PerformanceShowType>())
+                    {
+                        <option value="@type"
+                                selected="@(Model.Type == type ? "selected" : null)">
+                            @GetTypeText(type)
+                        </option>
+                    }
+
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">
+                    Статус
+                </label>
+
+                <select name="status"
+                        class="form-select">
+
+                    <option value="">
+                        Усі статуси
+                    </option>
+
+                    @foreach (var status in Enum.GetValues<PerformanceShowStatus>())
+                    {
+                        <option value="@status"
+                                selected="@(Model.Status == status ? "selected" : null)">
+                            @GetStatusText(status)
+                        </option>
+                    }
+
+                </select>
+            </div>
+
+            <div class="col-md-6 d-flex flex-wrap gap-2">
+                <button type="submit"
+                        class="btn btn-primary">
+                    Застосувати
+                </button>
+
+                <a asp-action="Calendar"
+                   class="btn btn-outline-secondary">
+                    Скинути
+                </a>
+
+                <a asp-action="Calendar"
+                   asp-route-startDate="@previousStart.ToString("yyyy-MM-dd")"
+                   asp-route-endDate="@previousEnd.ToString("yyyy-MM-dd")"
+                   asp-route-performanceId="@Model.PerformanceId"
+                   asp-route-hallId="@Model.HallId"
+                   asp-route-type="@Model.Type"
+                   asp-route-status="@Model.Status"
+                   class="btn btn-outline-dark">
+                    ← Попередні 14 днів
+                </a>
+
+                <a asp-action="Calendar"
+                   asp-route-startDate="@nextStart.ToString("yyyy-MM-dd")"
+                   asp-route-endDate="@nextEnd.ToString("yyyy-MM-dd")"
+                   asp-route-performanceId="@Model.PerformanceId"
+                   asp-route-hallId="@Model.HallId"
+                   asp-route-type="@Model.Type"
+                   asp-route-status="@Model.Status"
+                   class="btn btn-outline-dark">
+                    Наступні 14 днів →
+                </a>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+<div class="row g-4">
+
+    @foreach (var day in Model.Days)
+    {
+        var isToday = day.Date.Date == DateTime.Today;
+
+        <div class="col-lg-6 col-xl-4">
+            <div class="card border-0 shadow-sm h-100 @(isToday ? "border border-primary" : "")">
+
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center gap-2">
+                        <div>
+                            <div class="fw-semibold">
+                                @day.Date.ToString("dd.MM.yyyy")
+                            </div>
+
+                            <div class="small text-muted">
+                                @GetDayName(day.Date)
+                            </div>
+                        </div>
+
+                        @if (isToday)
+                        {
+                            <span class="badge text-bg-primary">
+                                Сьогодні
+                            </span>
+                        }
+                    </div>
+                </div>
+
+                <div class="card-body">
+
+                    @if (!day.Shows.Any())
+                    {
+                        <div class="text-muted small">
+                            Показів немає.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="list-group list-group-flush">
+
+                            @foreach (var show in day.Shows)
+                            {
+                                <a asp-action="Details"
+                                   asp-route-id="@show.Id"
+                                   class="list-group-item list-group-item-action px-0">
+
+                                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+
+                                        <div>
+                                            <strong>
+                                                @show.StartDateTime.ToString("HH:mm")
+                                                —
+                                                @show.EndDateTime.ToString("HH:mm")
+                                            </strong>
+
+                                            <span class="badge text-bg-success ms-2">
+                                                Показ
+                                            </span>
+                                        </div>
+
+                                        <span class="badge @show.StatusBadgeClass">
+                                            @show.StatusText
+                                        </span>
+
+                                    </div>
+
+                                    <div class="small text-muted mt-1">
+                                        @show.PerformanceTitle
+                                    </div>
+
+                                    <div class="small text-muted">
+                                        @show.TypeText
+                                    </div>
+
+                                    <div class="small text-muted">
+                                        @show.LocationText
+                                    </div>
+
+                                    @if (show.ExpectedAudienceCount.HasValue ||
+                                                            show.ActualAudienceCount.HasValue)
+                                    {
+                                        <div class="small text-muted">
+                                            Глядачі:
+                                            очікувано @(show.ExpectedAudienceCount?.ToString() ?? "—"),
+                                            фактично @(show.ActualAudienceCount?.ToString() ?? "—")
+                                        </div>
+                                    }
+
+                                </a>
+                            }
+
+                        </div>
+                    }
+
+                </div>
+
+            </div>
+        </div>
+    }
+
+</div>

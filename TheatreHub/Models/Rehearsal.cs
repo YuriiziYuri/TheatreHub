@@ -18,6 +18,18 @@ public class Rehearsal : IValidatableObject
     [ValidateNever]
     public Performance Performance { get; set; } = null!;
 
+    [Display(Name = "Дія")]
+    public int? ActId { get; set; }
+
+    [ValidateNever]
+    public Act? Act { get; set; }
+
+    [Display(Name = "Сцена")]
+    public int? SceneId { get; set; }
+
+    [ValidateNever]
+    public Scene? Scene { get; set; }
+
     [Range(1, int.MaxValue, ErrorMessage = "Оберіть зал")]
     [Display(Name = "Зал")]
     public int HallId { get; set; }
@@ -49,6 +61,7 @@ public class Rehearsal : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(
         ValidationContext validationContext)
+
     {
         if (EndDateTime <= StartDateTime)
         {

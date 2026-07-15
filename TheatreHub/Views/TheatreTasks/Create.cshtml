@@ -1,0 +1,173 @@
+﻿@model TheatreHub.Models.TheatreTask
+
+@{
+    ViewData["Title"] = "Створити завдання";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+
+                <h1 class="h3 mb-1">
+                    Створити завдання
+                </h1>
+
+                <p class="text-muted mb-4">
+                    Завдання можна прив’язати до вистави, дії або конкретної сцени.
+                </p>
+
+                <form asp-action="Create" method="post">
+
+                    <div asp-validation-summary="ModelOnly"
+                         class="text-danger mb-3">
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Title"
+                               class="form-label">
+                            Назва
+                        </label>
+
+                        <input asp-for="Title"
+                               class="form-control" />
+
+                        <span asp-validation-for="Title"
+                              class="text-danger">
+                        </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description"
+                               class="form-label">
+                            Опис
+                        </label>
+
+                        <textarea asp-for="Description"
+                                  class="form-control"
+                                  rows="4">
+                        </textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="ResponsibleName"
+                               class="form-label">
+                            Відповідальний
+                        </label>
+
+                        <input asp-for="ResponsibleName"
+                               class="form-control" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="PerformanceId"
+                               class="form-label">
+                            Вистава
+                        </label>
+
+                        <select asp-for="PerformanceId"
+                                asp-items="ViewBag.PerformanceOptions"
+                                class="form-select">
+                        </select>
+
+                        <span asp-validation-for="PerformanceId"
+                              class="text-danger">
+                        </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="ActId"
+                               class="form-label">
+                            Дія
+                        </label>
+
+                        <select asp-for="ActId"
+                                asp-items="ViewBag.ActOptions"
+                                class="form-select">
+                        </select>
+
+                        <span asp-validation-for="ActId"
+                              class="text-danger">
+                        </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="SceneId"
+                               class="form-label">
+                            Сцена
+                        </label>
+
+                        <select asp-for="SceneId"
+                                asp-items="ViewBag.SceneOptions"
+                                class="form-select">
+                        </select>
+
+                        <span asp-validation-for="SceneId"
+                              class="text-danger">
+                        </span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Deadline"
+                                   class="form-label">
+                                Дедлайн
+                            </label>
+
+                            <input asp-for="Deadline"
+                                   type="datetime-local"
+                                   value="@(Model.Deadline.HasValue? Model.Deadline.Value.ToString("yyyy-MM-ddTHH:mm") : "")"
+                                   class="form-control" />
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Status"
+                                   class="form-label">
+                                Статус
+                            </label>
+
+                            <select asp-for="Status"
+                                    asp-items="ViewBag.StatusOptions"
+                                    class="form-select">
+                            </select>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Priority"
+                                   class="form-label">
+                                Пріоритет
+                            </label>
+
+                            <select asp-for="Priority"
+                                    asp-items="ViewBag.PriorityOptions"
+                                    class="form-select">
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="submit"
+                                class="btn btn-primary">
+                            Створити
+                        </button>
+
+                        <a asp-action="Index"
+                           class="btn btn-outline-secondary">
+                            До списку
+                        </a>
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

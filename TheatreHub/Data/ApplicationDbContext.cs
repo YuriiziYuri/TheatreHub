@@ -39,6 +39,18 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<Scene> Scenes => Set<Scene>();
 
+    public DbSet<SceneRole> SceneRoles => Set<SceneRole>();
+
+    public DbSet<TheatreTask> TheatreTasks =>
+    Set<TheatreTask>();
+
+    public DbSet<ProductionItem> ProductionItems =>
+    Set<ProductionItem>();
+    public DbSet<PerformanceShow> PerformanceShows =>
+    Set<PerformanceShow>();
+    public DbSet<TheatreTaskComment> TheatreTaskComments =>
+    Set<TheatreTaskComment>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -49,6 +61,11 @@ public class ApplicationDbContext : DbContext
         ConfigureRehearsalParticipants(modelBuilder);
         ConfigureVenuesAndHalls(modelBuilder);
         ConfigureActsAndScenes(modelBuilder);
+        ConfigureSceneRoles(modelBuilder);
+        ConfigureTheatreTasks(modelBuilder);
+        ConfigureTheatreTaskComments(modelBuilder);
+        ConfigureProductionItems(modelBuilder);
+        ConfigurePerformanceShows(modelBuilder);
     }
 
     private static void ConfigureCharacterRoles(
@@ -100,13 +117,13 @@ public class ApplicationDbContext : DbContext
     }
 
     private static void ConfigureRehearsals(
-        ModelBuilder modelBuilder)
+     ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Rehearsal>()
             .HasOne(rehearsal => rehearsal.Performance)
             .WithMany(performance => performance.Rehearsals)
             .HasForeignKey(rehearsal => rehearsal.PerformanceId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Rehearsal>()
             .HasOne(rehearsal => rehearsal.Hall)
@@ -115,13 +132,16 @@ public class ApplicationDbContext : DbContext
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Rehearsal>()
-            .HasIndex(rehearsal => rehearsal.PerformanceId);
+            .HasOne(rehearsal => rehearsal.Act)
+            .WithMany(act => act.Rehearsals)
+            .HasForeignKey(rehearsal => rehearsal.ActId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Rehearsal>()
-            .HasIndex(rehearsal => rehearsal.HallId);
-
-        modelBuilder.Entity<Rehearsal>()
-            .HasIndex(rehearsal => rehearsal.StartDateTime);
+            .HasOne(rehearsal => rehearsal.Scene)
+            .WithMany(scene => scene.Rehearsals)
+            .HasForeignKey(rehearsal => rehearsal.SceneId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 
     private static void ConfigureRehearsalParticipants(
@@ -202,4 +222,155 @@ public class ApplicationDbContext : DbContext
             })
             .IsUnique();
     }
+    private static void ConfigureSceneRoles(
+    ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<SceneRole>()
+            .HasKey(sceneRole => new
+            {
+                sceneRole.SceneId,
+                sceneRole.CharacterRoleId
+            });
+
+        modelBuilder.Entity<SceneRole>()
+            .HasOne(sceneRole => sceneRole.Scene)
+            .WithMany(scene => scene.SceneRoles)
+            .HasForeignKey(sceneRole => sceneRole.SceneId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<SceneRole>()
+            .HasOne(sceneRole => sceneRole.CharacterRole)
+            .WithMany(role => role.SceneRoles)
+            .HasForeignKey(sceneRole =>
+                sceneRole.CharacterRoleId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<SceneRole>()
+            .HasIndex(sceneRole =>
+                sceneRole.CharacterRoleId);
+    }
+
+    private static void ConfigureTheatreTasks(
+    ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<TheatreTask>()
+            .HasOne(task => task.Performance)
+            .WithMany()
+            .HasForeignKey(task => task.PerformanceId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<TheatreTask>()
+            .HasOne(task => task.Act)
+            .WithMany()
+            .HasForeignKey(task => task.ActId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<TheatreTask>()
+            .HasOne(task => task.Scene)
+            .WithMany()
+            .HasForeignKey(task => task.SceneId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<TheatreTask>()
+            .HasIndex(task => task.PerformanceId);
+
+        modelBuilder.Entity<TheatreTask>()
+            .HasIndex(task => task.ActId);
+
+        modelBuilder.Entity<TheatreTask>()
+            .HasIndex(task => task.SceneId);
+
+        modelBuilder.Entity<TheatreTask>()
+            .HasIndex(task => task.Status);
+
+        modelBuilder.Entity<TheatreTask>()
+            .HasIndex(task => task.Deadline);
+    }
+
+    private static void ConfigureProductionItems(
+    ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ProductionItem>()
+            .HasOne(item => item.Performance)
+            .WithMany()
+            .HasForeignKey(item => item.PerformanceId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<ProductionItem>()
+            .HasOne(item => item.Act)
+            .WithMany()
+            .HasForeignKey(item => item.ActId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<ProductionItem>()
+            .HasOne(item => item.Scene)
+            .WithMany()
+            .HasForeignKey(item => item.SceneId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<ProductionItem>()
+            .HasIndex(item => item.PerformanceId);
+
+        modelBuilder.Entity<ProductionItem>()
+            .HasIndex(item => item.ActId);
+
+        modelBuilder.Entity<ProductionItem>()
+            .HasIndex(item => item.SceneId);
+
+        modelBuilder.Entity<ProductionItem>()
+            .HasIndex(item => item.Type);
+
+        modelBuilder.Entity<ProductionItem>()
+            .HasIndex(item => item.Status);
+
+        modelBuilder.Entity<ProductionItem>()
+            .HasIndex(item => item.NeededBy);
+    }
+    private static void ConfigureTheatreTaskComments(
+    ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<TheatreTaskComment>()
+            .HasOne(comment => comment.TheatreTask)
+            .WithMany()
+            .HasForeignKey(comment => comment.TheatreTaskId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TheatreTaskComment>()
+            .HasIndex(comment => comment.TheatreTaskId);
+
+        modelBuilder.Entity<TheatreTaskComment>()
+            .HasIndex(comment => comment.CreatedAt);
+    }
+
+    private static void ConfigurePerformanceShows(
+    ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PerformanceShow>()
+            .HasOne(show => show.Performance)
+            .WithMany()
+            .HasForeignKey(show => show.PerformanceId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<PerformanceShow>()
+            .HasOne(show => show.Hall)
+            .WithMany()
+            .HasForeignKey(show => show.HallId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<PerformanceShow>()
+            .HasIndex(show => show.PerformanceId);
+
+        modelBuilder.Entity<PerformanceShow>()
+            .HasIndex(show => show.HallId);
+
+        modelBuilder.Entity<PerformanceShow>()
+            .HasIndex(show => show.StartDateTime);
+
+        modelBuilder.Entity<PerformanceShow>()
+            .HasIndex(show => show.Status);
+
+        modelBuilder.Entity<PerformanceShow>()
+            .HasIndex(show => show.Type);
+    }
+
 }

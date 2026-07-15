@@ -1,0 +1,358 @@
+﻿@model IEnumerable<TheatreHub.Models.TheatreTask>
+@using TheatreHub.Models
+@using TheatreHub.Models.Enums
+
+@{
+    ViewData["Title"] = "Завдання";
+
+    var performances =
+        ViewBag.Performances as List<Performance> ?? [];
+
+    int? selectedPerformanceId =
+        ViewBag.PerformanceId as int?;
+
+    TheatreTaskStatus? selectedStatus =
+        ViewBag.Status as TheatreTaskStatus?;
+
+    TheatreTaskPriority? selectedPriority =
+        ViewBag.Priority as TheatreTaskPriority?;
+}
+
+@functions {
+    private static string GetStatusText(TheatreTaskStatus status)
+    {
+        return status switch
+        {
+            TheatreTaskStatus.Planned => "Заплановано",
+            TheatreTaskStatus.InProgress => "У роботі",
+            TheatreTaskStatus.Done => "Виконано",
+            TheatreTaskStatus.Cancelled => "Скасовано",
+            _ => status.ToString()
+        };
+    }
+
+    private static string GetPriorityText(TheatreTaskPriority priority)
+    {
+        return priority switch
+        {
+            TheatreTaskPriority.Low => "Низький",
+            TheatreTaskPriority.Normal => "Звичайний",
+            TheatreTaskPriority.High => "Високий",
+            TheatreTaskPriority.Critical => "Критичний",
+            _ => priority.ToString()
+        };
+    }
+
+    private static string GetStatusClass(TheatreTaskStatus status)
+    {
+        return status switch
+        {
+            TheatreTaskStatus.Planned => "text-bg-secondary",
+            TheatreTaskStatus.InProgress => "text-bg-primary",
+            TheatreTaskStatus.Done => "text-bg-success",
+            TheatreTaskStatus.Cancelled => "text-bg-dark",
+            _ => "text-bg-secondary"
+        };
+    }
+
+    private static string GetPriorityClass(TheatreTaskPriority priority)
+    {
+        return priority switch
+        {
+            TheatreTaskPriority.Low => "text-bg-light",
+            TheatreTaskPriority.Normal => "text-bg-secondary",
+            TheatreTaskPriority.High => "text-bg-warning",
+            TheatreTaskPriority.Critical => "text-bg-danger",
+            _ => "text-bg-secondary"
+        };
+    }
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+        <h1 class="h3 mb-1">
+            Завдання
+        </h1>
+
+        <p class="text-muted mb-0">
+            Робочі завдання для вистав, дій і сцен.
+        </p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-controller="Calendar"
+           asp-action="Index"
+           asp-route-eventType="task"
+           class="btn btn-outline-secondary">
+            Календар завдань
+        </a>
+
+        <a asp-action="Create"
+           class="btn btn-primary">
+            Створити завдання
+        </a>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+
+        <form asp-action="Index"
+              method="get"
+              class="row g-3 align-items-end">
+
+            <div class="col-md-4">
+                <label class="form-label">
+                    Вистава
+                </label>
+
+                <select name="performanceId"
+                        class="form-select">
+
+                    <option value="">
+                        Усі вистави
+                    </option>
+
+                    @foreach (var performance in performances)
+                    {
+                        <option value="@performance.Id"
+                                selected="@(selectedPerformanceId == performance.Id ? "selected" : null)">
+                            @performance.Title
+                        </option>
+                    }
+
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">
+                    Статус
+                </label>
+
+                <select name="status"
+                        class="form-select">
+
+                    <option value="">
+                        Усі статуси
+                    </option>
+
+                    @foreach (var status in Enum.GetValues<TheatreTaskStatus>())
+                    {
+                        <option value="@status"
+                                selected="@(selectedStatus == status ? "selected" : null)">
+                            @GetStatusText(status)
+                        </option>
+                    }
+
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">
+                    Пріоритет
+                </label>
+
+                <select name="priority"
+                        class="form-select">
+
+                    <option value="">
+                        Усі пріоритети
+                    </option>
+
+                    @foreach (var priority in Enum.GetValues<TheatreTaskPriority>())
+                    {
+                        <option value="@priority"
+                                selected="@(selectedPriority == priority ? "selected" : null)">
+                            @GetPriorityText(priority)
+                        </option>
+                    }
+
+                </select>
+            </div>
+
+            <div class="col-md-2 d-flex flex-wrap gap-2">
+                <button type="submit"
+                        class="btn btn-primary">
+                    Фільтр
+                </button>
+
+                <a asp-action="Index"
+                   class="btn btn-outline-secondary">
+                    Скинути
+                </a>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        Завдань поки немає.
+    </div>
+}
+else
+{
+    <div class="list-group">
+
+        @foreach (var task in Model)
+        {
+            var isOverdue =
+            task.Deadline.HasValue &&
+            task.Deadline.Value.Date < DateTime.Today &&
+            task.Status != TheatreTaskStatus.Done &&
+            task.Status != TheatreTaskStatus.Cancelled;
+
+            <div class="list-group-item">
+
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+
+                    <div>
+                        <h2 class="h5 mb-1">
+                            @task.Title
+                        </h2>
+
+                        <div class="small text-muted">
+                            @task.Performance.Title
+
+                            @if (task.Act != null)
+                            {
+                                <span>
+                                    · @task.Act.DisplayName
+                                </span>
+                            }
+
+                            @if (task.Scene != null)
+                            {
+                                <span>
+                                    · Сцена @task.Scene.Number. @task.Scene.Title
+                                </span>
+                            }
+                    </div>
+
+                    <div class="small text-muted mt-1">
+                        Відповідальний:
+                        @(string.IsNullOrWhiteSpace(task.ResponsibleName)
+                                            ? "не вказано"
+                                            : task.ResponsibleName)
+                                                               </div>
+
+                    <div class="small text-muted">
+                        Дедлайн:
+                        @(task.Deadline.HasValue
+                                            ? task.Deadline.Value.ToString("dd.MM.yyyy HH:mm")
+                                            : "не вказано")
+
+                    @if (isOverdue)
+                            {
+                                <span class="text-danger">
+                                    · прострочено
+                                </span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="text-end">
+
+                        <div class="mb-2">
+                            <span class="badge @GetStatusClass(task.Status)">
+                                @GetStatusText(task.Status)
+                            </span>
+
+                            <span class="badge @GetPriorityClass(task.Priority)">
+                                @GetPriorityText(task.Priority)
+                            </span>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 justify-content-end">
+
+                            <a asp-action="Details"
+                               asp-route-id="@task.Id"
+                               class="btn btn-sm btn-outline-primary">
+                                Деталі
+                            </a>
+
+                            <a asp-action="Edit"
+                               asp-route-id="@task.Id"
+                               class="btn btn-sm btn-outline-secondary">
+                                Редагувати
+                            </a>
+
+                            @if (task.Status != TheatreTaskStatus.InProgress)
+                            {
+                                <form asp-action="ChangeStatus"
+                                      method="post"
+                                      class="d-inline">
+
+                                    <input type="hidden"
+                                           name="id"
+                                           value="@task.Id" />
+
+                                    <input type="hidden"
+                                           name="status"
+                                           value="@TheatreTaskStatus.InProgress" />
+
+                                    <input type="hidden"
+                                           name="returnUrl"
+                                           value="@Context.Request.Path@Context.Request.QueryString" />
+
+                                    <button type="submit"
+                                            class="btn btn-sm btn-outline-primary">
+                                        У роботу
+                                    </button>
+
+                                </form>
+                            }
+
+                            @if (task.Status != TheatreTaskStatus.Done)
+                            {
+                                <form asp-action="ChangeStatus"
+                                      method="post"
+                                      class="d-inline">
+
+                                    <input type="hidden"
+                                           name="id"
+                                           value="@task.Id" />
+
+                                    <input type="hidden"
+                                           name="status"
+                                           value="@TheatreTaskStatus.Done" />
+
+                                    <input type="hidden"
+                                           name="returnUrl"
+                                           value="@Context.Request.Path@Context.Request.QueryString" />
+
+                                    <button type="submit"
+                                            class="btn btn-sm btn-outline-success">
+                                        Виконано
+                                    </button>
+
+                                </form>
+                            }
+
+                            <a asp-action="Delete"
+                               asp-route-id="@task.Id"
+                               class="btn btn-sm btn-outline-danger">
+                                Видалити
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+        }
+
+    </div>
+}

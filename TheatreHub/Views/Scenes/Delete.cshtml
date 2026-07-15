@@ -1,7 +1,10 @@
-﻿@model TheatreHub.Models.Scene
+@model TheatreHub.Models.Scene
 
 @{
     ViewData["Title"] = "Видалення сцени";
+
+    var hasRehearsals =
+        Model.Rehearsals.Any();
 }
 
 <div class="row justify-content-center">
@@ -42,27 +45,58 @@
                     <dd class="col-sm-8">
                         @Model.DurationMinutes хв
                     </dd>
+
+                    <dt class="col-sm-4">
+                        Репетиції
+                    </dt>
+                    <dd class="col-sm-8">
+                        @Model.Rehearsals.Count
+                    </dd>
                 </dl>
 
-                <form asp-action="Delete"
-                      method="post">
+                @if (hasRehearsals)
+                {
+                    <div class="alert alert-warning">
+                        Цю сцену не можна видалити, бо до неї вже
+                        прив’язані репетиції. Спочатку видаліть або
+                        перенесіть ці репетиції.
+                    </div>
 
-                    <input type="hidden"
-                           asp-for="Id" />
-
-                    <button type="submit"
-                            class="btn btn-danger">
-                        Видалити
-                    </button>
+                    <a asp-action="Details"
+                       asp-route-id="@Model.Id"
+                       class="btn btn-outline-primary">
+                        До сцени
+                    </a>
 
                     <a asp-controller="Acts"
                        asp-action="Details"
                        asp-route-id="@Model.ActId"
                        class="btn btn-outline-secondary">
-                        Скасувати
+                        До дії
                     </a>
+                }
+                else
+                {
+                    <form asp-action="Delete"
+                          method="post">
 
-                </form>
+                        <input type="hidden"
+                               asp-for="Id" />
+
+                        <button type="submit"
+                                class="btn btn-danger">
+                            Видалити
+                        </button>
+
+                        <a asp-controller="Acts"
+                           asp-action="Details"
+                           asp-route-id="@Model.ActId"
+                           class="btn btn-outline-secondary">
+                            Скасувати
+                        </a>
+
+                    </form>
+                }
 
             </div>
         </div>

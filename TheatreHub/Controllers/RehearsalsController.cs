@@ -26,14 +26,270 @@ public class RehearsalsController : Controller
         var rehearsals = await _context.Rehearsals
             .AsNoTracking()
             .Include(rehearsal => rehearsal.Performance)
+            .Include(rehearsal => rehearsal.Act)
+            .Include(rehearsal => rehearsal.Scene)
+                .ThenInclude(scene => scene!.Act)
             .Include(rehearsal => rehearsal.Hall)
-                .ThenInclude(hall => hall.Venue)
+                .ThenInclude(hall => hall!.Venue!)
             .Include(rehearsal => rehearsal.Participants)
                 .ThenInclude(participant => participant.Actor)
             .OrderBy(rehearsal => rehearsal.StartDateTime)
             .ToListAsync();
 
         return View(rehearsals);
+    }
+
+    public async Task<IActionResult> Calendar(
+        DateTime? startDate,
+        DateTime? endDate,
+        int? performanceId,
+        int? actorId,
+        int? hallId)
+    {
+        var today = DateTime.Today;
+
+        var calendarStartDate =
+            startDate?.Date ?? today;
+
+        var calendarEndDate =
+            endDate?.Date ?? today.AddDays(14);
+
+        if (calendarEndDate < calendarStartDate)
+        {
+            calendarEndDate =
+                calendarStartDate.AddDays(14);
+        }
+
+        var queryStart =
+            calendarStartDate;
+
+        var queryEnd =
+            calendarEndDate.AddDays(1);
+
+        var rehearsalQuery = _context.Rehearsals
+            .AsNoTracking()
+            .Include(rehearsal => rehearsal.Performance)
+            .Include(rehearsal => rehearsal.Act)
+            .Include(rehearsal => rehearsal.Scene)
+            .Include(rehearsal => rehearsal.Hall)
+                .ThenInclude(hall => hall!.Venue!)
+            .Include(rehearsal => rehearsal.Participants)
+            .Where(rehearsal =>
+                rehearsal.StartDateTime < queryEnd &&
+                rehearsal.EndDateTime >= queryStart);
+
+        if (performanceId.HasValue)
+        {
+            rehearsalQuery = rehearsalQuery.Where(rehearsal =>
+                rehearsal.PerformanceId == performanceId.Value);
+        }
+
+        if (actorId.HasValue)
+        {
+            rehearsalQuery = rehearsalQuery.Where(rehearsal =>
+                rehearsal.Participants.Any(participant =>
+                    participant.ActorId == actorId.Value));
+        }
+
+        if (hallId.HasValue)
+        {
+            rehearsalQuery = rehearsalQuery.Where(rehearsal =>
+                rehearsal.HallId == hallId.Value);
+        }
+
+        var rehearsals = await rehearsalQuery
+            .OrderBy(rehearsal => rehearsal.StartDateTime)
+            .ToListAsync();
+
+        var rehearsalItems = rehearsals
+            .Select(rehearsal =>
+                new RehearsalCalendarItemViewModel
+                {
+                    Id = rehearsal.Id,
+
+                    IsPerformanceShow = false,
+                    EventTypeText = "Репетиція",
+                    EventBadgeClass = "text-bg-primary",
+
+                    PerformanceTitle =
+                        rehearsal.Performance.Title,
+
+                    TargetText =
+                        GetRehearsalTargetText(rehearsal),
+
+                    HallText =
+                        GetRehearsalHallText(rehearsal),
+
+                    StartDateTime =
+                        rehearsal.StartDateTime,
+
+                    EndDateTime =
+                        rehearsal.EndDateTime,
+
+                    StatusText =
+                        GetRehearsalStatusText(rehearsal.Status),
+
+                    ParticipantsCount =
+                        rehearsal.Participants.Count
+                })
+            .ToList();
+
+        var showQuery = _context.PerformanceShows
+            .AsNoTracking()
+            .Include(show => show.Performance)
+            .Include(show => show.Hall)
+                .ThenInclude(hall => hall!.Venue!)
+            .Where(show =>
+                show.StartDateTime < queryEnd &&
+                show.EndDateTime >= queryStart &&
+                show.Status != PerformanceShowStatus.Cancelled);
+
+        if (performanceId.HasValue)
+        {
+            showQuery = showQuery.Where(show =>
+                show.PerformanceId == performanceId.Value);
+        }
+
+        if (hallId.HasValue)
+        {
+            showQuery = showQuery.Where(show =>
+                show.HallId == hallId.Value);
+        }
+
+        if (actorId.HasValue)
+        {
+            var performanceIdsForActor = await _context.RoleAssignments
+                .AsNoTracking()
+                .Where(assignment =>
+                    assignment.ActorId == actorId.Value &&
+                    assignment.IsCurrent &&
+                    assignment.Status == RoleAssignmentStatus.Approved)
+                .Select(assignment =>
+                    assignment.CharacterRole.PerformanceId)
+                .Distinct()
+                .ToListAsync();
+
+            showQuery = showQuery.Where(show =>
+                performanceIdsForActor.Contains(show.PerformanceId));
+        }
+
+        var shows = await showQuery
+            .OrderBy(show => show.StartDateTime)
+            .ToListAsync();
+
+        var showItems = shows
+            .Select(show =>
+                new RehearsalCalendarItemViewModel
+                {
+                    Id = show.Id,
+
+                    IsPerformanceShow = true,
+                    EventTypeText = "Показ",
+                    EventBadgeClass = "text-bg-success",
+
+                    PerformanceTitle =
+                        show.Performance.Title,
+
+                    TargetText =
+                        GetShowTargetText(show),
+
+                    HallText =
+                        GetShowLocationText(show),
+
+                    StartDateTime =
+                        show.StartDateTime,
+
+                    EndDateTime =
+                        show.EndDateTime,
+
+                    StatusText =
+                        GetShowStatusText(show.Status),
+
+                    ParticipantsCount = 0
+                })
+            .ToList();
+
+        var calendarItems = rehearsalItems
+            .Concat(showItems)
+            .OrderBy(item => item.StartDateTime)
+            .ThenBy(item => item.EndDateTime)
+            .ToList();
+
+        var days = new List<RehearsalCalendarDayViewModel>();
+
+        for (var date = calendarStartDate;
+             date <= calendarEndDate;
+             date = date.AddDays(1))
+        {
+            var dayItems = calendarItems
+                .Where(item =>
+                    item.StartDateTime.Date == date)
+                .OrderBy(item =>
+                    item.StartDateTime)
+                .ToList();
+
+            days.Add(
+                new RehearsalCalendarDayViewModel
+                {
+                    Date = date,
+                    Rehearsals = dayItems
+                });
+        }
+
+        var model = new RehearsalCalendarViewModel
+        {
+            StartDate = calendarStartDate,
+            EndDate = calendarEndDate,
+            PerformanceId = performanceId,
+            ActorId = actorId,
+            HallId = hallId,
+            Days = days,
+
+            Performances = await _context.Performances
+                .AsNoTracking()
+                .OrderBy(performance =>
+                    performance.Title)
+                .ToListAsync(),
+
+            Actors = await _context.Actors
+                .AsNoTracking()
+                .OrderBy(actor =>
+                    actor.LastName)
+                .ThenBy(actor =>
+                    actor.FirstName)
+                .ToListAsync(),
+
+            Halls = await _context.Halls
+                .AsNoTracking()
+                .Include(hall => hall.Venue)
+                .Where(hall =>
+                    hall.IsActive &&
+                    hall.Venue!.IsActive)
+                .OrderBy(hall =>
+                    hall.Venue!.Name)
+                .ThenBy(hall =>
+                    hall.Name)
+                .ToListAsync()
+        };
+
+        return View(model);
+    }
+
+    private static string GetRehearsalTargetText(
+        Rehearsal rehearsal)
+    {
+        if (rehearsal.Scene != null)
+        {
+            return
+                $"Сцена {rehearsal.Scene.Number}. {rehearsal.Scene.Title}";
+        }
+
+        if (rehearsal.Act != null)
+        {
+            return rehearsal.Act.DisplayName;
+        }
+
+        return "Уся вистава";
     }
 
     // =========================================================
@@ -50,9 +306,12 @@ public class RehearsalsController : Controller
 
         var rehearsal = await _context.Rehearsals
             .AsNoTracking()
-            .Include(item => item.Performance)
+            .Include(item => item.Performance).Include(rehearsal => rehearsal.Act)
+            .Include(rehearsal => rehearsal.Scene)
+                .ThenInclude(scene => scene!.Act)
+
             .Include(item => item.Hall)
-                .ThenInclude(hall => hall.Venue)
+                .ThenInclude(hall => hall!.Venue!)
             .Include(item => item.Participants)
                 .ThenInclude(participant => participant.Actor)
             .FirstOrDefaultAsync(item => item.Id == id.Value);
@@ -70,7 +329,10 @@ public class RehearsalsController : Controller
     // =========================================================
 
     // GET: Rehearsals/Create
-    public async Task<IActionResult> Create()
+    public async Task<IActionResult> Create(
+    int? performanceId,
+    int? actId,
+    int? sceneId)
     {
         var model = new RehearsalFormViewModel
         {
@@ -85,6 +347,63 @@ public class RehearsalsController : Controller
             Status = RehearsalStatus.Planned
         };
 
+        if (sceneId.HasValue)
+        {
+            var scene = await _context.Scenes
+                .AsNoTracking()
+                .Include(item => item.Act)
+                .FirstOrDefaultAsync(item =>
+                    item.Id == sceneId.Value);
+
+            if (scene == null)
+            {
+                return NotFound();
+            }
+
+            model.PerformanceId =
+                scene.Act.PerformanceId;
+
+            model.ActId =
+                scene.ActId;
+
+            model.SceneId =
+                scene.Id;
+        }
+        else if (actId.HasValue)
+        {
+            var act = await _context.Acts
+                .AsNoTracking()
+                .FirstOrDefaultAsync(item =>
+                    item.Id == actId.Value);
+
+            if (act == null)
+            {
+                return NotFound();
+            }
+
+            model.PerformanceId =
+                act.PerformanceId;
+
+            model.ActId =
+                act.Id;
+        }
+        else if (performanceId.HasValue)
+        {
+            var performanceExists =
+                await _context.Performances
+                    .AsNoTracking()
+                    .AnyAsync(item =>
+                        item.Id == performanceId.Value);
+
+            if (!performanceExists)
+            {
+                return NotFound();
+            }
+
+            model.PerformanceId =
+                performanceId.Value;
+        }
+
         await PopulateFormDataAsync(model);
 
         return View(model);
@@ -94,15 +413,33 @@ public class RehearsalsController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(
-        RehearsalFormViewModel model)
+    RehearsalFormViewModel model,
+    string? submitAction)
     {
+        await ValidatePerformanceAsync(model.PerformanceId);
+        await ValidateStructureTargetAsync(model);
+
+        if (submitAction == "fillActors")
+        {
+            var suggestedActorIds =
+                await GetSuggestedActorIdsAsync(model);
+
+            await PopulateFormDataAsync(
+                model,
+                suggestedActorIds);
+
+            ModelState.Clear();
+
+            TempData["SuccessMessage"] =
+                suggestedActorIds.Count == 0
+                    ? "Для вибраної сцени, дії або вистави не знайдено затверджених акторів основного складу."
+                    : $"Автоматично підібрано акторів: {suggestedActorIds.Count}.";
+
+            return View(model);
+        }
+
         ValidateTime(model);
-
-        await ValidatePerformanceAsync(
-            model.PerformanceId);
-
-        await ValidateHallAsync(
-            model.HallId);
+        await ValidateHallAsync(model.HallId);
 
         var selectedActorIds = model.Actors
             .Where(actor => actor.IsSelected)
@@ -138,6 +475,8 @@ public class RehearsalsController : Controller
         var rehearsal = new Rehearsal
         {
             PerformanceId = model.PerformanceId,
+            ActId = model.ActId,
+            SceneId = model.SceneId,
             HallId = model.HallId,
             StartDateTime = model.StartDateTime,
             EndDateTime = model.EndDateTime,
@@ -194,6 +533,8 @@ public class RehearsalsController : Controller
         {
             Id = rehearsal.Id,
             PerformanceId = rehearsal.PerformanceId,
+            ActId = rehearsal.ActId,
+            SceneId = rehearsal.SceneId,
             HallId = rehearsal.HallId,
             StartDateTime = rehearsal.StartDateTime,
             EndDateTime = rehearsal.EndDateTime,
@@ -212,21 +553,39 @@ public class RehearsalsController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(
-        int id,
-        RehearsalFormViewModel model)
+    int id,
+    RehearsalFormViewModel model,
+    string? submitAction)
     {
         if (model.Id != id)
         {
             return NotFound();
         }
 
+        await ValidatePerformanceAsync(model.PerformanceId);
+        await ValidateStructureTargetAsync(model);
+
+        if (submitAction == "fillActors")
+        {
+            var suggestedActorIds =
+                await GetSuggestedActorIdsAsync(model);
+
+            await PopulateFormDataAsync(
+                model,
+                suggestedActorIds);
+
+            ModelState.Clear();
+
+            TempData["SuccessMessage"] =
+                suggestedActorIds.Count == 0
+                    ? "Для вибраної сцени, дії або вистави не знайдено затверджених акторів основного складу."
+                    : $"Автоматично підібрано акторів: {suggestedActorIds.Count}.";
+
+            return View(model);
+        }
+
         ValidateTime(model);
-
-        await ValidatePerformanceAsync(
-            model.PerformanceId);
-
-        await ValidateHallAsync(
-            model.HallId);
+        await ValidateHallAsync(model.HallId);
 
         var selectedActorIds = model.Actors
             .Where(actor => actor.IsSelected)
@@ -272,6 +631,12 @@ public class RehearsalsController : Controller
         rehearsal.PerformanceId =
             model.PerformanceId;
 
+        rehearsal.ActId =
+            model.ActId;
+
+        rehearsal.SceneId =
+            model.SceneId;
+
         rehearsal.HallId =
             model.HallId;
 
@@ -286,11 +651,6 @@ public class RehearsalsController : Controller
 
         rehearsal.Status =
             model.Status;
-
-        /*
-         * Не видаляємо всіх учасників повністю.
-         * Інакше зітруться їхні відмітки про відвідування.
-         */
 
         var selectedIds =
             selectedActorIds.ToHashSet();
@@ -353,7 +713,7 @@ public class RehearsalsController : Controller
             .AsNoTracking()
             .Include(item => item.Performance)
             .Include(item => item.Hall)
-                .ThenInclude(hall => hall.Venue)
+                .ThenInclude(hall => hall!.Venue!)
             .Include(item => item.Participants)
                 .ThenInclude(participant => participant.Actor)
             .FirstOrDefaultAsync(item => item.Id == id.Value);
@@ -380,7 +740,7 @@ public class RehearsalsController : Controller
                 rehearsal.Hall.Name,
 
             VenueName =
-                rehearsal.Hall.Venue.Name,
+                rehearsal.Hall.Venue!.Name,
 
             Participants = rehearsal.Participants
                 .OrderBy(participant =>
@@ -542,8 +902,11 @@ public class RehearsalsController : Controller
         var rehearsal = await _context.Rehearsals
             .AsNoTracking()
             .Include(item => item.Performance)
+            .Include(rehearsal => rehearsal.Act)
+            .Include(rehearsal => rehearsal.Scene)
+                .ThenInclude(scene => scene!.Act)
             .Include(item => item.Hall)
-                .ThenInclude(hall => hall.Venue)
+                .ThenInclude(hall => hall!.Venue!)
             .Include(item => item.Participants)
                 .ThenInclude(participant => participant.Actor)
             .FirstOrDefaultAsync(item => item.Id == id.Value);
@@ -852,55 +1215,78 @@ public class RehearsalsController : Controller
     // =========================================================
 
     private async Task PopulateFormDataAsync(
-        RehearsalFormViewModel model,
-        IEnumerable<int>? selectedActorIds = null)
+    RehearsalFormViewModel model,
+    IEnumerable<int>? selectedActorIds = null)
     {
         var selectedIds =
             selectedActorIds?.ToHashSet()
             ?? new HashSet<int>();
 
-        model.Performances =
-            await _context.Performances
-                .AsNoTracking()
-                .OrderBy(performance =>
-                    performance.Title)
-                .ToListAsync();
+        model.Performances = await _context.Performances
+            .AsNoTracking()
+            .OrderBy(performance =>
+                performance.Title)
+            .ToListAsync();
 
-        model.Halls =
-            await _context.Halls
-                .AsNoTracking()
-                .Include(hall => hall.Venue)
-                .Where(hall =>
-                    (hall.IsActive &&
-                     hall.Venue.IsActive) ||
-                    hall.Id == model.HallId)
-                .OrderBy(hall =>
-                    hall.Venue.Name)
-                .ThenBy(hall =>
-                    hall.Name)
-                .ToListAsync();
+        model.Acts = await _context.Acts
+            .AsNoTracking()
+            .Include(act => act.Performance)
+            .OrderBy(act =>
+                act.Performance.Title)
+            .ThenBy(act =>
+                act.Position)
+            .ThenBy(act =>
+                act.Number)
+            .ToListAsync();
 
-        model.Actors =
-            await _context.Actors
-                .AsNoTracking()
-                .OrderBy(actor =>
-                    actor.LastName)
-                .ThenBy(actor =>
-                    actor.FirstName)
-                .Select(actor =>
-                    new ActorSelectionViewModel
-                    {
-                        ActorId = actor.Id,
+        model.Scenes = await _context.Scenes
+            .AsNoTracking()
+            .Include(scene => scene.Act)
+                .ThenInclude(act => act.Performance)
+            .OrderBy(scene =>
+                scene.Act.Performance.Title)
+            .ThenBy(scene =>
+                scene.Act.Position)
+            .ThenBy(scene =>
+                scene.Act.Number)
+            .ThenBy(scene =>
+                scene.Position)
+            .ThenBy(scene =>
+                scene.Number)
+            .ToListAsync();
 
-                        FullName =
-                            actor.FirstName +
-                            " " +
-                            actor.LastName,
+        model.Halls = await _context.Halls
+            .AsNoTracking()
+            .Include(hall => hall.Venue)
+            .Where(hall =>
+                hall.IsActive &&
+                hall.Venue!.IsActive)
+            .OrderBy(hall =>
+                hall.Venue!.Name)
+            .ThenBy(hall =>
+                hall.Name)
+            .ToListAsync();
 
-                        IsSelected =
-                            selectedIds.Contains(actor.Id)
-                    })
-                .ToListAsync();
+        model.Actors = await _context.Actors
+            .AsNoTracking()
+            .OrderBy(actor =>
+                actor.LastName)
+            .ThenBy(actor =>
+                actor.FirstName)
+            .Select(actor =>
+                new ActorSelectionViewModel
+                {
+                    ActorId = actor.Id,
+
+                    FullName =
+                        actor.FirstName +
+                        " " +
+                        actor.LastName,
+
+                    IsSelected =
+                        selectedIds.Contains(actor.Id)
+                })
+            .ToListAsync();
     }
 
     // =========================================================
@@ -914,7 +1300,7 @@ public class RehearsalsController : Controller
             .AsNoTracking()
             .Include(item => item.Performance)
             .Include(item => item.Hall)
-                .ThenInclude(hall => hall.Venue)
+                .ThenInclude(hall => hall!.Venue!)
             .FirstOrDefaultAsync(
                 item =>
                     item.Id == model.RehearsalId);
@@ -937,7 +1323,7 @@ public class RehearsalsController : Controller
             rehearsal.Hall.Name;
 
         model.VenueName =
-            rehearsal.Hall.Venue.Name;
+            rehearsal.Hall.Venue!.Name;
 
         var actorIds = model.Participants
             .Select(participant =>
@@ -967,6 +1353,243 @@ public class RehearsalsController : Controller
                     fullName;
             }
         }
+    }
+
+
+    // =========================================================
+
+    private async Task ValidateStructureTargetAsync(
+    RehearsalFormViewModel model)
+    {
+        if (!model.ActId.HasValue &&
+            !model.SceneId.HasValue)
+        {
+            return;
+        }
+
+        Act? selectedAct = null;
+
+        if (model.ActId.HasValue)
+        {
+            selectedAct = await _context.Acts
+                .AsNoTracking()
+                .FirstOrDefaultAsync(act =>
+                    act.Id == model.ActId.Value);
+
+            if (selectedAct == null)
+            {
+                ModelState.AddModelError(
+                    nameof(model.ActId),
+                    "Обрана дія не існує.");
+
+                return;
+            }
+
+            if (selectedAct.PerformanceId != model.PerformanceId)
+            {
+                ModelState.AddModelError(
+                    nameof(model.ActId),
+                    "Обрана дія не належить вибраній виставі.");
+            }
+        }
+
+        if (model.SceneId.HasValue)
+        {
+            var selectedScene = await _context.Scenes
+                .AsNoTracking()
+                .Include(scene => scene.Act)
+                .FirstOrDefaultAsync(scene =>
+                    scene.Id == model.SceneId.Value);
+
+            if (selectedScene == null)
+            {
+                ModelState.AddModelError(
+                    nameof(model.SceneId),
+                    "Обрана сцена не існує.");
+
+                return;
+            }
+
+            if (selectedScene.Act.PerformanceId !=
+                model.PerformanceId)
+            {
+                ModelState.AddModelError(
+                    nameof(model.SceneId),
+                    "Обрана сцена не належить вибраній виставі.");
+            }
+
+            if (model.ActId.HasValue &&
+                selectedScene.ActId != model.ActId.Value)
+            {
+                ModelState.AddModelError(
+                    nameof(model.SceneId),
+                    "Обрана сцена не належить вибраній дії.");
+            }
+
+            if (!model.ActId.HasValue)
+            {
+                model.ActId = selectedScene.ActId;
+            }
+        }
+    }
+
+    // =========================================================
+
+    private async Task<List<int>> GetSuggestedActorIdsAsync(
+    RehearsalFormViewModel model)
+    {
+        if (model.SceneId.HasValue)
+        {
+            return await GetActorIdsForSceneAsync(
+                model.SceneId.Value);
+        }
+
+        if (model.ActId.HasValue)
+        {
+            return await GetActorIdsForActAsync(
+                model.ActId.Value);
+        }
+
+        if (model.PerformanceId > 0)
+        {
+            return await GetActorIdsForPerformanceAsync(
+                model.PerformanceId);
+        }
+
+        return [];
+    }
+
+    private async Task<List<int>> GetActorIdsForSceneAsync(
+        int sceneId)
+    {
+        return await _context.SceneRoles
+            .AsNoTracking()
+            .Where(sceneRole =>
+                sceneRole.SceneId == sceneId &&
+                sceneRole.IsRequired)
+            .SelectMany(sceneRole =>
+                sceneRole.CharacterRole.Assignments)
+            .Where(assignment =>
+                assignment.IsCurrent &&
+                assignment.Status ==
+                    RoleAssignmentStatus.Approved &&
+                assignment.CastType ==
+                    CastType.Main)
+            .Select(assignment =>
+                assignment.ActorId)
+            .Distinct()
+            .ToListAsync();
+    }
+
+    private async Task<List<int>> GetActorIdsForActAsync(
+        int actId)
+    {
+        return await _context.SceneRoles
+            .AsNoTracking()
+            .Where(sceneRole =>
+                sceneRole.Scene.ActId == actId &&
+                sceneRole.IsRequired)
+            .SelectMany(sceneRole =>
+                sceneRole.CharacterRole.Assignments)
+            .Where(assignment =>
+                assignment.IsCurrent &&
+                assignment.Status ==
+                    RoleAssignmentStatus.Approved &&
+                assignment.CastType ==
+                    CastType.Main)
+            .Select(assignment =>
+                assignment.ActorId)
+            .Distinct()
+            .ToListAsync();
+    }
+
+    private async Task<List<int>> GetActorIdsForPerformanceAsync(
+        int performanceId)
+    {
+        return await _context.RoleAssignments
+            .AsNoTracking()
+            .Where(assignment =>
+                assignment.CharacterRole.PerformanceId ==
+                    performanceId &&
+                assignment.IsCurrent &&
+                assignment.Status ==
+                    RoleAssignmentStatus.Approved &&
+                assignment.CastType ==
+                    CastType.Main)
+            .Select(assignment =>
+                assignment.ActorId)
+            .Distinct()
+            .ToListAsync();
+    }
+
+    // =========================================================
+    // ТЕКСТ ДЛЯ КАЛЕНДАРЯ
+    // =========================================================
+
+    private static string GetRehearsalHallText(
+        Rehearsal rehearsal)
+    {
+        return rehearsal.Hall?.Venue == null
+            ? rehearsal.Hall?.Name ?? "Зал не вказано"
+            : $"{rehearsal.Hall.Venue.Name} — {rehearsal.Hall.Name}";
+    }
+
+    private static string GetRehearsalStatusText(
+        RehearsalStatus status)
+    {
+        return status.ToString() switch
+        {
+            "Planned" => "Заплановано",
+            "Confirmed" => "Підтверджено",
+            "Done" => "Проведено",
+            "Completed" => "Проведено",
+            "Cancelled" => "Скасовано",
+            _ => status.ToString()
+        };
+    }
+
+    private static string GetShowTargetText(
+        PerformanceShow show)
+    {
+        return show.Type switch
+        {
+            PerformanceShowType.Premiere => "Прем’єра",
+            PerformanceShowType.Regular => "Звичайний показ",
+            PerformanceShowType.Touring => "Виїзний показ",
+            PerformanceShowType.Closed => "Закритий показ",
+            PerformanceShowType.Charity => "Благодійний показ",
+            PerformanceShowType.Other => "Інший показ",
+            _ => "Показ вистави"
+        };
+    }
+
+    private static string GetShowLocationText(
+        PerformanceShow show)
+    {
+        if (show.Hall != null)
+        {
+            return show.Hall.Venue == null
+                ? show.Hall.Name
+                : $"{show.Hall.Venue.Name} — {show.Hall.Name}";
+        }
+
+        return string.IsNullOrWhiteSpace(show.ExternalLocation)
+            ? "Локацію не вказано"
+            : show.ExternalLocation;
+    }
+
+    private static string GetShowStatusText(
+        PerformanceShowStatus status)
+    {
+        return status switch
+        {
+            PerformanceShowStatus.Planned => "Заплановано",
+            PerformanceShowStatus.Confirmed => "Підтверджено",
+            PerformanceShowStatus.Completed => "Проведено",
+            PerformanceShowStatus.Cancelled => "Скасовано",
+            PerformanceShowStatus.Postponed => "Перенесено",
+            _ => status.ToString()
+        };
     }
 
     // =========================================================

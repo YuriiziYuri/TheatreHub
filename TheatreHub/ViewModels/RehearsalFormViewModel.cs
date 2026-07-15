@@ -37,4 +37,14 @@ public class RehearsalFormViewModel
     public List<Hall> Halls { get; set; } = [];
 
     public List<ActorSelectionViewModel> Actors { get; set; } = [];
+
+    [Display(Name = "Дія")]
+    public int? ActId { get; set; }
+
+    [Display(Name = "Сцена")]
+    public int? SceneId { get; set; }
+
+    public List<Act> Acts { get; set; } = [];
+
+    public List<Scene> Scenes { get; set; } = [];
 }

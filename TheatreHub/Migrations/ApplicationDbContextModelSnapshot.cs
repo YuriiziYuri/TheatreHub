@@ -207,10 +207,137 @@ namespace TheatreHub.Migrations
                     b.ToTable("Performances");
                 });
 
+            modelBuilder.Entity("TheatreHub.Models.PerformanceShow", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ActualAudienceCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("EndDateTime")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("ExpectedAudienceCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ExternalLocation")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("HallId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PerformanceId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("StartDateTime")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HallId");
+
+                    b.HasIndex("PerformanceId");
+
+                    b.HasIndex("StartDateTime");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("Type");
+
+                    b.ToTable("PerformanceShows");
+                });
+
+            modelBuilder.Entity("TheatreHub.Models.ProductionItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ActId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("NeededBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PerformanceId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ResponsibleName")
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("SceneId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("StorageLocation")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActId");
+
+                    b.HasIndex("NeededBy");
+
+                    b.HasIndex("PerformanceId");
+
+                    b.HasIndex("SceneId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("Type");
+
+                    b.ToTable("ProductionItems");
+                });
+
             modelBuilder.Entity("TheatreHub.Models.Rehearsal", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ActId")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("EndDateTime")
@@ -226,6 +353,9 @@ namespace TheatreHub.Migrations
                     b.Property<int>("PerformanceId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("SceneId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("StartDateTime")
                         .HasColumnType("TEXT");
 
@@ -234,11 +364,13 @@ namespace TheatreHub.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ActId");
+
                     b.HasIndex("HallId");
 
                     b.HasIndex("PerformanceId");
 
-                    b.HasIndex("StartDateTime");
+                    b.HasIndex("SceneId");
 
                     b.ToTable("Rehearsals");
                 });
@@ -356,6 +488,113 @@ namespace TheatreHub.Migrations
                     b.ToTable("Scenes");
                 });
 
+            modelBuilder.Entity("TheatreHub.Models.SceneRole", b =>
+                {
+                    b.Property<int>("SceneId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CharacterRoleId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("SceneId", "CharacterRoleId");
+
+                    b.HasIndex("CharacterRoleId");
+
+                    b.ToTable("SceneRoles");
+                });
+
+            modelBuilder.Entity("TheatreHub.Models.TheatreTask", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ActId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("Deadline")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PerformanceId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ResponsibleName")
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("SceneId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActId");
+
+                    b.HasIndex("Deadline");
+
+                    b.HasIndex("PerformanceId");
+
+                    b.HasIndex("SceneId");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("TheatreTasks");
+                });
+
+            modelBuilder.Entity("TheatreHub.Models.TheatreTaskComment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AuthorName")
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TheatreTaskId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("TheatreTaskId");
+
+                    b.ToTable("TheatreTaskComments");
+                });
+
             modelBuilder.Entity("TheatreHub.Models.Venue", b =>
                 {
                     b.Property<int>("Id")
@@ -435,8 +674,56 @@ namespace TheatreHub.Migrations
                     b.Navigation("Venue");
                 });
 
+            modelBuilder.Entity("TheatreHub.Models.PerformanceShow", b =>
+                {
+                    b.HasOne("TheatreHub.Models.Hall", "Hall")
+                        .WithMany()
+                        .HasForeignKey("HallId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("TheatreHub.Models.Performance", "Performance")
+                        .WithMany()
+                        .HasForeignKey("PerformanceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Hall");
+
+                    b.Navigation("Performance");
+                });
+
+            modelBuilder.Entity("TheatreHub.Models.ProductionItem", b =>
+                {
+                    b.HasOne("TheatreHub.Models.Act", "Act")
+                        .WithMany()
+                        .HasForeignKey("ActId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("TheatreHub.Models.Performance", "Performance")
+                        .WithMany()
+                        .HasForeignKey("PerformanceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TheatreHub.Models.Scene", "Scene")
+                        .WithMany()
+                        .HasForeignKey("SceneId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Act");
+
+                    b.Navigation("Performance");
+
+                    b.Navigation("Scene");
+                });
+
             modelBuilder.Entity("TheatreHub.Models.Rehearsal", b =>
                 {
+                    b.HasOne("TheatreHub.Models.Act", "Act")
+                        .WithMany("Rehearsals")
+                        .HasForeignKey("ActId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("TheatreHub.Models.Hall", "Hall")
                         .WithMany("Rehearsals")
                         .HasForeignKey("HallId")
@@ -446,12 +733,21 @@ namespace TheatreHub.Migrations
                     b.HasOne("TheatreHub.Models.Performance", "Performance")
                         .WithMany("Rehearsals")
                         .HasForeignKey("PerformanceId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("TheatreHub.Models.Scene", "Scene")
+                        .WithMany("Rehearsals")
+                        .HasForeignKey("SceneId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Act");
 
                     b.Navigation("Hall");
 
                     b.Navigation("Performance");
+
+                    b.Navigation("Scene");
                 });
 
             modelBuilder.Entity("TheatreHub.Models.RehearsalParticipant", b =>
@@ -503,8 +799,65 @@ namespace TheatreHub.Migrations
                     b.Navigation("Act");
                 });
 
+            modelBuilder.Entity("TheatreHub.Models.SceneRole", b =>
+                {
+                    b.HasOne("TheatreHub.Models.CharacterRole", "CharacterRole")
+                        .WithMany("SceneRoles")
+                        .HasForeignKey("CharacterRoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TheatreHub.Models.Scene", "Scene")
+                        .WithMany("SceneRoles")
+                        .HasForeignKey("SceneId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CharacterRole");
+
+                    b.Navigation("Scene");
+                });
+
+            modelBuilder.Entity("TheatreHub.Models.TheatreTask", b =>
+                {
+                    b.HasOne("TheatreHub.Models.Act", "Act")
+                        .WithMany()
+                        .HasForeignKey("ActId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("TheatreHub.Models.Performance", "Performance")
+                        .WithMany()
+                        .HasForeignKey("PerformanceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TheatreHub.Models.Scene", "Scene")
+                        .WithMany()
+                        .HasForeignKey("SceneId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Act");
+
+                    b.Navigation("Performance");
+
+                    b.Navigation("Scene");
+                });
+
+            modelBuilder.Entity("TheatreHub.Models.TheatreTaskComment", b =>
+                {
+                    b.HasOne("TheatreHub.Models.TheatreTask", "TheatreTask")
+                        .WithMany()
+                        .HasForeignKey("TheatreTaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TheatreTask");
+                });
+
             modelBuilder.Entity("TheatreHub.Models.Act", b =>
                 {
+                    b.Navigation("Rehearsals");
+
                     b.Navigation("Scenes");
                 });
 
@@ -518,6 +871,8 @@ namespace TheatreHub.Migrations
             modelBuilder.Entity("TheatreHub.Models.CharacterRole", b =>
                 {
                     b.Navigation("Assignments");
+
+                    b.Navigation("SceneRoles");
                 });
 
             modelBuilder.Entity("TheatreHub.Models.Hall", b =>
@@ -537,6 +892,13 @@ namespace TheatreHub.Migrations
             modelBuilder.Entity("TheatreHub.Models.Rehearsal", b =>
                 {
                     b.Navigation("Participants");
+                });
+
+            modelBuilder.Entity("TheatreHub.Models.Scene", b =>
+                {
+                    b.Navigation("Rehearsals");
+
+                    b.Navigation("SceneRoles");
                 });
 
             modelBuilder.Entity("TheatreHub.Models.Venue", b =>

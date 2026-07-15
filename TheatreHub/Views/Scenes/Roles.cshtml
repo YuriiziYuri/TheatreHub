@@ -1,0 +1,158 @@
+﻿@model TheatreHub.ViewModels.SceneRolesViewModel
+
+@{
+    ViewData["Title"] = "Ролі сцени";
+}
+
+<div class="mb-4">
+    <h1 class="h2 mb-1">
+        Ролі сцени
+    </h1>
+
+    <p class="text-muted mb-1">
+        Вистава:
+        <strong>@Model.PerformanceTitle</strong>
+    </p>
+
+    <p class="text-muted mb-1">
+        @Model.ActName
+    </p>
+
+    <p class="text-muted mb-0">
+        @Model.SceneTitle
+    </p>
+</div>
+
+<form asp-action="Roles"
+      asp-route-id="@Model.SceneId"
+      method="post">
+
+    <input type="hidden"
+           asp-for="SceneId" />
+
+    <div asp-validation-summary="ModelOnly"
+         class="alert alert-danger">
+    </div>
+
+    @if (!Model.Roles.Any())
+    {
+        <div class="alert alert-warning">
+            У цій виставі ще немає ролей.
+            Спочатку додайте персонажів у розділі ролей.
+        </div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+
+                <table class="table align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 90px">
+                                Участь
+                            </th>
+                            <th>Роль</th>
+                            <th>Актори</th>
+                            <th style="width: 170px">
+                                Обов’язкова
+                            </th>
+                            <th>Примітка</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @for (var i = 0;
+                                            i < Model.Roles.Count;
+                                            i++)
+                        {
+                            <tr>
+                                <td>
+                                    <input type="hidden"
+                                           asp-for="Roles[i].CharacterRoleId" />
+
+                                    <input type="hidden"
+                                           asp-for="Roles[i].RoleName" />
+
+                                    <input type="hidden"
+                                           asp-for="Roles[i].IsMainRole" />
+
+                                    <input type="hidden"
+                                           asp-for="Roles[i].AssignedActorsText" />
+
+                                    <div class="form-check">
+                                        <input asp-for="Roles[i].IsSelected"
+                                               class="form-check-input" />
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <strong>
+                                        @Model.Roles[i].RoleName
+                                    </strong>
+
+                                    <div class="small text-muted">
+                                        @(Model.Roles[i].IsMainRole
+                                                                        ? "Головна роль"
+                                                                        : "Другорядна роль")
+                            </div>
+                        </td>
+
+                                <td>
+                                    <span class="small">
+                                        @Model.Roles[i].AssignedActorsText
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <div class="form-check">
+                                        <input asp-for="Roles[i].IsRequired"
+                                               class="form-check-input" />
+
+                                        <label asp-for="Roles[i].IsRequired"
+                                               class="form-check-label">
+                                        </label>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <input asp-for="Roles[i].Notes"
+                                           class="form-control"
+                                           placeholder="Наприклад: з’являється наприкінці сцени" />
+
+                                    <span asp-validation-for="Roles[i].Notes"
+                                          class="text-danger">
+                                    </span>
+                                </td>
+                            </tr>
+                                        }
+                    </tbody>
+                </table>
+
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mt-4">
+
+            <button type="submit"
+                    class="btn btn-primary">
+                Зберегти ролі сцени
+            </button>
+
+            <a asp-action="Details"
+               asp-route-id="@Model.SceneId"
+               class="btn btn-outline-secondary">
+                Скасувати
+            </a>
+
+        </div>
+    }
+
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync(
+            "_ValidationScriptsPartial");
+    }
+}

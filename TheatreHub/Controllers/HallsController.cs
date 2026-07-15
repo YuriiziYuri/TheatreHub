@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using TheatreHub.Data;
@@ -62,6 +62,10 @@ public class HallsController : Controller
         {
             return NotFound();
         }
+
+        hall.Rehearsals = hall.Rehearsals
+            .OrderBy(rehearsal => rehearsal.StartDateTime)
+            .ToList();
 
         return View(hall);
     }
@@ -215,8 +219,8 @@ public class HallsController : Controller
             $"Зал «{existingHall.Name}» успішно оновлено.";
 
         return RedirectToAction(
-            nameof(Index),
-            new { venueId = existingHall.VenueId });
+            nameof(Details),
+            new { id = existingHall.Id });
     }
 
     // GET: Halls/Delete/5

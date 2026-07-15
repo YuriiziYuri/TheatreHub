@@ -1,16 +1,36 @@
-﻿@model TheatreHub.Models.Actor
+@model TheatreHub.Models.Actor
+@using TheatreHub.Models.Enums
 
 @{
     ViewData["Title"] = "Інформація про актора";
 }
 
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
 <div class="row justify-content-center">
-    <div class="col-lg-7">
+    <div class="col-lg-9">
 
         <div class="card border-0 shadow-sm">
             <div class="card-body p-4">
 
-                <div class="d-flex justify-content-between align-items-start mb-4">
+                <div class="d-flex flex-wrap
+                            justify-content-between
+                            align-items-start
+                            gap-3
+                            mb-4">
+
                     <div>
                         <h1 class="h3 mb-1">@Model.FullName</h1>
                         <p class="text-muted mb-0">
@@ -59,11 +79,189 @@
                     </dd>
                 </dl>
 
+                <hr />
+
+                <div class="d-flex flex-wrap
+                            justify-content-between
+                            align-items-center
+                            gap-3
+                            mb-3">
+
+                    <div>
+                        <h2 class="h4 mb-1">
+                            Призначення на ролі
+                        </h2>
+
+                        <p class="text-muted mb-0">
+                            Ролі, з якими пов’язаний цей актор
+                        </p>
+                    </div>
+
+                </div>
+
+                @if (!Model.RoleAssignments.Any())
+                {
+                    <div class="alert alert-info">
+                        У цього актора ще немає призначень на ролі.
+                    </div>
+                }
+                else
+                {
+                    <div class="list-group mb-4">
+
+                        @foreach (var assignment in Model.RoleAssignments)
+                        {
+                            <div class="list-group-item">
+
+                                <div class="d-flex flex-wrap
+                                            justify-content-between
+                                            align-items-start
+                                            gap-3">
+
+                                    <div>
+                                        <strong>
+                                            @assignment.CharacterRole.Name
+                                        </strong>
+
+                                        <div class="small text-muted">
+                                            @assignment.CharacterRole.Performance.Title
+                                        </div>
+
+                                        <div class="small text-muted">
+                                            @(assignment.CastType == CastType.Main
+                                                ? "Основний склад"
+                                                : "Запасний склад")
+                                            ·
+                                            @assignment.Status
+                                        </div>
+                                    </div>
+
+                                    <div class="text-end small text-muted">
+                                        @assignment.StartDate.ToString("dd.MM.yyyy")
+
+                                        @if (assignment.EndDate.HasValue)
+                                        {
+                                            <span>
+                                                —
+                                                @assignment.EndDate.Value.ToString("dd.MM.yyyy")
+                                            </span>
+                                        }
+
+                                        @if (assignment.IsCurrent)
+                                        {
+                                            <div>
+                                                <span class="badge text-bg-success">
+                                                    Поточне
+                                                </span>
+                                            </div>
+                                        }
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        }
+
+                    </div>
+                }
+
+                <hr />
+
+                <div class="d-flex flex-wrap
+                            justify-content-between
+                            align-items-center
+                            gap-3
+                            mb-3">
+
+                    <div>
+                        <h2 class="h4 mb-1">
+                            Репетиції
+                        </h2>
+
+                        <p class="text-muted mb-0">
+                            Репетиції, у яких бере участь актор
+                        </p>
+                    </div>
+
+                </div>
+
+                @if (!Model.RehearsalParticipants.Any())
+                {
+                    <div class="alert alert-info">
+                        Цей актор ще не доданий до репетицій.
+                    </div>
+                }
+                else
+                {
+                    <div class="list-group mb-4">
+
+                        @foreach (var participant in Model.RehearsalParticipants)
+                        {
+                            var rehearsal = participant.Rehearsal;
+
+                            <div class="list-group-item">
+
+                                <div class="d-flex flex-wrap
+                                            justify-content-between
+                                            align-items-start
+                                            gap-3">
+
+                                    <div>
+                                        <strong>
+                                            @rehearsal.Performance.Title
+                                        </strong>
+
+                                        <div class="small text-muted">
+                                            @rehearsal.StartDateTime.ToString("dd.MM.yyyy HH:mm")
+                                            —
+                                            @rehearsal.EndDateTime.ToString("HH:mm")
+                                        </div>
+
+                                        <div class="small text-muted">
+                                            @rehearsal.Hall.Venue.Name —
+                                            @rehearsal.Hall.Name
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex flex-wrap gap-2">
+
+                                        <a asp-controller="Rehearsals"
+                                           asp-action="Details"
+                                           asp-route-id="@rehearsal.Id"
+                                           class="btn btn-sm btn-outline-primary">
+                                            Деталі
+                                        </a>
+
+                                        <a asp-controller="Rehearsals"
+                                           asp-action="Attendance"
+                                           asp-route-id="@rehearsal.Id"
+                                           class="btn btn-sm btn-outline-success">
+                                            Відвідування
+                                        </a>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        }
+
+                    </div>
+                }
+
+                <hr />
+
                 <div class="d-flex flex-wrap gap-2">
                     <a asp-action="Edit"
                        asp-route-id="@Model.Id"
                        class="btn btn-primary">
                         Редагувати
+                    </a>
+
+                    <a asp-action="Delete"
+                       asp-route-id="@Model.Id"
+                       class="btn btn-outline-danger">
+                        Видалити
                     </a>
 
                     <a asp-action="Index"

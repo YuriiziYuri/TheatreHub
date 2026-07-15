@@ -50,6 +50,38 @@
                     </dd>
 
                     <dt class="col-sm-4">
+                        Об’єкт репетиції
+                    </dt>
+
+                    <dd class="col-sm-8">
+                        @if (Model.Scene != null)
+                        {
+                            <div>
+                                <strong>
+                                    Сцена @Model.Scene.Number.
+                                    @Model.Scene.Title
+                                </strong>
+                            </div>
+
+                            <div class="small text-muted">
+                                @Model.Scene.Act.DisplayName
+                            </div>
+                        }
+                        else if (Model.Act != null)
+                        {
+                            <strong>
+                                @Model.Act.DisplayName
+                            </strong>
+                        }
+                        else
+                        {
+                            <span>
+                                Уся вистава
+                            </span>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-4">
                         Початок
                     </dt>
 

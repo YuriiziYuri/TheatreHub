@@ -45,6 +45,8 @@ public class Act
 
     public ICollection<Scene> Scenes { get; set; }
         = new List<Scene>();
+    public ICollection<Rehearsal> Rehearsals { get; set; }
+    = new List<Rehearsal>();
 
     public string DisplayName =>
         string.IsNullOrWhiteSpace(Title)

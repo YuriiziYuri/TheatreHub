@@ -4,14 +4,9 @@
     ViewData["Title"] = "Репетиції";
 }
 
-<div class="d-flex flex-wrap
-            justify-content-between
-            align-items-center
-            gap-3
-            mb-4">
-
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
     <div>
-        <h1 class="h2 mb-1">
+        <h1 class="h3 mb-1">
             Репетиції
         </h1>
 
@@ -20,10 +15,19 @@
         </p>
     </div>
 
-    <a asp-action="Create"
-       class="btn btn-primary">
-        Створити репетицію
-    </a>
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-controller="Calendar"
+           asp-action="Index"
+           asp-route-eventType="rehearsal"
+           class="btn btn-outline-secondary">
+            Календар репетицій
+        </a>
+
+        <a asp-action="Create"
+           class="btn btn-primary">
+            Створити репетицію
+        </a>
+    </div>
 </div>
 
 @if (TempData["SuccessMessage"] != null)
@@ -69,15 +73,40 @@ else
                     @foreach (var item in Model)
                     {
                         <tr>
-                            <td class="fw-semibold">
-                                <a asp-controller="Performances"
-                                   asp-action="Details"
-                                   asp-route-id="@item.PerformanceId"
-                                   class="text-decoration-none">
 
-                                    @item.Performance.Title
+                            <td>
+                                <div class="fw-semibold">
+                                    <a asp-controller="Performances"
+                                       asp-action="Details"
+                                       asp-route-id="@item.PerformanceId"
+                                       class="text-decoration-none">
 
-                                </a>
+                                        @item.Performance.Title
+
+                                    </a>
+                                </div>
+
+                                <div class="small text-muted">
+                                    @if (item.Scene != null)
+                                    {
+                                        <span>
+                                            Сцена @item.Scene.Number.
+                                            @item.Scene.Title
+                                        </span>
+                                    }
+                                    else if (item.Act != null)
+                                    {
+                                        <span>
+                                            @item.Act.DisplayName
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span>
+                                            Уся вистава
+                                        </span>
+                                    }
+                                </div>
                             </td>
 
                             <td class="text-nowrap">

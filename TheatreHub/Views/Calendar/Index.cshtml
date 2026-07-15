@@ -1,0 +1,504 @@
+﻿@model TheatreHub.ViewModels.TheatreCalendarViewModel
+
+@{
+    ViewData["Title"] = "Календар театру";
+
+    var rangeLength =
+        (Model.EndDate - Model.StartDate).Days + 1;
+
+    if (rangeLength < 1)
+    {
+        rangeLength = 14;
+    }
+
+    var previousStart =
+        Model.StartDate.AddDays(-rangeLength);
+
+    var previousEnd =
+        Model.EndDate.AddDays(-rangeLength);
+
+    var nextStart =
+        Model.StartDate.AddDays(rangeLength);
+
+    var nextEnd =
+        Model.EndDate.AddDays(rangeLength);
+}
+
+@functions {
+    private static string GetDayName(DateTime date)
+    {
+        return date.DayOfWeek switch
+        {
+            DayOfWeek.Monday => "Понеділок",
+            DayOfWeek.Tuesday => "Вівторок",
+            DayOfWeek.Wednesday => "Середа",
+            DayOfWeek.Thursday => "Четвер",
+            DayOfWeek.Friday => "П’ятниця",
+            DayOfWeek.Saturday => "Субота",
+            DayOfWeek.Sunday => "Неділя",
+            _ => date.DayOfWeek.ToString()
+        };
+    }
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+        <h1 class="h3 mb-1">
+            Календар театру
+        </h1>
+
+        <p class="text-muted mb-0">
+            Репетиції, покази, дедлайни завдань і прем’єри вистав в одному місці.
+        </p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-controller="Rehearsals"
+           asp-action="Create"
+           class="btn btn-outline-primary">
+            Додати репетицію
+        </a>
+
+        <a asp-controller="PerformanceShows"
+           asp-action="Create"
+           class="btn btn-primary">
+            Додати показ
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-2">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">Усього</div>
+                <div class="h4 mb-0">@Model.TotalEvents</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-2">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">Репетиції</div>
+                <div class="h4 mb-0">@Model.RehearsalsCount</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-2">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">Покази</div>
+                <div class="h4 mb-0">@Model.ShowsCount</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-2">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">Завдання</div>
+                <div class="h4 mb-0">@Model.TasksCount</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-2">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">Прем’єри</div>
+                <div class="h4 mb-0">@Model.PremieresCount</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-2">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">Прострочено</div>
+                <div class="h4 mb-0 text-danger">@Model.OverdueTasksCount</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+
+        <form asp-controller="Calendar"
+              asp-action="Index"
+              method="get"
+              class="row g-3 align-items-end">
+
+            <div class="col-md-3">
+                <label class="form-label">
+                    Початок
+                </label>
+
+                <input type="date"
+                       name="startDate"
+                       value="@Model.StartDate.ToString("yyyy-MM-dd")"
+                       class="form-control" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">
+                    Кінець
+                </label>
+
+                <input type="date"
+                       name="endDate"
+                       value="@Model.EndDate.ToString("yyyy-MM-dd")"
+                       class="form-control" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">
+                    Тип події
+                </label>
+
+                <select name="eventType"
+                        class="form-select">
+
+                    <option value="all"
+                            selected="@(Model.EventType == "all" ? "selected" : null)">
+                        Усі події
+                    </option>
+
+                    <option value="rehearsal"
+                            selected="@(Model.EventType == "rehearsal" ? "selected" : null)">
+                        Тільки репетиції
+                    </option>
+
+                    <option value="show"
+                            selected="@(Model.EventType == "show" ? "selected" : null)">
+                        Тільки покази
+                    </option>
+
+                    <option value="task"
+                            selected="@(Model.EventType == "task" ? "selected" : null)">
+                        Тільки завдання
+                    </option>
+
+                    <option value="premiere"
+                            selected="@(Model.EventType == "premiere" ? "selected" : null)">
+                        Тільки прем’єри
+                    </option>
+
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">
+                    Вистава
+                </label>
+
+                <select name="performanceId"
+                        class="form-select">
+
+                    <option value="">
+                        Усі вистави
+                    </option>
+
+                    @foreach (var performance in Model.Performances)
+                    {
+                        <option value="@performance.Id"
+                                selected="@(Model.PerformanceId == performance.Id ? "selected" : null)">
+                            @performance.Title
+                        </option>
+                    }
+
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">
+                    Актор
+                </label>
+
+                <select name="actorId"
+                        class="form-select">
+
+                    <option value="">
+                        Усі актори
+                    </option>
+
+                    @foreach (var actor in Model.Actors)
+                    {
+                        <option value="@actor.Id"
+                                selected="@(Model.ActorId == actor.Id ? "selected" : null)">
+                            @actor.FullName
+                        </option>
+                    }
+
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">
+                    Зал
+                </label>
+
+                <select name="hallId"
+                        class="form-select">
+
+                    <option value="">
+                        Усі зали
+                    </option>
+
+                    @foreach (var hall in Model.Halls)
+                    {
+                        <option value="@hall.Id"
+                                selected="@(Model.HallId == hall.Id ? "selected" : null)">
+                            @(hall.Venue == null
+                                                    ? hall.Name
+                                                    : $"{hall.Venue.Name} — {hall.Name}")
+                    </option>
+                                        }
+
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <div class="form-check mb-2">
+                    <input class="form-check-input"
+                           type="checkbox"
+                           name="includeCompleted"
+                           value="true"
+                           checked="@Model.IncludeCompleted"
+                           id="includeCompleted" />
+
+                    <label class="form-check-label"
+                           for="includeCompleted">
+                        Показувати завершені
+                    </label>
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input"
+                           type="checkbox"
+                           name="includeCancelled"
+                           value="true"
+                           checked="@Model.IncludeCancelled"
+                           id="includeCancelled" />
+
+                    <label class="form-check-label"
+                           for="includeCancelled">
+                        Показувати скасовані
+                    </label>
+                </div>
+            </div>
+
+            <div class="col-md-3 d-flex flex-wrap gap-2">
+                <button type="submit"
+                        class="btn btn-primary">
+                    Застосувати
+                </button>
+
+                <a asp-controller="Calendar"
+                   asp-action="Index"
+                   class="btn btn-outline-secondary">
+                    Скинути
+                </a>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div class="text-muted">
+        Період:
+        <strong>@Model.StartDate.ToString("dd.MM.yyyy")</strong>
+        —
+        <strong>@Model.EndDate.ToString("dd.MM.yyyy")</strong>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-controller="Calendar"
+           asp-action="Index"
+           asp-route-startDate="@previousStart.ToString("yyyy-MM-dd")"
+           asp-route-endDate="@previousEnd.ToString("yyyy-MM-dd")"
+           asp-route-performanceId="@Model.PerformanceId"
+           asp-route-actorId="@Model.ActorId"
+           asp-route-hallId="@Model.HallId"
+           asp-route-eventType="@Model.EventType"
+           asp-route-includeCompleted="@Model.IncludeCompleted"
+           asp-route-includeCancelled="@Model.IncludeCancelled"
+           class="btn btn-outline-dark">
+            ← Назад
+        </a>
+
+        <a asp-controller="Calendar"
+           asp-action="Index"
+           asp-route-performanceId="@Model.PerformanceId"
+           asp-route-actorId="@Model.ActorId"
+           asp-route-hallId="@Model.HallId"
+           asp-route-eventType="@Model.EventType"
+           asp-route-includeCompleted="@Model.IncludeCompleted"
+           asp-route-includeCancelled="@Model.IncludeCancelled"
+           class="btn btn-outline-primary">
+            Сьогодні
+        </a>
+
+        <a asp-controller="Calendar"
+           asp-action="Index"
+           asp-route-startDate="@nextStart.ToString("yyyy-MM-dd")"
+           asp-route-endDate="@nextEnd.ToString("yyyy-MM-dd")"
+           asp-route-performanceId="@Model.PerformanceId"
+           asp-route-actorId="@Model.ActorId"
+           asp-route-hallId="@Model.HallId"
+           asp-route-eventType="@Model.EventType"
+           asp-route-includeCompleted="@Model.IncludeCompleted"
+           asp-route-includeCancelled="@Model.IncludeCancelled"
+           class="btn btn-outline-dark">
+            Вперед →
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+
+    @foreach (var day in Model.Days)
+    {
+        var isToday =
+        day.Date.Date == DateTime.Today;
+
+        <div class="col-lg-6 col-xl-4">
+            <div class="card border-0 shadow-sm h-100 @(isToday ? "border border-primary" : "")">
+
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center gap-2">
+                        <div>
+                            <div class="fw-semibold">
+                                @day.Date.ToString("dd.MM.yyyy")
+                            </div>
+
+                            <div class="small text-muted">
+                                @GetDayName(day.Date)
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2">
+                            @if (isToday)
+                            {
+                                <span class="badge text-bg-primary">
+                                    Сьогодні
+                                </span>
+                            }
+
+                            <span class="badge text-bg-light text-dark">
+                                @day.Items.Count
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body">
+
+                    @if (!day.Items.Any())
+                    {
+                        <div class="text-muted small">
+                            Подій немає.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="list-group list-group-flush">
+
+                            @foreach (var item in day.Items)
+                            {
+                                var url =
+                                Url.Action(
+                                item.ActionName,
+                                item.ControllerName,
+                                new { id = item.Id });
+
+                                <a href="@url"
+                                   class="list-group-item list-group-item-action px-0 @(item.IsOverdue ? "border border-danger rounded mb-2 px-2" : "")">
+
+                                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+
+                                        <div>
+                                            @if (item.IsAllDay)
+                                            {
+                                                <strong>
+                                                    @(item.EventType == "premiere" ? "Прем’єра" : "До кінця дня")
+                                                </strong>
+                                            }
+                                            else
+                                            {
+                                                <strong>
+                                                    @item.StartDateTime.ToString("HH:mm")
+
+                                                    @if (item.EndDateTime.HasValue)
+                                                    {
+                                                        <span>
+                                                            —
+                                                            @item.EndDateTime.Value.ToString("HH:mm")
+                                                        </span>
+                                                    }
+                                                </strong>
+                                            }
+
+                                            <span class="badge @item.BadgeClass ms-2">
+                                                @item.EventTypeText
+                                            </span>
+                                        </div>
+
+                                        @if (!string.IsNullOrWhiteSpace(item.StatusText))
+                                        {
+                                            <span class="badge text-bg-secondary">
+                                                @item.StatusText
+                                            </span>
+                                        }
+
+                                    </div>
+
+                                    <div class="fw-semibold mt-1">
+                                        @item.Title
+                                    </div>
+
+                                    @if (!string.IsNullOrWhiteSpace(item.Subtitle))
+                                    {
+                                        <div class="small text-muted">
+                                            @item.Subtitle
+                                        </div>
+                                    }
+
+                                    @if (!string.IsNullOrWhiteSpace(item.Details))
+                                    {
+                                        <div class="small text-muted">
+                                            @item.Details
+                                        </div>
+                                    }
+
+                                    @if (!string.IsNullOrWhiteSpace(item.LocationText))
+                                    {
+                                        <div class="small text-muted">
+                                            @item.LocationText
+                                        </div>
+                                    }
+
+                                    @if (item.IsOverdue)
+                                    {
+                                        <div class="small text-danger fw-semibold mt-1">
+                                            Прострочено
+                                        </div>
+                                    }
+
+                                </a>
+                            }
+
+                        </div>
+                    }
+
+                </div>
+
+            </div>
+        </div>
+    }
+
+</div>
