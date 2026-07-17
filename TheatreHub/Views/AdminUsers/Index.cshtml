@@ -1,0 +1,196 @@
+﻿@model TheatreHub.ViewModels.AdminUsers.AdminUserIndexViewModel
+
+@{
+    ViewData["Title"] = "Користувачі";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="mb-1">Користувачі</h1>
+        <p class="text-muted mb-0">
+            Керування обліковими записами, ролями та доступом до системи.
+        </p>
+    </div>
+
+    <a asp-action="Create" class="btn btn-primary">
+        + Додати користувача
+    </a>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Пошук</label>
+                <input name="searchTerm"
+                       value="@Model.SearchTerm"
+                       class="form-control"
+                       placeholder="Ім’я, email або посада" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Роль</label>
+                <select name="role" class="form-select">
+                    <option value="">Усі ролі</option>
+
+                    @foreach (var role in Model.AvailableRoles)
+                    {
+                        <option value="@role" selected="@(Model.Role == role)">
+                            @role
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Статус</label>
+                <select name="isActive" class="form-select">
+                    <option value="">Усі</option>
+                    <option value="true" selected="@(Model.IsActive == true)">
+                        Активні
+                    </option>
+                    <option value="false" selected="@(Model.IsActive == false)">
+                        Деактивовані
+                    </option>
+                </select>
+            </div>
+
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary w-100">
+                    Фільтрувати
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (!Model.Users.Any())
+{
+    <div class="alert alert-info">
+        Користувачів не знайдено.
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Користувач</th>
+                    <th>Email</th>
+                    <th>Посада</th>
+                    <th>Ролі</th>
+                    <th>Актор</th>
+                    <th>Статус</th>
+                    <th style="width: 280px;">Дії</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var user in Model.Users)
+                {
+                    <tr>
+                        <td>
+                            <strong>@user.FullName</strong>
+                        </td>
+
+                        <td>
+                            @user.Email
+                        </td>
+
+                        <td>
+                            @(string.IsNullOrWhiteSpace(user.JobTitle)
+                                                ? "—"
+                                                : user.JobTitle)
+                </td>
+
+                        <td>
+                    @if (user.Roles.Any())
+                            {
+                                foreach (var role in user.Roles)
+                                {
+                                    <span class="badge text-bg-secondary me-1">
+                                        @role
+                                    </span>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">
+                                    Без ролі
+                                </span>
+                            }
+                    </td>
+
+                    <td>
+                        @(string.IsNullOrWhiteSpace(user.ActorName)
+                                            ? "—"
+                                            : user.ActorName)
+                </td>
+
+                        <td>
+                    @if (user.IsActive)
+                            {
+                                <span class="badge text-bg-success">
+                                    Активний
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge text-bg-danger">
+                                    Деактивований
+                                </span>
+                            }
+                        </td>
+
+                        <td>
+                            <div class="d-flex flex-wrap gap-1">
+                                <a asp-controller="AdminUsers"
+                                   asp-action="Edit"
+                                   asp-route-id="@user.Id"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Редагувати
+                                </a>
+
+                                <a asp-controller="AdminUsers"
+                                   asp-action="ChangePassword"
+                                   asp-route-id="@user.Id"
+                                   class="btn btn-sm btn-outline-secondary">
+                                    Пароль
+                                </a>
+
+                                <form asp-controller="AdminUsers"
+                                      asp-action="ToggleActive"
+                                      asp-route-id="@user.Id"
+                                      method="post"
+                                      class="d-inline">
+                                    @Html.AntiForgeryToken()
+
+                                    <button type="submit"
+                                            class="btn btn-sm @(user.IsActive ? "btn-outline-danger" : "btn-outline-success")"
+                                            onclick="return confirm('Змінити статус користувача?');">
+                                        @(user.IsActive ? "Деактивувати" : "Активувати")
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

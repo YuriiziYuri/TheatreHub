@@ -1,6 +1,10 @@
 ﻿@model IEnumerable<TheatreHub.Models.TheatreTask>
 @using TheatreHub.Models
 @using TheatreHub.Models.Enums
+@using Microsoft.AspNetCore.Authorization
+@using TheatreHub.Constants
+
+@inject IAuthorizationService AuthorizationService
 
 @{
     ViewData["Title"] = "Завдання";
@@ -16,6 +20,11 @@
 
     TheatreTaskPriority? selectedPriority =
         ViewBag.Priority as TheatreTaskPriority?;
+
+    var canManageTasks =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManageTasks)).Succeeded;
 }
 
 @functions {
@@ -94,10 +103,13 @@
             Календар завдань
         </a>
 
-        <a asp-action="Create"
-           class="btn btn-primary">
-            Створити завдання
-        </a>
+        @if (canManageTasks)
+        {
+            <a asp-action="Create"
+               class="btn btn-primary">
+                Створити завдання
+            </a>
+        }
     </div>
 </div>
 
@@ -281,69 +293,72 @@ else
                                 Деталі
                             </a>
 
-                            <a asp-action="Edit"
-                               asp-route-id="@task.Id"
-                               class="btn btn-sm btn-outline-secondary">
-                                Редагувати
-                            </a>
-
-                            @if (task.Status != TheatreTaskStatus.InProgress)
+                            @if (canManageTasks)
                             {
-                                <form asp-action="ChangeStatus"
-                                      method="post"
-                                      class="d-inline">
+                                <a asp-action="Edit"
+                                   asp-route-id="@task.Id"
+                                   class="btn btn-sm btn-outline-secondary">
+                                    Редагувати
+                                </a>
 
-                                    <input type="hidden"
-                                           name="id"
-                                           value="@task.Id" />
+                                @if (task.Status != TheatreTaskStatus.InProgress)
+                                {
+                                    <form asp-action="ChangeStatus"
+                                          method="post"
+                                          class="d-inline">
 
-                                    <input type="hidden"
-                                           name="status"
-                                           value="@TheatreTaskStatus.InProgress" />
+                                        <input type="hidden"
+                                               name="id"
+                                               value="@task.Id" />
 
-                                    <input type="hidden"
-                                           name="returnUrl"
-                                           value="@Context.Request.Path@Context.Request.QueryString" />
+                                        <input type="hidden"
+                                               name="status"
+                                               value="@TheatreTaskStatus.InProgress" />
 
-                                    <button type="submit"
-                                            class="btn btn-sm btn-outline-primary">
-                                        У роботу
-                                    </button>
+                                        <input type="hidden"
+                                               name="returnUrl"
+                                               value="@Context.Request.Path@Context.Request.QueryString" />
 
-                                </form>
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-primary">
+                                            У роботу
+                                        </button>
+
+                                    </form>
+                                }
+
+                                @if (task.Status != TheatreTaskStatus.Done)
+                                {
+                                    <form asp-action="ChangeStatus"
+                                          method="post"
+                                          class="d-inline">
+
+                                        <input type="hidden"
+                                               name="id"
+                                               value="@task.Id" />
+
+                                        <input type="hidden"
+                                               name="status"
+                                               value="@TheatreTaskStatus.Done" />
+
+                                        <input type="hidden"
+                                               name="returnUrl"
+                                               value="@Context.Request.Path@Context.Request.QueryString" />
+
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-success">
+                                            Виконано
+                                        </button>
+
+                                    </form>
+                                }
+
+                                <a asp-action="Delete"
+                                   asp-route-id="@task.Id"
+                                   class="btn btn-sm btn-outline-danger">
+                                    Видалити
+                                </a>
                             }
-
-                            @if (task.Status != TheatreTaskStatus.Done)
-                            {
-                                <form asp-action="ChangeStatus"
-                                      method="post"
-                                      class="d-inline">
-
-                                    <input type="hidden"
-                                           name="id"
-                                           value="@task.Id" />
-
-                                    <input type="hidden"
-                                           name="status"
-                                           value="@TheatreTaskStatus.Done" />
-
-                                    <input type="hidden"
-                                           name="returnUrl"
-                                           value="@Context.Request.Path@Context.Request.QueryString" />
-
-                                    <button type="submit"
-                                            class="btn btn-sm btn-outline-success">
-                                        Виконано
-                                    </button>
-
-                                </form>
-                            }
-
-                            <a asp-action="Delete"
-                               asp-route-id="@task.Id"
-                               class="btn btn-sm btn-outline-danger">
-                                Видалити
-                            </a>
 
                         </div>
 

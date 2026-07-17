@@ -25,6 +25,9 @@ public class Performance
     [DataType(DataType.Date)]
     public DateTime? PremiereDate { get; set; }
 
+    [Range(0, 100000000, ErrorMessage = "Плановий бюджет не може бути від’ємним.")]
+    public decimal? PlannedBudget { get; set; }
+
     [Range(1, 600, ErrorMessage = "Тривалість повинна бути від 1 до 600 хвилин")]
     [Display(Name = "Тривалість, хв")]
     public int DurationMinutes { get; set; }

@@ -1,8 +1,17 @@
 ﻿@model TheatreHub.Models.CharacterRole
 @using TheatreHub.Models.Enums
+@using Microsoft.AspNetCore.Authorization
+@using TheatreHub.Constants
+
+@inject IAuthorizationService AuthorizationService
 
 @{
     ViewData["Title"] = "Деталі персонажа";
+
+    var canManagePerformances =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManagePerformances)).Succeeded;
 
     var mainAssignments = Model.Assignments
         .Where(assignment =>
@@ -115,9 +124,9 @@
                                     <div class="list-group-item">
 
                                         <div class="d-flex
-                                                            justify-content-between
-                                                            align-items-start
-                                                            gap-2">
+                                                                    justify-content-between
+                                                                    align-items-start
+                                                                    gap-2">
 
                                             <div>
                                                 <div class="fw-semibold">
@@ -155,7 +164,7 @@
                                     @if (assignment.IsCurrent)
                                             {
                                                 <span class="badge
-                                                                         text-bg-success">
+                                                                                     text-bg-success">
                                                     Поточний
                                                 </span>
                                             }
@@ -192,9 +201,9 @@
                                     <div class="list-group-item">
 
                                         <div class="d-flex
-                                                            justify-content-between
-                                                            align-items-start
-                                                            gap-2">
+                                                                    justify-content-between
+                                                                    align-items-start
+                                                                    gap-2">
 
                                             <div>
                                                 <div class="fw-semibold">
@@ -232,7 +241,7 @@
                                     @if (assignment.IsCurrent)
                                             {
                                                 <span class="badge
-                                                                         text-bg-success">
+                                                                                     text-bg-success">
                                                     Поточний
                                                 </span>
                                             }
@@ -251,22 +260,25 @@
 
                 <div class="d-flex flex-wrap gap-2 mt-4">
 
-                    <a asp-controller="RoleAssignments"
-                       asp-action="Index"
-                       asp-route-characterRoleId="@Model.Id"
-                       class="btn btn-primary">
+                    @if (canManagePerformances)
+                    {
+                        <a asp-controller="RoleAssignments"
+                           asp-action="Index"
+                           asp-route-characterRoleId="@Model.Id"
+                           class="btn btn-primary">
 
-                        Керувати акторським складом
+                            Керувати акторським складом
 
-                    </a>
+                        </a>
 
-                    <a asp-action="Edit"
-                       asp-route-id="@Model.Id"
-                       class="btn btn-outline-secondary">
+                        <a asp-action="Edit"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-outline-secondary">
 
-                        Редагувати персонажа
+                            Редагувати персонажа
 
-                    </a>
+                        </a>
+                    }
 
                     <a asp-action="Index"
                        class="btn btn-outline-dark">

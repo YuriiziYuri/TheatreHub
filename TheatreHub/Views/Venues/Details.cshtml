@@ -1,7 +1,17 @@
 ﻿@model TheatreHub.Models.Venue
 
+@using Microsoft.AspNetCore.Authorization
+@using TheatreHub.Constants
+
+@inject IAuthorizationService AuthorizationService
+
 @{
     ViewData["Title"] = "Деталі майданчика";
+
+    var canManageVenues =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManageVenues)).Succeeded;
 }
 
 @if (TempData["SuccessMessage"] != null)
@@ -232,14 +242,17 @@
                         </p>
                     </div>
 
-                    <a asp-controller="Halls"
-                       asp-action="Create"
-                       asp-route-venueId="@Model.Id"
-                       class="btn btn-primary">
+                    @if (canManageVenues)
+                    {
+                        <a asp-controller="Halls"
+                           asp-action="Create"
+                           asp-route-venueId="@Model.Id"
+                           class="btn btn-primary">
 
-                        Додати зал
+                            Додати зал
 
-                    </a>
+                        </a>
+                    }
 
                 </div>
 
@@ -360,14 +373,17 @@
 
                                             </a>
 
-                                            <a asp-controller="Halls"
-                                               asp-action="Edit"
-                                               asp-route-id="@hall.Id"
-                                               class="btn btn-sm btn-outline-secondary">
+                                            @if (canManageVenues)
+                                            {
+                                                <a asp-controller="Halls"
+                                                   asp-action="Edit"
+                                                   asp-route-id="@hall.Id"
+                                                   class="btn btn-sm btn-outline-secondary">
 
-                                                Змінити
+                                                    Змінити
 
-                                            </a>
+                                                </a>
+                                            }
 
                                         </td>
 
@@ -383,13 +399,16 @@
 
                 <div class="d-flex flex-wrap gap-2">
 
-                    <a asp-action="Edit"
-                       asp-route-id="@Model.Id"
-                       class="btn btn-primary">
+                    @if (canManageVenues)
+                    {
+                        <a asp-action="Edit"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-primary">
 
-                        Редагувати майданчик
+                            Редагувати майданчик
 
-                    </a>
+                        </a>
+                    }
 
                     <a asp-controller="Halls"
                        asp-action="Index"
@@ -407,13 +426,16 @@
 
                     </a>
 
-                    <a asp-action="Delete"
-                       asp-route-id="@Model.Id"
-                       class="btn btn-outline-danger">
+                    @if (canManageVenues)
+                    {
+                        <a asp-action="Delete"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-outline-danger">
 
-                        Видалити
+                            Видалити
 
-                    </a>
+                        </a>
+                    }
 
                 </div>
 

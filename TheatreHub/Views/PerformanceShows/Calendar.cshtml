@@ -1,5 +1,9 @@
 ﻿@model TheatreHub.ViewModels.PerformanceShowCalendarViewModel
 @using TheatreHub.Models.Enums
+@using Microsoft.AspNetCore.Authorization
+@using TheatreHub.Constants
+
+@inject IAuthorizationService AuthorizationService
 
 @{
     ViewData["Title"] = "Календар показів";
@@ -9,6 +13,11 @@
 
     var nextStart = Model.StartDate.AddDays(14);
     var nextEnd = Model.EndDate.AddDays(14);
+
+    var canManagePerformances =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManagePerformances)).Succeeded;
 }
 
 @functions {
@@ -72,10 +81,13 @@
             Список показів
         </a>
 
-        <a asp-action="Create"
-           class="btn btn-primary">
-            Додати показ
-        </a>
+        @if (canManagePerformances)
+        {
+            <a asp-action="Create"
+               class="btn btn-primary">
+                Додати показ
+            </a>
+        }
     </div>
 </div>
 

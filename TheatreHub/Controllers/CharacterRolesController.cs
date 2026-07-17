@@ -3,16 +3,24 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using TheatreHub.Data;
 using TheatreHub.Models;
+using Microsoft.AspNetCore.Authorization;
+using TheatreHub.Constants;
+using TheatreHub.Services.ActionLogs;
 
 namespace TheatreHub.Controllers;
 
+[Authorize]
 public class CharacterRolesController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly IUserActionLogService _actionLogService;
 
-    public CharacterRolesController(ApplicationDbContext context)
+    public CharacterRolesController(
+        ApplicationDbContext context,
+        IUserActionLogService actionLogService)
     {
         _context = context;
+        _actionLogService = actionLogService;
     }
 
     // GET: CharacterRoles
@@ -56,6 +64,7 @@ public class CharacterRolesController : Controller
     }
 
     // GET: CharacterRoles/Create
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Create()
     {
         await LoadPerformancesAsync();
@@ -66,6 +75,7 @@ public class CharacterRolesController : Controller
     // POST: CharacterRoles/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Create(
         [Bind("Name,Description,IsMainRole,PerformanceId")]
         CharacterRole characterRole)
@@ -89,6 +99,21 @@ public class CharacterRolesController : Controller
         _context.CharacterRoles.Add(characterRole);
         await _context.SaveChangesAsync();
 
+        var performanceTitle = await _context.Performances
+            .Where(performance =>
+                performance.Id == characterRole.PerformanceId)
+            .Select(performance =>
+                performance.Title)
+            .FirstOrDefaultAsync();
+
+        await _actionLogService.LogAsync(
+            User,
+            "Create",
+            "CharacterRole",
+            characterRole.Id,
+            characterRole.Name,
+            $"Створено персонажа «{characterRole.Name}» для вистави «{performanceTitle}».");
+
         TempData["SuccessMessage"] =
             $"Персонажа «{characterRole.Name}» успішно створено.";
 
@@ -96,6 +121,7 @@ public class CharacterRolesController : Controller
     }
 
     // GET: CharacterRoles/Edit/5
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Edit(int? id)
     {
         if (id == null)
@@ -120,6 +146,7 @@ public class CharacterRolesController : Controller
     // POST: CharacterRoles/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Edit(
         int id,
         [Bind("Id,Name,Description,IsMainRole,PerformanceId")]
@@ -160,6 +187,21 @@ public class CharacterRolesController : Controller
         try
         {
             await _context.SaveChangesAsync();
+
+            var performanceTitle = await _context.Performances
+                .Where(performance =>
+                    performance.Id == existingRole.PerformanceId)
+                .Select(performance =>
+                    performance.Title)
+                .FirstOrDefaultAsync();
+
+            await _actionLogService.LogAsync(
+                User,
+                "Edit",
+                "CharacterRole",
+                existingRole.Id,
+                existingRole.Name,
+                $"Відредаговано персонажа «{existingRole.Name}» для вистави «{performanceTitle}».");
         }
         catch (DbUpdateConcurrencyException)
         {
@@ -178,6 +220,7 @@ public class CharacterRolesController : Controller
     }
 
     // GET: CharacterRoles/Delete/5
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Delete(int? id)
     {
         if (id == null)
@@ -203,9 +246,11 @@ public class CharacterRolesController : Controller
     // POST: CharacterRoles/Delete/5
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         var characterRole = await _context.CharacterRoles
+            .Include(role => role.Performance)
             .FirstOrDefaultAsync(role => role.Id == id);
 
         if (characterRole == null)
@@ -214,11 +259,18 @@ public class CharacterRolesController : Controller
         }
 
         var roleName = characterRole.Name;
+        var performanceTitle = characterRole.Performance.Title;
 
-        // Пов’язані RoleAssignment мають видалитися автоматично,
-        // якщо в ApplicationDbContext налаштовано DeleteBehavior.Cascade.
         _context.CharacterRoles.Remove(characterRole);
         await _context.SaveChangesAsync();
+
+        await _actionLogService.LogAsync(
+            User,
+            "Delete",
+            "CharacterRole",
+            id,
+            roleName,
+            $"Видалено персонажа «{roleName}» з вистави «{performanceTitle}».");
 
         TempData["SuccessMessage"] =
             $"Персонажа «{roleName}» видалено.";

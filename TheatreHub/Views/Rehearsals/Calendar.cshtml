@@ -1,6 +1,21 @@
 ﻿@model TheatreHub.ViewModels.RehearsalCalendarViewModel
 
+@using Microsoft.AspNetCore.Authorization
+@using TheatreHub.Constants
+
+@inject IAuthorizationService AuthorizationService
+
 @{
+    var canManageRehearsals =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManageRehearsals)).Succeeded;
+
+    var canManagePerformances =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManagePerformances)).Succeeded;
+
     ViewData["Title"] = "Календар репетицій і показів";
 }
 
@@ -21,17 +36,23 @@
     </div>
 
     <div class="d-flex flex-wrap gap-2">
-        <a asp-controller="Rehearsals"
-           asp-action="Create"
-           class="btn btn-primary">
-            Створити репетицію
-        </a>
+        @if (canManageRehearsals)
+        {
+            <a asp-controller="Rehearsals"
+               asp-action="Create"
+               class="btn btn-primary">
+                Створити репетицію
+            </a>
+        }
 
-        <a asp-controller="PerformanceShows"
-           asp-action="Create"
-           class="btn btn-outline-primary">
-            Створити показ
-        </a>
+        @if (canManagePerformances)
+        {
+            <a asp-controller="PerformanceShows"
+               asp-action="Create"
+               class="btn btn-outline-primary">
+                Створити показ
+            </a>
+        }
 
         <a asp-controller="Rehearsals"
            asp-action="Index"
@@ -175,9 +196,9 @@ else
 
                 <div class="card-header bg-white">
                     <div class="d-flex flex-wrap
-                                        justify-content-between
-                                        align-items-center
-                                        gap-2">
+                                                justify-content-between
+                                                align-items-center
+                                                gap-2">
 
                         <h2 class="h5 mb-0">
                             @day.Date.ToString("dd.MM.yyyy")
@@ -207,9 +228,9 @@ else
                                 <div class="list-group-item">
 
                                     <div class="d-flex flex-wrap
-                                                                justify-content-between
-                                                                align-items-start
-                                                                gap-3">
+                                                                                justify-content-between
+                                                                                align-items-start
+                                                                                gap-3">
 
                                         <div>
                                             <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
@@ -259,28 +280,34 @@ else
 
                                             @if (!item.IsPerformanceShow)
                                             {
-                                                <a asp-controller="Rehearsals"
-                                                   asp-action="Attendance"
-                                                   asp-route-id="@item.Id"
-                                                   class="btn btn-sm btn-outline-success">
-                                                    Відвідування
-                                                </a>
+                                                @if (canManageRehearsals)
+                                                {
+                                                    <a asp-controller="Rehearsals"
+                                                       asp-action="Attendance"
+                                                       asp-route-id="@item.Id"
+                                                       class="btn btn-sm btn-outline-success">
+                                                        Відвідування
+                                                    </a>
 
-                                                <a asp-controller="Rehearsals"
-                                                   asp-action="Edit"
-                                                   asp-route-id="@item.Id"
-                                                   class="btn btn-sm btn-outline-secondary">
-                                                    Редагувати
-                                                </a>
+                                                    <a asp-controller="Rehearsals"
+                                                       asp-action="Edit"
+                                                       asp-route-id="@item.Id"
+                                                       class="btn btn-sm btn-outline-secondary">
+                                                        Редагувати
+                                                    </a>
+                                                }
                                             }
                                             else
                                             {
-                                                <a asp-controller="PerformanceShows"
-                                                   asp-action="Edit"
-                                                   asp-route-id="@item.Id"
-                                                   class="btn btn-sm btn-outline-secondary">
-                                                    Редагувати
-                                                </a>
+                                                @if (canManagePerformances)
+                                                {
+                                                    <a asp-controller="PerformanceShows"
+                                                       asp-action="Edit"
+                                                       asp-route-id="@item.Id"
+                                                       class="btn btn-sm btn-outline-secondary">
+                                                        Редагувати
+                                                    </a>
+                                                }
                                             }
 
                                         </div>

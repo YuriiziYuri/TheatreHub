@@ -4,16 +4,24 @@ using Microsoft.EntityFrameworkCore;
 using TheatreHub.Data;
 using TheatreHub.Models;
 using TheatreHub.Models.Enums;
+using Microsoft.AspNetCore.Authorization;
+using TheatreHub.Constants;
+using TheatreHub.Services.ActionLogs;
 
 namespace TheatreHub.Controllers;
 
+[Authorize]
 public class TheatreTasksController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly IUserActionLogService _actionLogService;
 
-    public TheatreTasksController(ApplicationDbContext context)
+    public TheatreTasksController(
+        ApplicationDbContext context,
+        IUserActionLogService actionLogService)
     {
         _context = context;
+        _actionLogService = actionLogService;
     }
 
     // GET: TheatreTasks
@@ -100,6 +108,7 @@ public class TheatreTasksController : Controller
     }
 
     // GET: TheatreTasks/Create
+    [Authorize(Policy = AppPolicies.CanManageTasks)]
     public async Task<IActionResult> Create(
         int? performanceId,
         int? actId,
@@ -175,6 +184,7 @@ public class TheatreTasksController : Controller
     // POST: TheatreTasks/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManageTasks)]
     public async Task<IActionResult> Create(
         [Bind(
             "Title,Description,ResponsibleName,Deadline," +
@@ -197,6 +207,19 @@ public class TheatreTasksController : Controller
         _context.TheatreTasks.Add(task);
         await _context.SaveChangesAsync();
 
+        var performanceTitle = await _context.Performances
+            .Where(performance => performance.Id == task.PerformanceId)
+            .Select(performance => performance.Title)
+            .FirstOrDefaultAsync();
+
+        await _actionLogService.LogAsync(
+            User,
+            "Create",
+            "TheatreTask",
+            task.Id,
+            task.Title,
+            $"Створено завдання «{task.Title}» для вистави «{performanceTitle}».");
+
         TempData["SuccessMessage"] =
             $"Завдання «{task.Title}» створено.";
 
@@ -204,6 +227,7 @@ public class TheatreTasksController : Controller
     }
 
     // GET: TheatreTasks/Edit/5
+    [Authorize(Policy = AppPolicies.CanManageTasks)]
     public async Task<IActionResult> Edit(int? id)
     {
         if (id == null)
@@ -229,6 +253,7 @@ public class TheatreTasksController : Controller
     // POST: TheatreTasks/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManageTasks)]
     public async Task<IActionResult> Edit(
         int id,
         [Bind(
@@ -273,6 +298,14 @@ public class TheatreTasksController : Controller
 
         await _context.SaveChangesAsync();
 
+        await _actionLogService.LogAsync(
+            User,
+            "Edit",
+            "TheatreTask",
+            existingTask.Id,
+            existingTask.Title,
+            $"Оновлено завдання «{existingTask.Title}».");
+
         TempData["SuccessMessage"] =
             $"Завдання «{existingTask.Title}» оновлено.";
 
@@ -280,6 +313,7 @@ public class TheatreTasksController : Controller
     }
 
     // GET: TheatreTasks/Delete/5
+    [Authorize(Policy = AppPolicies.CanManageTasks)]
     public async Task<IActionResult> Delete(int? id)
     {
         if (id == null)
@@ -306,6 +340,7 @@ public class TheatreTasksController : Controller
     // POST: TheatreTasks/Delete/5
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManageTasks)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         var task = await _context.TheatreTasks
@@ -322,16 +357,25 @@ public class TheatreTasksController : Controller
         _context.TheatreTasks.Remove(task);
         await _context.SaveChangesAsync();
 
+        await _actionLogService.LogAsync(
+            User,
+            "Delete",
+            "TheatreTask",
+            id,
+            title,
+            $"Видалено завдання «{title}».");
+
         TempData["SuccessMessage"] =
             $"Завдання «{title}» видалено.";
 
         return RedirectToAction(nameof(Index));
     }
 
-    //...
+    // ChangeStatus
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManageTasks)]
     public async Task<IActionResult> ChangeStatus(
     int id,
     TheatreTaskStatus status,
@@ -351,9 +395,19 @@ public class TheatreTasksController : Controller
             return NotFound();
         }
 
+        var oldStatus = task.Status;
+
         task.Status = status;
 
         await _context.SaveChangesAsync();
+
+        await _actionLogService.LogAsync(
+            User,
+            "ChangeStatus",
+            "TheatreTask",
+            task.Id,
+            task.Title,
+            $"Статус завдання «{task.Title}» змінено з {oldStatus} на {status}.");
 
         TempData["SuccessMessage"] =
             $"Статус завдання «{task.Title}» оновлено.";
@@ -372,18 +426,19 @@ public class TheatreTasksController : Controller
     //коментарі
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManageTasks)]
     public async Task<IActionResult> AddComment(
     int theatreTaskId,
     string commentText,
     string? authorName,
     string? returnUrl)
     {
-        var taskExists = await _context.TheatreTasks
+        var task = await _context.TheatreTasks
             .AsNoTracking()
-            .AnyAsync(task =>
-                task.Id == theatreTaskId);
+            .FirstOrDefaultAsync(item =>
+                item.Id == theatreTaskId);
 
-        if (!taskExists)
+        if (task == null)
         {
             return NotFound();
         }
@@ -417,6 +472,14 @@ public class TheatreTasksController : Controller
         _context.TheatreTaskComments.Add(comment);
         await _context.SaveChangesAsync();
 
+        await _actionLogService.LogAsync(
+            User,
+            "AddComment",
+            "TheatreTaskComment",
+            comment.Id,
+            task.Title,
+            $"Додано коментар до завдання «{task.Title}».");
+
         TempData["SuccessMessage"] =
             "Коментар додано.";
 
@@ -433,11 +496,13 @@ public class TheatreTasksController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManageTasks)]
     public async Task<IActionResult> DeleteComment(
     int id,
     string? returnUrl)
     {
         var comment = await _context.TheatreTaskComments
+            .Include(item => item.TheatreTask)
             .FirstOrDefaultAsync(item =>
                 item.Id == id);
 
@@ -447,9 +512,18 @@ public class TheatreTasksController : Controller
         }
 
         var taskId = comment.TheatreTaskId;
+        var taskTitle = comment.TheatreTask?.Title ?? "Завдання";
 
         _context.TheatreTaskComments.Remove(comment);
         await _context.SaveChangesAsync();
+
+        await _actionLogService.LogAsync(
+            User,
+            "DeleteComment",
+            "TheatreTaskComment",
+            id,
+            taskTitle,
+            $"Видалено коментар із завдання «{taskTitle}».");
 
         TempData["SuccessMessage"] =
             "Коментар видалено.";

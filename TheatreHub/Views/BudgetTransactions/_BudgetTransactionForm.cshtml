@@ -1,0 +1,383 @@
+﻿@model TheatreHub.ViewModels.BudgetTransactionFormViewModel
+
+@using TheatreHub.Models.Enums
+
+@functions {
+    private static string GetTypeText(BudgetTransactionType type)
+    {
+        return type switch
+        {
+            BudgetTransactionType.Income => "Дохід",
+            BudgetTransactionType.Expense => "Витрата",
+            _ => type.ToString()
+        };
+    }
+
+    private static string GetStatusText(BudgetTransactionStatus status)
+    {
+        return status switch
+        {
+            BudgetTransactionStatus.Planned => "Заплановано",
+            BudgetTransactionStatus.Confirmed => "Підтверджено",
+            BudgetTransactionStatus.Completed => "Виконано",
+            BudgetTransactionStatus.Cancelled => "Скасовано",
+            _ => status.ToString()
+        };
+    }
+
+    private static string GetCategoryText(BudgetTransactionCategory category)
+    {
+        return category switch
+        {
+            BudgetTransactionCategory.Tickets => "Квитки",
+            BudgetTransactionCategory.InstitutionPayment => "Оплата від закладу",
+            BudgetTransactionCategory.Donation => "Благодійний внесок",
+            BudgetTransactionCategory.Grant => "Грант",
+            BudgetTransactionCategory.Partnership => "Партнерство",
+
+            BudgetTransactionCategory.Props => "Реквізит",
+            BudgetTransactionCategory.Costumes => "Костюми",
+            BudgetTransactionCategory.Makeup => "Грим",
+            BudgetTransactionCategory.Decorations => "Декорації",
+            BudgetTransactionCategory.Rent => "Оренда",
+            BudgetTransactionCategory.Transport => "Транспорт",
+            BudgetTransactionCategory.Fees => "Гонорари",
+            BudgetTransactionCategory.Marketing => "Реклама",
+            BudgetTransactionCategory.Equipment => "Техніка",
+
+            BudgetTransactionCategory.Other => "Інше",
+            _ => category.ToString()
+        };
+    }
+}
+
+<input type="hidden"
+       asp-for="Transaction.Id" />
+
+<div asp-validation-summary="ModelOnly"
+     class="alert alert-danger"></div>
+
+<div class="row g-3">
+
+    <div class="col-md-6">
+        <label asp-for="Transaction.PerformanceId"
+               class="form-label">
+            Вистава
+        </label>
+
+        <select asp-for="Transaction.PerformanceId"
+                class="form-select">
+
+            <option value="">
+                Оберіть виставу
+            </option>
+
+            @foreach (var performance in Model.Performances)
+            {
+                <option value="@performance.Id">
+                    @performance.Title
+                </option>
+            }
+
+        </select>
+
+        <span asp-validation-for="Transaction.PerformanceId"
+              class="text-danger"></span>
+    </div>
+
+    <div class="col-md-6">
+        <label asp-for="Transaction.PerformanceShowId"
+               class="form-label">
+            Показ, якщо операція стосується конкретного показу
+        </label>
+
+        <select asp-for="Transaction.PerformanceShowId"
+                class="form-select">
+
+            <option value="">
+                Без конкретного показу
+            </option>
+
+            @foreach (var show in Model.PerformanceShows)
+            {
+                <option value="@show.Id">
+                    @show.Performance.Title — @show.StartDateTime.ToString("dd.MM.yyyy HH:mm")
+                </option>
+            }
+
+        </select>
+
+        <span asp-validation-for="Transaction.PerformanceShowId"
+              class="text-danger"></span>
+
+        <div class="form-text">
+            Для доходів від квитків краще обирати конкретний показ.
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <label asp-for="Transaction.ProductionItemId"
+               class="form-label">
+            Постановочний елемент
+        </label>
+
+        <select asp-for="Transaction.ProductionItemId"
+                class="form-select">
+
+            <option value="">
+                Без постановочного елемента
+            </option>
+
+            @foreach (var item in Model.ProductionItems)
+            {
+                <option value="@item.Id">
+                    @item.Performance.Title — @item.Name
+                </option>
+            }
+
+        </select>
+
+        <span asp-validation-for="Transaction.ProductionItemId"
+              class="text-danger"></span>
+
+        <div class="form-text">
+            Для витрат на реквізит, костюми, грим, декорації або техніку.
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <label asp-for="Transaction.Type"
+               class="form-label">
+            Тип операції
+        </label>
+
+        <select asp-for="Transaction.Type"
+                class="form-select">
+
+            @foreach (BudgetTransactionType type in Enum.GetValues(typeof(BudgetTransactionType)))
+            {
+                <option value="@type">
+                    @GetTypeText(type)
+                </option>
+            }
+
+        </select>
+
+        <span asp-validation-for="Transaction.Type"
+              class="text-danger"></span>
+    </div>
+
+    <div class="col-md-3">
+        <label asp-for="Transaction.Status"
+               class="form-label">
+            Статус
+        </label>
+
+        <select asp-for="Transaction.Status"
+                class="form-select">
+
+            @foreach (BudgetTransactionStatus status in Enum.GetValues(typeof(BudgetTransactionStatus)))
+            {
+                <option value="@status">
+                    @GetStatusText(status)
+                </option>
+            }
+
+        </select>
+
+        <span asp-validation-for="Transaction.Status"
+              class="text-danger"></span>
+    </div>
+
+    <div class="col-md-6">
+        <label asp-for="Transaction.Category"
+               class="form-label">
+            Категорія
+        </label>
+
+        <select asp-for="Transaction.Category"
+                class="form-select">
+
+            @foreach (BudgetTransactionCategory category in Enum.GetValues(typeof(BudgetTransactionCategory)))
+            {
+                <option value="@category">
+                    @GetCategoryText(category)
+                </option>
+            }
+
+        </select>
+
+        <span asp-validation-for="Transaction.Category"
+              class="text-danger"></span>
+    </div>
+
+    <div class="col-md-6">
+        <label asp-for="Transaction.Title"
+               class="form-label">
+            Назва операції
+        </label>
+
+        <input asp-for="Transaction.Title"
+               class="form-control"
+               placeholder="Наприклад: Дохід від показу або Купівля костюмів" />
+
+        <span asp-validation-for="Transaction.Title"
+              class="text-danger"></span>
+    </div>
+
+    <div class="col-md-12">
+        <label asp-for="Transaction.Description"
+               class="form-label">
+            Опис
+        </label>
+
+        <textarea asp-for="Transaction.Description"
+                  class="form-control"
+                  rows="3"
+                  placeholder="Короткий опис фінансової операції"></textarea>
+
+        <span asp-validation-for="Transaction.Description"
+              class="text-danger"></span>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="Transaction.PlannedAmount"
+               class="form-label">
+            Планова сума
+        </label>
+
+        <input asp-for="Transaction.PlannedAmount"
+               class="form-control"
+               type="number"
+               step="0.01"
+               min="0" />
+
+        <span asp-validation-for="Transaction.PlannedAmount"
+              class="text-danger"></span>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="Transaction.ActualAmount"
+               class="form-label">
+            Фактична сума
+        </label>
+
+        <input asp-for="Transaction.ActualAmount"
+               class="form-control"
+               type="number"
+               step="0.01"
+               min="0" />
+
+        <span asp-validation-for="Transaction.ActualAmount"
+              class="text-danger"></span>
+
+        <div class="form-text">
+            Можна залишити порожнім, якщо операція ще не виконана.
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="Transaction.Currency"
+               class="form-label">
+            Валюта
+        </label>
+
+        <input asp-for="Transaction.Currency"
+               class="form-control"
+               placeholder="UAH" />
+
+        <span asp-validation-for="Transaction.Currency"
+              class="text-danger"></span>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="Transaction.TransactionDate"
+               class="form-label">
+            Дата операції
+        </label>
+
+        <input asp-for="Transaction.TransactionDate"
+               class="form-control"
+               type="date" />
+
+        <span asp-validation-for="Transaction.TransactionDate"
+              class="text-danger"></span>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="Transaction.ResponsibleName"
+               class="form-label">
+            Відповідальний
+        </label>
+
+        <input asp-for="Transaction.ResponsibleName"
+               class="form-control"
+               placeholder="Ім’я відповідального" />
+
+        <span asp-validation-for="Transaction.ResponsibleName"
+              class="text-danger"></span>
+    </div>
+
+    <div class="col-md-4 d-flex align-items-end">
+        <div class="form-check">
+            <input asp-for="Transaction.IsAutoCalculated"
+                   class="form-check-input" />
+
+            <label asp-for="Transaction.IsAutoCalculated"
+                   class="form-check-label">
+                Автоматично рахувати дохід
+            </label>
+
+            <div class="form-text">
+                Працює для доходу: глядачі × ціна квитка.
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <label asp-for="Transaction.AudienceCount"
+               class="form-label">
+            Кількість глядачів
+        </label>
+
+        <input asp-for="Transaction.AudienceCount"
+               class="form-control"
+               type="number"
+               min="0" />
+
+        <span asp-validation-for="Transaction.AudienceCount"
+              class="text-danger"></span>
+    </div>
+
+    <div class="col-md-6">
+        <label asp-for="Transaction.TicketPrice"
+               class="form-label">
+            Ціна квитка
+        </label>
+
+        <input asp-for="Transaction.TicketPrice"
+               class="form-control"
+               type="number"
+               step="0.01"
+               min="0" />
+
+        <span asp-validation-for="Transaction.TicketPrice"
+              class="text-danger"></span>
+    </div>
+
+    <div class="col-md-12">
+        <label asp-for="Transaction.Notes"
+               class="form-label">
+            Нотатки
+        </label>
+
+        <textarea asp-for="Transaction.Notes"
+                  class="form-control"
+                  rows="3"
+                  placeholder="Додаткова інформація"></textarea>
+
+        <span asp-validation-for="Transaction.Notes"
+              class="text-danger"></span>
+    </div>
+
+</div>

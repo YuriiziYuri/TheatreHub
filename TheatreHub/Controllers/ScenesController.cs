@@ -4,16 +4,24 @@ using TheatreHub.Data;
 using TheatreHub.Models;
 using TheatreHub.Models.Enums;
 using TheatreHub.ViewModels;
+using Microsoft.AspNetCore.Authorization;
+using TheatreHub.Constants;
+using TheatreHub.Services.ActionLogs;
 
 namespace TheatreHub.Controllers;
 
+[Authorize]
 public class ScenesController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly IUserActionLogService _actionLogService;
 
-    public ScenesController(ApplicationDbContext context)
+    public ScenesController(
+        ApplicationDbContext context,
+        IUserActionLogService actionLogService)
     {
         _context = context;
+        _actionLogService = actionLogService;
     }
 
     public async Task<IActionResult> Index(int actId)
@@ -121,6 +129,7 @@ public class ScenesController : Controller
         return View(scene);
     }
 
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Create(int actId)
     {
         var act = await _context.Acts
@@ -157,6 +166,7 @@ public class ScenesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Create(
         [Bind(
             "ActId,Number,Title,Synopsis," +
@@ -191,6 +201,17 @@ public class ScenesController : Controller
             return View(scene);
         }
 
+        var sceneLogTitle =
+            await GetSceneLogTitleAsync(scene.Id);
+
+        await _actionLogService.LogAsync(
+            User,
+            "Create",
+            "Scene",
+            scene.Id,
+            sceneLogTitle,
+            $"Створено сцену «{scene.Title}».");
+
         TempData["SuccessMessage"] =
             $"Сцену «{scene.Title}» успішно створено.";
 
@@ -200,6 +221,7 @@ public class ScenesController : Controller
             new { id = scene.ActId });
     }
 
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Edit(int? id)
     {
         if (id == null)
@@ -225,6 +247,7 @@ public class ScenesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Edit(
         int id,
         [Bind(
@@ -284,6 +307,17 @@ public class ScenesController : Controller
             return View(scene);
         }
 
+        var sceneLogTitle =
+            await GetSceneLogTitleAsync(existingScene.Id);
+
+        await _actionLogService.LogAsync(
+            User,
+            "Edit",
+            "Scene",
+            existingScene.Id,
+            sceneLogTitle,
+            $"Відредаговано сцену «{existingScene.Title}».");
+
         TempData["SuccessMessage"] =
             $"Сцену «{existingScene.Title}» успішно оновлено.";
 
@@ -293,6 +327,7 @@ public class ScenesController : Controller
             new { id = existingScene.ActId });
     }
 
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Delete(int? id)
     {
         if (id == null)
@@ -317,6 +352,7 @@ public class ScenesController : Controller
 
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         var scene = await _context.Scenes
@@ -358,9 +394,19 @@ public class ScenesController : Controller
 
         var actId = scene.ActId;
         var sceneTitle = scene.Title;
+        var sceneLogTitle =
+            await GetSceneLogTitleAsync(scene.Id);
 
         _context.Scenes.Remove(scene);
         await _context.SaveChangesAsync();
+
+        await _actionLogService.LogAsync(
+            User,
+            "Delete",
+            "Scene",
+            id,
+            sceneLogTitle,
+            $"Видалено сцену «{sceneTitle}».");
 
         TempData["SuccessMessage"] =
             $"Сцену «{sceneTitle}» видалено.";
@@ -371,6 +417,7 @@ public class ScenesController : Controller
             new { id = actId });
     }
 
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Roles(int? id)
     {
         if (id == null)
@@ -452,6 +499,7 @@ public class ScenesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Roles(
         int id,
         SceneRolesViewModel model)
@@ -536,12 +584,43 @@ public class ScenesController : Controller
 
         await _context.SaveChangesAsync();
 
+        var sceneLogTitle =
+            await GetSceneLogTitleAsync(scene.Id);
+
+        await _actionLogService.LogAsync(
+            User,
+            "UpdateSceneRoles",
+            "Scene",
+            scene.Id,
+            sceneLogTitle,
+            $"Оновлено ролі сцени «{scene.Title}».");
+
         TempData["SuccessMessage"] =
             "Ролі сцени успішно оновлено.";
 
         return RedirectToAction(
             nameof(Details),
             new { id = scene.Id });
+    }
+
+    private async Task<string> GetSceneLogTitleAsync(int sceneId)
+    {
+        var sceneInfo = await _context.Scenes
+            .AsNoTracking()
+            .Include(scene => scene.Act)
+                .ThenInclude(act => act.Performance)
+            .Where(scene => scene.Id == sceneId)
+            .Select(scene =>
+                scene.Act.Performance.Title +
+                " — " +
+                scene.Act.DisplayName +
+                " — Сцена " +
+                scene.Number +
+                ". " +
+                scene.Title)
+            .FirstOrDefaultAsync();
+
+        return sceneInfo ?? "Сцена";
     }
 
     private async Task ValidateSceneAsync(

@@ -1,0 +1,89 @@
+﻿@model List<TheatreHub.ViewModels.Notifications.NotificationItemViewModel>
+
+@{
+    var title = ViewData["GroupTitle"]?.ToString() ?? "Сповіщення";
+    var emptyText = ViewData["EmptyText"]?.ToString() ?? "Немає сповіщень.";
+    var badgeClass = ViewData["BadgeClass"]?.ToString() ?? "text-bg-secondary";
+}
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h2 class="h5 mb-0">@title</h2>
+        <span class="badge @badgeClass">
+            @Model.Count
+        </span>
+    </div>
+
+    <div class="card-body p-0">
+        @if (!Model.Any())
+        {
+            <div class="p-3 text-muted">
+                @emptyText
+            </div>
+        }
+        else
+        {
+            <div class="list-group list-group-flush">
+                @foreach (var notification in Model)
+                {
+                    <div class="list-group-item">
+                        <div class="d-flex flex-wrap justify-content-between gap-2">
+                            <div>
+                                <div class="fw-semibold">
+                                    @notification.Title
+                                </div>
+
+                                <div class="text-muted">
+                                    @notification.Message
+                                </div>
+
+                                <div class="small text-muted mt-1">
+                                    @notification.Category
+
+                                    @if (notification.EventDateTime.HasValue)
+                                    {
+                                        <span>
+                                            · @notification.EventDateTime.Value.ToString("dd.MM.yyyy HH:mm")
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="ms-auto d-flex flex-column flex-sm-row gap-2 align-items-sm-start">
+                                @if (!string.IsNullOrWhiteSpace(notification.ControllerName)
+                                                        && !string.IsNullOrWhiteSpace(notification.ActionName)
+                                                        && notification.EntityId.HasValue)
+                                {
+                                    <a asp-controller="@notification.ControllerName"
+                                       asp-action="@notification.ActionName"
+                                       asp-route-id="@notification.EntityId"
+                                       class="btn btn-sm btn-outline-primary">
+                                        Відкрити
+                                    </a>
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(notification.Key))
+                                {
+                                    <form asp-controller="Notifications"
+                                          asp-action="MarkAsRead"
+                                          method="post">
+                                        @Html.AntiForgeryToken()
+
+                                        <input type="hidden"
+                                               name="key"
+                                               value="@notification.Key" />
+
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-success">
+                                            Прочитано
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

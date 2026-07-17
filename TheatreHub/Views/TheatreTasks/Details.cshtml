@@ -1,9 +1,18 @@
 @model TheatreHub.Models.TheatreTask
 @using TheatreHub.Models.Enums
 @using TheatreHub.Models
+@using Microsoft.AspNetCore.Authorization
+@using TheatreHub.Constants
+
+@inject IAuthorizationService AuthorizationService
 
 @{
     ViewData["Title"] = "Деталі завдання";
+
+    var canManageTasks =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManageTasks)).Succeeded;
 }
 
 @if (TempData["ErrorMessage"] != null)
@@ -209,45 +218,48 @@
                             Робочі примітки та обговорення цього завдання
                         </p>
 
-                        <form asp-action="AddComment"
-                              method="post"
-                              class="mb-4">
+                        @if (canManageTasks)
+                        {
+                            <form asp-action="AddComment"
+                                  method="post"
+                                  class="mb-4">
 
-                            <input type="hidden"
-                                   name="theatreTaskId"
-                                   value="@Model.Id" />
+                                <input type="hidden"
+                                       name="theatreTaskId"
+                                       value="@Model.Id" />
 
-                            <input type="hidden"
-                                   name="returnUrl"
-                                   value="@Context.Request.Path@Context.Request.QueryString" />
+                                <input type="hidden"
+                                       name="returnUrl"
+                                       value="@Context.Request.Path@Context.Request.QueryString" />
 
-                            <div class="mb-3">
-                                <label class="form-label">
-                                    Автор
-                                </label>
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        Автор
+                                    </label>
 
-                                <input name="authorName"
-                                       class="form-control"
-                                       placeholder="Наприклад: режисер, адміністратор, Максим" />
-                            </div>
+                                    <input name="authorName"
+                                           class="form-control"
+                                           placeholder="Наприклад: режисер, адміністратор, Максим" />
+                                </div>
 
-                            <div class="mb-3">
-                                <label class="form-label">
-                                    Коментар
-                                </label>
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        Коментар
+                                    </label>
 
-                                <textarea name="commentText"
+                                    <textarea name="commentText"
                                           class="form-control"
                                           rows="3"
                                           placeholder="Напишіть коментар до завдання..."></textarea>
-                            </div>
+                                </div>
 
-                            <button type="submit"
-                                    class="btn btn-primary">
-                                Додати коментар
-                            </button>
+                                <button type="submit"
+                                        class="btn btn-primary">
+                                    Додати коментар
+                                </button>
 
-                        </form>
+                            </form>
+                        }
 
                         @if (!comments.Any())
                         {
@@ -264,9 +276,9 @@
                                     <div class="list-group-item">
 
                                         <div class="d-flex flex-wrap
-                                            justify-content-between
-                                            align-items-start
-                                            gap-3">
+                                                    justify-content-between
+                                                    align-items-start
+                                                    gap-3">
 
                                             <div>
                                                 <div class="fw-semibold">
@@ -284,29 +296,32 @@
                                                 </div>
                                             </div>
 
-                                            <form asp-action="DeleteComment"
-                                                  method="post"
-                                                  class="d-inline">
+                                    @if (canManageTasks)
+                                            {
+                                                <form asp-action="DeleteComment"
+                                                      method="post"
+                                                      class="d-inline">
 
-                                                <input type="hidden"
-                                                       name="id"
-                                                       value="@comment.Id" />
+                                                    <input type="hidden"
+                                                           name="id"
+                                                           value="@comment.Id" />
 
-                                                <input type="hidden"
-                                                       name="returnUrl"
-                                                       value="@Context.Request.Path@Context.Request.QueryString" />
+                                                    <input type="hidden"
+                                                           name="returnUrl"
+                                                           value="@Context.Request.Path@Context.Request.QueryString" />
 
-                                                <button type="submit"
-                                                        class="btn btn-sm btn-outline-danger">
-                                                    Видалити
-                                                </button>
+                                                    <button type="submit"
+                                                            class="btn btn-sm btn-outline-danger">
+                                                        Видалити
+                                                    </button>
 
-                                            </form>
+                                                </form>
+                                            }
 
                                         </div>
 
                                     </div>
-                                                        }
+                                }
 
                             </div>
                         }
@@ -315,63 +330,66 @@
                 </div>
 
                 <div class="d-flex flex-wrap gap-2 mt-4">
-                    <a asp-action="Edit"
-                       asp-route-id="@Model.Id"
-                       class="btn btn-primary">
-                        Редагувати
-                    </a>
-
-                    @if (Model.Status != TheatreTaskStatus.InProgress)
+                    @if (canManageTasks)
                     {
-                        <form asp-action="ChangeStatus"
-                              method="post">
-                            <input type="hidden"
-                                   name="id"
-                                   value="@Model.Id" />
+                        <a asp-action="Edit"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-primary">
+                            Редагувати
+                        </a>
 
-                            <input type="hidden"
-                                   name="status"
-                                   value="@TheatreTaskStatus.InProgress" />
+                        @if (Model.Status != TheatreTaskStatus.InProgress)
+                        {
+                            <form asp-action="ChangeStatus"
+                                  method="post">
+                                <input type="hidden"
+                                       name="id"
+                                       value="@Model.Id" />
 
-                            <input type="hidden"
-                                   name="returnUrl"
-                                   value="@Context.Request.Path@Context.Request.QueryString" />
+                                <input type="hidden"
+                                       name="status"
+                                       value="@TheatreTaskStatus.InProgress" />
 
-                            <button type="submit"
-                                    class="btn btn-outline-primary">
-                                У роботу
-                            </button>
-                        </form>
+                                <input type="hidden"
+                                       name="returnUrl"
+                                       value="@Context.Request.Path@Context.Request.QueryString" />
+
+                                <button type="submit"
+                                        class="btn btn-outline-primary">
+                                    У роботу
+                                </button>
+                            </form>
+                        }
+
+                        @if (Model.Status != TheatreTaskStatus.Done)
+                        {
+                            <form asp-action="ChangeStatus"
+                                  method="post">
+                                <input type="hidden"
+                                       name="id"
+                                       value="@Model.Id" />
+
+                                <input type="hidden"
+                                       name="status"
+                                       value="@TheatreTaskStatus.Done" />
+
+                                <input type="hidden"
+                                       name="returnUrl"
+                                       value="@Context.Request.Path@Context.Request.QueryString" />
+
+                                <button type="submit"
+                                        class="btn btn-outline-success">
+                                    Виконано
+                                </button>
+                            </form>
+                        }
+
+                        <a asp-action="Delete"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-outline-danger">
+                            Видалити
+                        </a>
                     }
-
-                    @if (Model.Status != TheatreTaskStatus.Done)
-                    {
-                        <form asp-action="ChangeStatus"
-                              method="post">
-                            <input type="hidden"
-                                   name="id"
-                                   value="@Model.Id" />
-
-                            <input type="hidden"
-                                   name="status"
-                                   value="@TheatreTaskStatus.Done" />
-
-                            <input type="hidden"
-                                   name="returnUrl"
-                                   value="@Context.Request.Path@Context.Request.QueryString" />
-
-                            <button type="submit"
-                                    class="btn btn-outline-success">
-                                Виконано
-                            </button>
-                        </form>
-                    }
-
-                    <a asp-action="Delete"
-                       asp-route-id="@Model.Id"
-                       class="btn btn-outline-danger">
-                        Видалити
-                    </a>
 
                     <a asp-action="Index"
                        class="btn btn-outline-secondary">

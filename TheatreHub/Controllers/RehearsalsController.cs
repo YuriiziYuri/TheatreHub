@@ -4,16 +4,24 @@ using TheatreHub.Data;
 using TheatreHub.Models;
 using TheatreHub.Models.Enums;
 using TheatreHub.ViewModels;
+using Microsoft.AspNetCore.Authorization;
+using TheatreHub.Constants;
+using TheatreHub.Services.ActionLogs;
 
 namespace TheatreHub.Controllers;
 
+[Authorize]
 public class RehearsalsController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly IUserActionLogService _actionLogService;
 
-    public RehearsalsController(ApplicationDbContext context)
+    public RehearsalsController(
+        ApplicationDbContext context,
+        IUserActionLogService actionLogService)
     {
         _context = context;
+        _actionLogService = actionLogService;
     }
 
     // =========================================================
@@ -329,6 +337,7 @@ public class RehearsalsController : Controller
     // =========================================================
 
     // GET: Rehearsals/Create
+    [Authorize(Policy = AppPolicies.CanManageRehearsals)]
     public async Task<IActionResult> Create(
     int? performanceId,
     int? actId,
@@ -412,6 +421,7 @@ public class RehearsalsController : Controller
     // POST: Rehearsals/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManageRehearsals)]
     public async Task<IActionResult> Create(
     RehearsalFormViewModel model,
     string? submitAction)
@@ -497,6 +507,21 @@ public class RehearsalsController : Controller
 
         await _context.SaveChangesAsync();
 
+        var performanceTitle = await _context.Performances
+            .Where(performance =>
+                performance.Id == rehearsal.PerformanceId)
+            .Select(performance =>
+                performance.Title)
+            .FirstOrDefaultAsync();
+
+        await _actionLogService.LogAsync(
+            User,
+            "Create",
+            "Rehearsal",
+            rehearsal.Id,
+            performanceTitle,
+            $"Створено репетицію вистави «{performanceTitle}» на {rehearsal.StartDateTime:dd.MM.yyyy HH:mm}.");
+
         TempData["SuccessMessage"] =
             "Репетицію успішно створено.";
 
@@ -508,6 +533,7 @@ public class RehearsalsController : Controller
     // =========================================================
 
     // GET: Rehearsals/Edit/5
+    [Authorize(Policy = AppPolicies.CanManageRehearsals)]
     public async Task<IActionResult> Edit(int? id)
     {
         if (id == null)
@@ -552,6 +578,7 @@ public class RehearsalsController : Controller
     // POST: Rehearsals/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManageRehearsals)]
     public async Task<IActionResult> Edit(
     int id,
     RehearsalFormViewModel model,
@@ -620,6 +647,7 @@ public class RehearsalsController : Controller
         }
 
         var rehearsal = await _context.Rehearsals
+            .Include(item => item.Performance)
             .Include(item => item.Participants)
             .FirstOrDefaultAsync(item => item.Id == id);
 
@@ -691,6 +719,21 @@ public class RehearsalsController : Controller
 
         await _context.SaveChangesAsync();
 
+        var performanceTitle = await _context.Performances
+            .Where(performance =>
+                performance.Id == rehearsal.PerformanceId)
+            .Select(performance =>
+                performance.Title)
+            .FirstOrDefaultAsync();
+
+        await _actionLogService.LogAsync(
+            User,
+            "Edit",
+            "Rehearsal",
+            rehearsal.Id,
+            performanceTitle,
+            $"Оновлено репетицію вистави «{performanceTitle}» на {rehearsal.StartDateTime:dd.MM.yyyy HH:mm}.");
+
         TempData["SuccessMessage"] =
             "Репетицію успішно оновлено.";
 
@@ -702,6 +745,7 @@ public class RehearsalsController : Controller
     // =========================================================
 
     // GET: Rehearsals/Attendance/5
+    [Authorize(Policy = AppPolicies.CanManageRehearsals)]
     public async Task<IActionResult> Attendance(int? id)
     {
         if (id == null)
@@ -780,6 +824,7 @@ public class RehearsalsController : Controller
     // POST: Rehearsals/Attendance/5
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManageRehearsals)]
     public async Task<IActionResult> Attendance(
         int id,
         RehearsalAttendanceViewModel model)
@@ -792,6 +837,7 @@ public class RehearsalsController : Controller
         ValidateAttendance(model);
 
         var rehearsal = await _context.Rehearsals
+            .Include(item => item.Performance)
             .Include(item => item.Participants)
                 .ThenInclude(participant =>
                     participant.Actor)
@@ -879,6 +925,14 @@ public class RehearsalsController : Controller
 
         await _context.SaveChangesAsync();
 
+        await _actionLogService.LogAsync(
+            User,
+            "UpdateAttendance",
+            "Rehearsal",
+            rehearsal.Id,
+            rehearsal.Performance.Title,
+            $"Оновлено відвідування репетиції вистави «{rehearsal.Performance.Title}» на {rehearsal.StartDateTime:dd.MM.yyyy HH:mm}.");
+
         TempData["SuccessMessage"] =
             "Дані про відвідування успішно збережено.";
 
@@ -892,6 +946,7 @@ public class RehearsalsController : Controller
     // =========================================================
 
     // GET: Rehearsals/Delete/5
+    [Authorize(Policy = AppPolicies.CanManageRehearsals)]
     public async Task<IActionResult> Delete(int? id)
     {
         if (id == null)
@@ -922,9 +977,11 @@ public class RehearsalsController : Controller
     // POST: Rehearsals/Delete/5
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManageRehearsals)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         var rehearsal = await _context.Rehearsals
+            .Include(item => item.Performance)
             .Include(item => item.Participants)
             .FirstOrDefaultAsync(item => item.Id == id);
 
@@ -933,12 +990,23 @@ public class RehearsalsController : Controller
             return NotFound();
         }
 
+        var performanceTitle = rehearsal.Performance.Title;
+        var rehearsalDateTime = rehearsal.StartDateTime;
+
         _context.RehearsalParticipants.RemoveRange(
             rehearsal.Participants);
 
         _context.Rehearsals.Remove(rehearsal);
 
         await _context.SaveChangesAsync();
+
+        await _actionLogService.LogAsync(
+            User,
+            "Delete",
+            "Rehearsal",
+            id,
+            performanceTitle,
+            $"Видалено репетицію вистави «{performanceTitle}» на {rehearsalDateTime:dd.MM.yyyy HH:mm}.");
 
         TempData["SuccessMessage"] =
             "Репетицію видалено.";

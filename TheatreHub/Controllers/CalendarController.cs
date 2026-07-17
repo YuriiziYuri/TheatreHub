@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TheatreHub.Data;
 using TheatreHub.Models;
@@ -7,6 +8,7 @@ using TheatreHub.ViewModels;
 
 namespace TheatreHub.Controllers;
 
+[Authorize]
 public class CalendarController : Controller
 {
     private readonly ApplicationDbContext _context;

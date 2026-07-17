@@ -1,6 +1,10 @@
 ﻿@model IEnumerable<TheatreHub.Models.PerformanceShow>
 @using TheatreHub.Models
 @using TheatreHub.Models.Enums
+@using Microsoft.AspNetCore.Authorization
+@using TheatreHub.Constants
+
+@inject IAuthorizationService AuthorizationService
 
 @{
     ViewData["Title"] = "Покази";
@@ -20,6 +24,11 @@
         ViewBag.Status is PerformanceShowStatus statusValue
             ? statusValue
             : null;
+
+    var canManagePerformances =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManagePerformances)).Succeeded;
 }
 
 @functions {
@@ -104,10 +113,13 @@
             Календар показів
         </a>
 
-        <a asp-action="Create"
-           class="btn btn-primary">
-            Додати показ
-        </a>
+        @if (canManagePerformances)
+        {
+            <a asp-action="Create"
+               class="btn btn-primary">
+                Додати показ
+            </a>
+        }
     </div>
 </div>
 
@@ -266,69 +278,72 @@ else
                                 Деталі
                             </a>
 
-                            <a asp-action="Edit"
-                               asp-route-id="@show.Id"
-                               class="btn btn-sm btn-outline-secondary">
-                                Редагувати
-                            </a>
-
-                            @if (show.Status != PerformanceShowStatus.Confirmed)
+                            @if (canManagePerformances)
                             {
-                                <form asp-action="ChangeStatus"
-                                      method="post"
-                                      class="d-inline">
+                                <a asp-action="Edit"
+                                   asp-route-id="@show.Id"
+                                   class="btn btn-sm btn-outline-secondary">
+                                    Редагувати
+                                </a>
 
-                                    <input type="hidden"
-                                           name="id"
-                                           value="@show.Id" />
+                                @if (show.Status != PerformanceShowStatus.Confirmed)
+                                {
+                                    <form asp-action="ChangeStatus"
+                                          method="post"
+                                          class="d-inline">
 
-                                    <input type="hidden"
-                                           name="status"
-                                           value="@PerformanceShowStatus.Confirmed" />
+                                        <input type="hidden"
+                                               name="id"
+                                               value="@show.Id" />
 
-                                    <input type="hidden"
-                                           name="returnUrl"
-                                           value="@Context.Request.Path@Context.Request.QueryString" />
+                                        <input type="hidden"
+                                               name="status"
+                                               value="@PerformanceShowStatus.Confirmed" />
 
-                                    <button type="submit"
-                                            class="btn btn-sm btn-outline-primary">
-                                        Підтвердити
-                                    </button>
+                                        <input type="hidden"
+                                               name="returnUrl"
+                                               value="@Context.Request.Path@Context.Request.QueryString" />
 
-                                </form>
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-primary">
+                                            Підтвердити
+                                        </button>
+
+                                    </form>
+                                }
+
+                                @if (show.Status != PerformanceShowStatus.Completed)
+                                {
+                                    <form asp-action="ChangeStatus"
+                                          method="post"
+                                          class="d-inline">
+
+                                        <input type="hidden"
+                                               name="id"
+                                               value="@show.Id" />
+
+                                        <input type="hidden"
+                                               name="status"
+                                               value="@PerformanceShowStatus.Completed" />
+
+                                        <input type="hidden"
+                                               name="returnUrl"
+                                               value="@Context.Request.Path@Context.Request.QueryString" />
+
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-success">
+                                            Проведено
+                                        </button>
+
+                                    </form>
+                                }
+
+                                <a asp-action="Delete"
+                                   asp-route-id="@show.Id"
+                                   class="btn btn-sm btn-outline-danger">
+                                    Видалити
+                                </a>
                             }
-
-                            @if (show.Status != PerformanceShowStatus.Completed)
-                            {
-                                <form asp-action="ChangeStatus"
-                                      method="post"
-                                      class="d-inline">
-
-                                    <input type="hidden"
-                                           name="id"
-                                           value="@show.Id" />
-
-                                    <input type="hidden"
-                                           name="status"
-                                           value="@PerformanceShowStatus.Completed" />
-
-                                    <input type="hidden"
-                                           name="returnUrl"
-                                           value="@Context.Request.Path@Context.Request.QueryString" />
-
-                                    <button type="submit"
-                                            class="btn btn-sm btn-outline-success">
-                                        Проведено
-                                    </button>
-
-                                </form>
-                            }
-
-                            <a asp-action="Delete"
-                               asp-route-id="@show.Id"
-                               class="btn btn-sm btn-outline-danger">
-                                Видалити
-                            </a>
 
                         </div>
 

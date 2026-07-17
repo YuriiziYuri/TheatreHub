@@ -1,8 +1,31 @@
 @model TheatreHub.Models.ProductionItem
 @using TheatreHub.Models.Enums
+@using Microsoft.AspNetCore.Authorization
+@using TheatreHub.Constants
+
+@inject IAuthorizationService AuthorizationService
 
 @{
     ViewData["Title"] = "Деталі постановочного елемента";
+
+    decimal plannedExpenseTotal = ViewBag.PlannedExpenseTotal ?? 0m;
+    decimal actualExpenseTotal = ViewBag.ActualExpenseTotal ?? 0m;
+    int budgetTransactionsCount = ViewBag.BudgetTransactionsCount ?? 0;
+
+    var canManageProduction =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManageProduction)).Succeeded;
+
+    var canViewFinance =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanViewFinance)).Succeeded;
+
+    var canManageFinance =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManageFinance)).Succeeded;
 }
 
 @functions {
@@ -44,6 +67,11 @@
             ProductionItemStatus.Cancelled => "text-bg-dark",
             _ => "text-bg-secondary"
         };
+    }
+
+    private static string FormatMoney(decimal amount, string currency = "UAH")
+    {
+        return $"{amount:N2} {currency}";
     }
 }
 
@@ -162,65 +190,172 @@
                     </dd>
                 </dl>
 
+
+                @if (canViewFinance)
+                {
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <h2 class="h5 mb-0">
+                                Фінанси елемента
+                            </h2>
+
+                            <div class="d-flex flex-wrap gap-2">
+                                @if (canManageFinance)
+                                {
+                                    <a asp-controller="BudgetTransactions"
+                                       asp-action="Create"
+                                       asp-route-performanceId="@Model.PerformanceId"
+                                       asp-route-productionItemId="@Model.Id"
+                                       asp-route-type="Expense"
+                                       class="btn btn-sm btn-outline-danger">
+                                        Додати витрату
+                                    </a>
+                                }
+
+                                <a asp-controller="BudgetTransactions"
+                                   asp-action="Index"
+                                   asp-route-performanceId="@Model.PerformanceId"
+                                   asp-route-productionItemId="@Model.Id"
+                                   class="btn btn-sm btn-outline-secondary">
+                                    Операції елемента
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="row g-3">
+
+                                <div class="col-md-4">
+                                    <div class="border rounded p-3 h-100">
+                                        <div class="text-muted small">
+                                            Планові витрати
+                                        </div>
+
+                                        <div class="h5 mb-0 text-danger">
+                                            @FormatMoney(plannedExpenseTotal)
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <div class="border rounded p-3 h-100">
+                                        <div class="text-muted small">
+                                            Фактичні витрати
+                                        </div>
+
+                                        <div class="h5 mb-0 text-danger">
+                                            @FormatMoney(actualExpenseTotal)
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <div class="border rounded p-3 h-100">
+                                        <div class="text-muted small">
+                                            Кількість операцій
+                                        </div>
+
+                                        <div class="h5 mb-0">
+                                            @budgetTransactionsCount
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div class="small text-muted mt-3">
+                                Тут враховуються тільки фінансові операції, прив’язані саме до цього постановочного елемента.
+                            </div>
+                        </div>
+                    </div>
+
+                }
+
                 <div class="d-flex flex-wrap gap-2 mt-4">
 
-                    <a asp-action="Edit"
-                       asp-route-id="@Model.Id"
-                       class="btn btn-primary">
-                        Редагувати
-                    </a>
-
-                    @if (Model.Status != ProductionItemStatus.InProgress)
+                    @if (canManageFinance)
                     {
-                        <form asp-action="ChangeStatus"
-                              method="post">
-                            <input type="hidden"
-                                   name="id"
-                                   value="@Model.Id" />
-
-                            <input type="hidden"
-                                   name="status"
-                                   value="@ProductionItemStatus.InProgress" />
-
-                            <input type="hidden"
-                                   name="returnUrl"
-                                   value="@Context.Request.Path@Context.Request.QueryString" />
-
-                            <button type="submit"
-                                    class="btn btn-outline-primary">
-                                У роботу
-                            </button>
-                        </form>
+                        <a asp-controller="BudgetTransactions"
+                           asp-action="Create"
+                           asp-route-performanceId="@Model.PerformanceId"
+                           asp-route-productionItemId="@Model.Id"
+                           asp-route-type="Expense"
+                           class="btn btn-outline-danger">
+                            Додати витрату
+                        </a>
                     }
 
-                    @if (Model.Status != ProductionItemStatus.Ready)
+                    @if (canViewFinance)
                     {
-                        <form asp-action="ChangeStatus"
-                              method="post">
-                            <input type="hidden"
-                                   name="id"
-                                   value="@Model.Id" />
-
-                            <input type="hidden"
-                                   name="status"
-                                   value="@ProductionItemStatus.Ready" />
-
-                            <input type="hidden"
-                                   name="returnUrl"
-                                   value="@Context.Request.Path@Context.Request.QueryString" />
-
-                            <button type="submit"
-                                    class="btn btn-outline-success">
-                                Готово
-                            </button>
-                        </form>
+                        <a asp-controller="BudgetTransactions"
+                           asp-action="Index"
+                           asp-route-performanceId="@Model.PerformanceId"
+                           asp-route-productionItemId="@Model.Id"
+                           class="btn btn-outline-secondary">
+                            Операції елемента
+                        </a>
                     }
 
-                    <a asp-action="Delete"
-                       asp-route-id="@Model.Id"
-                       class="btn btn-outline-danger">
-                        Видалити
-                    </a>
+                    @if (canManageProduction)
+                    {
+                        <a asp-action="Edit"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-primary">
+                            Редагувати
+                        </a>
+
+                        @if (Model.Status != ProductionItemStatus.InProgress)
+                        {
+                            <form asp-action="ChangeStatus"
+                                  method="post">
+                                <input type="hidden"
+                                       name="id"
+                                       value="@Model.Id" />
+
+                                <input type="hidden"
+                                       name="status"
+                                       value="@ProductionItemStatus.InProgress" />
+
+                                <input type="hidden"
+                                       name="returnUrl"
+                                       value="@Context.Request.Path@Context.Request.QueryString" />
+
+                                <button type="submit"
+                                        class="btn btn-outline-primary">
+                                    У роботу
+                                </button>
+                            </form>
+                        }
+
+                        @if (Model.Status != ProductionItemStatus.Ready)
+                        {
+                            <form asp-action="ChangeStatus"
+                                  method="post">
+                                <input type="hidden"
+                                       name="id"
+                                       value="@Model.Id" />
+
+                                <input type="hidden"
+                                       name="status"
+                                       value="@ProductionItemStatus.Ready" />
+
+                                <input type="hidden"
+                                       name="returnUrl"
+                                       value="@Context.Request.Path@Context.Request.QueryString" />
+
+                                <button type="submit"
+                                        class="btn btn-outline-success">
+                                    Готово
+                                </button>
+                            </form>
+                        }
+
+                        <a asp-action="Delete"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-outline-danger">
+                            Видалити
+                        </a>
+                    }
 
                     <a asp-action="Index"
                        class="btn btn-outline-secondary">

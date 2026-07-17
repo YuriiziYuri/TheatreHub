@@ -1,18 +1,26 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using TheatreHub.Constants;
 using TheatreHub.Data;
 using TheatreHub.Models;
+using TheatreHub.Services.ActionLogs;
 
 namespace TheatreHub.Controllers;
 
+[Authorize]
 public class HallsController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly IUserActionLogService _actionLogService;
 
-    public HallsController(ApplicationDbContext context)
+    public HallsController(
+        ApplicationDbContext context,
+        IUserActionLogService actionLogService)
     {
         _context = context;
+        _actionLogService = actionLogService;
     }
 
     // GET: Halls
@@ -71,6 +79,7 @@ public class HallsController : Controller
     }
 
     // GET: Halls/Create
+    [Authorize(Policy = AppPolicies.CanManageVenues)]
     public async Task<IActionResult> Create(int? venueId)
     {
         var hall = new Hall
@@ -87,6 +96,7 @@ public class HallsController : Controller
     // POST: Halls/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManageVenues)]
     public async Task<IActionResult> Create(
         [Bind(
             "VenueId,Name,Capacity,RentalCost," +
@@ -121,6 +131,23 @@ public class HallsController : Controller
             return View(hall);
         }
 
+        var venueName = await _context.Venues
+            .Where(venue => venue.Id == hall.VenueId)
+            .Select(venue => venue.Name)
+            .FirstOrDefaultAsync();
+
+        var hallTitle = string.IsNullOrWhiteSpace(venueName)
+            ? hall.Name
+            : $"{venueName} — {hall.Name}";
+
+        await _actionLogService.LogAsync(
+            User,
+            "Create",
+            "Hall",
+            hall.Id,
+            hallTitle,
+            $"Створено зал «{hallTitle}».");
+
         TempData["SuccessMessage"] =
             $"Зал «{hall.Name}» успішно створено.";
 
@@ -130,6 +157,7 @@ public class HallsController : Controller
     }
 
     // GET: Halls/Edit/5
+    [Authorize(Policy = AppPolicies.CanManageVenues)]
     public async Task<IActionResult> Edit(int? id)
     {
         if (id == null)
@@ -154,6 +182,7 @@ public class HallsController : Controller
     // POST: Halls/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManageVenues)]
     public async Task<IActionResult> Edit(
         int id,
         [Bind(
@@ -215,6 +244,23 @@ public class HallsController : Controller
             return View(hall);
         }
 
+        var venueName = await _context.Venues
+            .Where(venue => venue.Id == existingHall.VenueId)
+            .Select(venue => venue.Name)
+            .FirstOrDefaultAsync();
+
+        var hallTitle = string.IsNullOrWhiteSpace(venueName)
+            ? existingHall.Name
+            : $"{venueName} — {existingHall.Name}";
+
+        await _actionLogService.LogAsync(
+            User,
+            "Edit",
+            "Hall",
+            existingHall.Id,
+            hallTitle,
+            $"Відредаговано зал «{hallTitle}».");
+
         TempData["SuccessMessage"] =
             $"Зал «{existingHall.Name}» успішно оновлено.";
 
@@ -224,6 +270,7 @@ public class HallsController : Controller
     }
 
     // GET: Halls/Delete/5
+    [Authorize(Policy = AppPolicies.CanManageVenues)]
     public async Task<IActionResult> Delete(int? id)
     {
         if (id == null)
@@ -248,9 +295,11 @@ public class HallsController : Controller
     // POST: Halls/Delete/5
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManageVenues)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         var hall = await _context.Halls
+            .Include(item => item.Venue)
             .Include(item => item.Rehearsals)
             .FirstOrDefaultAsync(item => item.Id == id);
 
@@ -271,9 +320,20 @@ public class HallsController : Controller
 
         var venueId = hall.VenueId;
         var hallName = hall.Name;
+        var hallTitle = hall.Venue == null
+            ? hall.Name
+            : $"{hall.Venue.Name} — {hall.Name}";
 
         _context.Halls.Remove(hall);
         await _context.SaveChangesAsync();
+
+        await _actionLogService.LogAsync(
+            User,
+            "Delete",
+            "Hall",
+            id,
+            hallTitle,
+            $"Видалено зал «{hallTitle}».");
 
         TempData["SuccessMessage"] =
             $"Зал «{hallName}» видалено.";

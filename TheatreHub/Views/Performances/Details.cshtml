@@ -2,10 +2,150 @@
 @using TheatreHub.Models
 @using TheatreHub.Models.Enums
 @using TheatreHub.ViewModels
+@using TheatreHub.Constants
+@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService AuthorizationService
 
+@functions {
+    private static string FormatMoney(decimal amount, string? currency = "UAH")
+    {
+        return $"{amount:N2} {currency}";
+    }
+
+    private static string GetTaskStatusText(TheatreTaskStatus status)
+    {
+        return status switch
+        {
+            TheatreTaskStatus.Planned => "Заплановано",
+            TheatreTaskStatus.InProgress => "У роботі",
+            TheatreTaskStatus.Done => "Виконано",
+            TheatreTaskStatus.Cancelled => "Скасовано",
+            _ => status.ToString()
+        };
+    }
+
+    private static string GetTaskPriorityText(TheatreTaskPriority priority)
+    {
+        return priority switch
+        {
+            TheatreTaskPriority.Low => "Низький",
+            TheatreTaskPriority.Normal => "Звичайний",
+            TheatreTaskPriority.High => "Високий",
+            TheatreTaskPriority.Critical => "Критичний",
+            _ => priority.ToString()
+        };
+    }
+
+    private static string GetTaskStatusClass(TheatreTaskStatus status)
+    {
+        return status switch
+        {
+            TheatreTaskStatus.Planned => "text-bg-secondary",
+            TheatreTaskStatus.InProgress => "text-bg-primary",
+            TheatreTaskStatus.Done => "text-bg-success",
+            TheatreTaskStatus.Cancelled => "text-bg-dark",
+            _ => "text-bg-secondary"
+        };
+    }
+
+    private static string GetTaskPriorityClass(TheatreTaskPriority priority)
+    {
+        return priority switch
+        {
+            TheatreTaskPriority.Low => "text-bg-light",
+            TheatreTaskPriority.Normal => "text-bg-secondary",
+            TheatreTaskPriority.High => "text-bg-warning",
+            TheatreTaskPriority.Critical => "text-bg-danger",
+            _ => "text-bg-secondary"
+        };
+    }
+
+    private static string GetShowTypeText(PerformanceShowType type)
+    {
+        return type switch
+        {
+            PerformanceShowType.Premiere => "Прем’єра",
+            PerformanceShowType.Regular => "Звичайний показ",
+            PerformanceShowType.Touring => "Виїзний показ",
+            PerformanceShowType.Closed => "Закритий показ",
+            PerformanceShowType.Charity => "Благодійний показ",
+            PerformanceShowType.Other => "Інше",
+            _ => type.ToString()
+        };
+    }
+
+    private static string GetShowStatusText(PerformanceShowStatus status)
+    {
+        return status switch
+        {
+            PerformanceShowStatus.Planned => "Заплановано",
+            PerformanceShowStatus.Confirmed => "Підтверджено",
+            PerformanceShowStatus.Completed => "Проведено",
+            PerformanceShowStatus.Cancelled => "Скасовано",
+            PerformanceShowStatus.Postponed => "Перенесено",
+            _ => status.ToString()
+        };
+    }
+
+    private static string GetShowStatusClass(PerformanceShowStatus status)
+    {
+        return status switch
+        {
+            PerformanceShowStatus.Planned => "text-bg-secondary",
+            PerformanceShowStatus.Confirmed => "text-bg-primary",
+            PerformanceShowStatus.Completed => "text-bg-success",
+            PerformanceShowStatus.Cancelled => "text-bg-dark",
+            PerformanceShowStatus.Postponed => "text-bg-warning",
+            _ => "text-bg-secondary"
+        };
+    }
+
+    private static string GetShowLocationText(PerformanceShow show)
+    {
+        if (show.Hall != null)
+        {
+            return show.Hall.Venue == null
+            ? show.Hall.Name
+            : $"{show.Hall.Venue.Name} — {show.Hall.Name}";
+        }
+
+        return string.IsNullOrWhiteSpace(show.ExternalLocation)
+        ? "Локацію не вказано"
+        : show.ExternalLocation;
+    }
+}
 
 @{
     ViewData["Title"] = "Інформація про виставу";
+
+    var canManagePerformances =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManagePerformances)).Succeeded;
+
+    var canManageRehearsals =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManageRehearsals)).Succeeded;
+
+    var canManageTasks =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManageTasks)).Succeeded;
+
+    var canViewFinance =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanViewFinance)).Succeeded;
+
+    var canManageFinance =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManageFinance)).Succeeded;
+
+    var tasks =
+        ViewBag.Tasks as List<TheatreTask>
+        ?? new List<TheatreTask>();
 
     var statusClass = Model.Status switch
     {
@@ -76,11 +216,14 @@
                     </p>
                 </div>
 
-                <a asp-action="Preparation"
-                   asp-route-id="@Model.Id"
-                   class="btn btn-secondary btn-lg">
-                    Відкрити контроль
-                </a>
+                @if (canManagePerformances)
+                {
+                    <a asp-action="Preparation"
+                       asp-route-id="@Model.Id"
+                       class="btn btn-secondary btn-lg">
+                        Відкрити контроль
+                    </a>
+                }
 
             </div>
 
@@ -88,64 +231,9 @@
 
         @{
             var performanceShows =
-            ViewBag.PerformanceShows as List<PerformanceShow> ?? [];
+            ViewBag.PerformanceShows as List<PerformanceShow> ?? new List<PerformanceShow>();
         }
 
-        @functions {
-            private static string GetShowTypeText(PerformanceShowType type)
-            {
-                return type switch
-                {
-                    PerformanceShowType.Premiere => "Прем’єра",
-                    PerformanceShowType.Regular => "Звичайний показ",
-                    PerformanceShowType.Touring => "Виїзний показ",
-                    PerformanceShowType.Closed => "Закритий показ",
-                    PerformanceShowType.Charity => "Благодійний показ",
-                    PerformanceShowType.Other => "Інше",
-                    _ => type.ToString()
-                };
-            }
-
-            private static string GetShowStatusText(PerformanceShowStatus status)
-            {
-                return status switch
-                {
-                    PerformanceShowStatus.Planned => "Заплановано",
-                    PerformanceShowStatus.Confirmed => "Підтверджено",
-                    PerformanceShowStatus.Completed => "Проведено",
-                    PerformanceShowStatus.Cancelled => "Скасовано",
-                    PerformanceShowStatus.Postponed => "Перенесено",
-                    _ => status.ToString()
-                };
-            }
-
-            private static string GetShowStatusClass(PerformanceShowStatus status)
-            {
-                return status switch
-                {
-                    PerformanceShowStatus.Planned => "text-bg-secondary",
-                    PerformanceShowStatus.Confirmed => "text-bg-primary",
-                    PerformanceShowStatus.Completed => "text-bg-success",
-                    PerformanceShowStatus.Cancelled => "text-bg-dark",
-                    PerformanceShowStatus.Postponed => "text-bg-warning",
-                    _ => "text-bg-secondary"
-                };
-            }
-
-            private static string GetShowLocationText(PerformanceShow show)
-            {
-                if (show.Hall != null)
-                {
-                    return show.Hall.Venue == null
-                    ? show.Hall.Name
-                    : $"{show.Hall.Venue.Name} — {show.Hall.Name}";
-                }
-
-                return string.IsNullOrWhiteSpace(show.ExternalLocation)
-                ? "Локацію не вказано"
-                : show.ExternalLocation;
-            }
-        }
 
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-body p-4">
@@ -161,12 +249,15 @@
                         </p>
                     </div>
 
-                    <a asp-controller="PerformanceShows"
-                       asp-action="Create"
-                       asp-route-performanceId="@Model.Id"
-                       class="btn btn-primary">
-                        Додати показ
-                    </a>
+                    @if (canManagePerformances)
+                    {
+                        <a asp-controller="PerformanceShows"
+                           asp-action="Create"
+                           asp-route-performanceId="@Model.Id"
+                           class="btn btn-primary">
+                            Додати показ
+                        </a>
+                    }
                 </div>
 
                 @if (!performanceShows.Any())
@@ -226,12 +317,15 @@
                                                 Деталі
                                             </a>
 
-                                            <a asp-controller="PerformanceShows"
-                                               asp-action="Edit"
-                                               asp-route-id="@show.Id"
-                                               class="btn btn-sm btn-outline-secondary">
-                                                Редагувати
-                                            </a>
+                                            @if (canManagePerformances)
+                                            {
+                                                <a asp-controller="PerformanceShows"
+                                                   asp-action="Edit"
+                                                   asp-route-id="@show.Id"
+                                                   class="btn btn-sm btn-outline-secondary">
+                                                    Редагувати
+                                                </a>
+                                            }
                                         </div>
                                     </div>
 
@@ -340,18 +434,45 @@
 
                 <div class="d-flex flex-wrap gap-2">
 
-                    <a asp-controller="Rehearsals"
-                       asp-action="Create"
-                       asp-route-performanceId="@Model.Id"
-                       class="btn btn-outline-success">
-                        Створити репетицію
-                    </a>
+                    @if (canManageRehearsals)
+                    {
+                        <a asp-controller="Rehearsals"
+                           asp-action="Create"
+                           asp-route-performanceId="@Model.Id"
+                           class="btn btn-outline-success">
+                            Створити репетицію
+                        </a>
+                    }
 
-                    <a asp-action="Edit"
-                       asp-route-id="@Model.Id"
-                       class="btn btn-primary">
-                        Редагувати
-                    </a>
+
+                    @if (canViewFinance)
+                    {
+                        <a asp-controller="Performances"
+                           asp-action="Budget"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-outline-success">
+                            Бюджет
+                        </a>
+                    }
+
+                    @if (canManageFinance)
+                    {
+                        <a asp-controller="BudgetTransactions"
+                           asp-action="Create"
+                           asp-route-performanceId="@Model.Id"
+                           class="btn btn-outline-primary">
+                            Додати фінансову операцію
+                        </a>
+                    }
+
+                    @if (canManagePerformances)
+                    {
+                        <a asp-action="Edit"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-primary">
+                            Редагувати
+                        </a>
+                    }
 
                     <a asp-controller="Acts"
                        asp-action="Index"
@@ -370,59 +491,121 @@
             </div>
         </div>
 
-        <!-- Блок завдань -->
-        @{
-            var tasks = ViewBag.Tasks as List<TheatreTask> ?? [];
+        <!-- Блок бюджету -->
+        @if (canViewFinance)
+        {
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <h2 class="h5 mb-0">
+                        Бюджет вистави
+                    </h2>
 
-            string GetTaskStatusText(TheatreTaskStatus status)
-            {
-                return status switch
-                {
-                    TheatreTaskStatus.Planned => "Заплановано",
-                    TheatreTaskStatus.InProgress => "У роботі",
-                    TheatreTaskStatus.Done => "Виконано",
-                    TheatreTaskStatus.Cancelled => "Скасовано",
-                    _ => status.ToString()
-                };
-            }
+                    <div class="d-flex flex-wrap gap-2">
+                        <a asp-controller="Performances"
+                           asp-action="Budget"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-sm btn-outline-success">
+                            Відкрити бюджет
+                        </a>
 
-            string GetTaskPriorityText(TheatreTaskPriority priority)
-            {
-                return priority switch
-                {
-                    TheatreTaskPriority.Low => "Низький",
-                    TheatreTaskPriority.Normal => "Звичайний",
-                    TheatreTaskPriority.High => "Високий",
-                    TheatreTaskPriority.Critical => "Критичний",
-                    _ => priority.ToString()
-                };
-            }
+                        @if (canManageFinance)
+                        {
+                            <a asp-controller="BudgetTransactions"
+                               asp-action="Create"
+                               asp-route-performanceId="@Model.Id"
+                               class="btn btn-sm btn-outline-primary">
+                                Додати операцію
+                            </a>
+                        }
+                    </div>
+                </div>
 
-            string GetTaskStatusClass(TheatreTaskStatus status)
-            {
-                return status switch
-                {
-                    TheatreTaskStatus.Planned => "text-bg-secondary",
-                    TheatreTaskStatus.InProgress => "text-bg-primary",
-                    TheatreTaskStatus.Done => "text-bg-success",
-                    TheatreTaskStatus.Cancelled => "text-bg-dark",
-                    _ => "text-bg-secondary"
-                };
-            }
+                <div class="card-body">
+                    <div class="row g-3">
 
-            string GetTaskPriorityClass(TheatreTaskPriority priority)
-            {
-                return priority switch
-                {
-                    TheatreTaskPriority.Low => "text-bg-light",
-                    TheatreTaskPriority.Normal => "text-bg-secondary",
-                    TheatreTaskPriority.High => "text-bg-warning",
-                    TheatreTaskPriority.Critical => "text-bg-danger",
-                    _ => "text-bg-secondary"
-                };
-            }
+                        <div class="col-md-3">
+                            <div class="border rounded p-3 h-100">
+                                <div class="text-muted small">
+                                    Плановий бюджет
+                                </div>
+
+                                <div class="h5 mb-0">
+                                    @FormatMoney((decimal)ViewBag.PlannedBudget)
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="border rounded p-3 h-100">
+                                <div class="text-muted small">
+                                    Планові витрати
+                                </div>
+
+                                <div class="h5 mb-0 text-danger">
+                                    @FormatMoney((decimal)ViewBag.PlannedExpenseTotal)
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="border rounded p-3 h-100">
+                                <div class="text-muted small">
+                                    Фактичні доходи
+                                </div>
+
+                                <div class="h5 mb-0 text-success">
+                                    @FormatMoney((decimal)ViewBag.ActualIncomeTotal)
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="border rounded p-3 h-100">
+                                <div class="text-muted small">
+                                    Фактичний прибуток
+                                </div>
+
+                                @{
+                                    decimal actualProfit =
+                                    ViewBag.ActualProfit;
+                                }
+
+                                <div class="h5 mb-0 @(actualProfit >= 0 ? "text-success" : "text-danger")">
+                                    @FormatMoney(actualProfit)
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="mt-3">
+                        @{
+                            decimal plannedBudget =
+                            ViewBag.PlannedBudget;
+
+                            decimal plannedBudgetRemaining =
+                            ViewBag.PlannedBudgetRemaining;
+                        }
+
+                        <div class="small text-muted">
+                            Залишок планового бюджету:
+                            <strong class="@(plannedBudgetRemaining >= 0 ? "text-success" : "text-danger")">
+                                @FormatMoney(plannedBudgetRemaining)
+                            </strong>
+                        </div>
+
+                        @if (plannedBudget <= 0)
+                        {
+                            <div class="small text-muted mt-1">
+                                Плановий бюджет для цієї вистави ще не вказано.
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
         }
 
+        <!-- Блок завдань -->
         <!-- Блок реквізиту -->
         @await Html.PartialAsync(
         "_ProductionItemsBlock",
@@ -455,12 +638,15 @@
                         </p>
                     </div>
 
-                    <a asp-controller="TheatreTasks"
-                       asp-action="Create"
-                       asp-route-performanceId="@Model.Id"
-                       class="btn btn-outline-primary">
-                        Створити завдання
-                    </a>
+                    @if (canManageTasks)
+                    {
+                        <a asp-controller="TheatreTasks"
+                           asp-action="Create"
+                           asp-route-performanceId="@Model.Id"
+                           class="btn btn-outline-primary">
+                            Створити завдання
+                        </a>
+                    }
 
                 </div>
 
@@ -485,9 +671,9 @@
                             <div class="list-group-item">
 
                                 <div class="d-flex flex-wrap
-                                            justify-content-between
-                                            align-items-start
-                                            gap-3">
+                                                    justify-content-between
+                                                    align-items-start
+                                                    gap-3">
 
                                     <div>
                                         <strong>
@@ -553,7 +739,8 @@
                                                 Деталі
                                             </a>
 
-                                            @if (task.Status != TheatreTaskStatus.InProgress)
+                                            @if (canManageTasks &&
+                                                                                task.Status != TheatreTaskStatus.InProgress)
                                             {
                                                 <form asp-controller="TheatreTasks"
                                                       asp-action="ChangeStatus"
@@ -577,7 +764,8 @@
                                                 </form>
                                             }
 
-                                            @if (task.Status != TheatreTaskStatus.Done)
+                                            @if (canManageTasks &&
+                                                                                task.Status != TheatreTaskStatus.Done)
                                             {
                                                 <form asp-controller="TheatreTasks"
                                                       asp-action="ChangeStatus"
@@ -636,12 +824,15 @@
                         </p>
                     </div>
 
-                    <a asp-controller="Rehearsals"
-                       asp-action="Create"
-                       asp-route-performanceId="@Model.Id"
-                       class="btn btn-outline-success">
-                        Створити репетицію
-                    </a>
+                    @if (canManageRehearsals)
+                    {
+                        <a asp-controller="Rehearsals"
+                           asp-action="Create"
+                           asp-route-performanceId="@Model.Id"
+                           class="btn btn-outline-success">
+                            Створити репетицію
+                        </a>
+                    }
 
                 </div>
 
@@ -661,9 +852,9 @@
                             <div class="list-group-item">
 
                                 <div class="d-flex flex-wrap
-                                            justify-content-between
-                                            align-items-start
-                                            gap-3">
+                                                    justify-content-between
+                                                    align-items-start
+                                                    gap-3">
 
                                     <div>
                                         <strong>
@@ -713,19 +904,22 @@
                                             Деталі
                                         </a>
 
-                                        <a asp-controller="Rehearsals"
-                                           asp-action="Attendance"
-                                           asp-route-id="@rehearsal.Id"
-                                           class="btn btn-sm btn-outline-success">
-                                            Відвідування
-                                        </a>
+                                        @if (canManageRehearsals)
+                                        {
+                                            <a asp-controller="Rehearsals"
+                                               asp-action="Attendance"
+                                               asp-route-id="@rehearsal.Id"
+                                               class="btn btn-sm btn-outline-success">
+                                                Відвідування
+                                            </a>
 
-                                        <a asp-controller="Rehearsals"
-                                           asp-action="Edit"
-                                           asp-route-id="@rehearsal.Id"
-                                           class="btn btn-sm btn-outline-secondary">
-                                            Редагувати
-                                        </a>
+                                            <a asp-controller="Rehearsals"
+                                               asp-action="Edit"
+                                               asp-route-id="@rehearsal.Id"
+                                               class="btn btn-sm btn-outline-secondary">
+                                                Редагувати
+                                            </a>
+                                        }
 
                                     </div>
 
@@ -762,12 +956,15 @@
 
                     <div class="d-flex flex-wrap gap-2">
 
-                        <a asp-controller="Acts"
-                           asp-action="Create"
-                           asp-route-performanceId="@Model.Id"
-                           class="btn btn-primary">
-                            Додати дію
-                        </a>
+                        @if (canManagePerformances)
+                        {
+                            <a asp-controller="Acts"
+                               asp-action="Create"
+                               asp-route-performanceId="@Model.Id"
+                               class="btn btn-primary">
+                                Додати дію
+                            </a>
+                        }
 
                         <a asp-controller="Acts"
                            asp-action="Index"
@@ -801,9 +998,9 @@
                                 <div class="p-3 bg-light border-bottom">
 
                                     <div class="d-flex flex-wrap
-                                                        justify-content-between
-                                                        align-items-start
-                                                        gap-3">
+                                                                justify-content-between
+                                                                align-items-start
+                                                                gap-3">
 
                                         <div>
                                             <h3 class="h5 mb-1">
@@ -825,8 +1022,8 @@
                                         </div>
 
                                         <div class="d-flex
-                                                            flex-wrap
-                                                            gap-2">
+                                                                    flex-wrap
+                                                                    gap-2">
 
                                             <a asp-controller="Acts"
                                                asp-action="Details"
@@ -835,26 +1032,29 @@
                                                 Деталі
                                             </a>
 
-                                            <a asp-controller="Scenes"
-                                               asp-action="Create"
-                                               asp-route-actId="@act.Id"
-                                               class="btn btn-sm btn-primary">
-                                                Додати сцену
-                                            </a>
+                                            @if (canManagePerformances)
+                                            {
+                                                <a asp-controller="Scenes"
+                                                   asp-action="Create"
+                                                   asp-route-actId="@act.Id"
+                                                   class="btn btn-sm btn-primary">
+                                                    Додати сцену
+                                                </a>
 
-                                            <a asp-controller="Acts"
-                                               asp-action="Edit"
-                                               asp-route-id="@act.Id"
-                                               class="btn btn-sm btn-outline-secondary">
-                                                Редагувати
-                                            </a>
+                                                <a asp-controller="Acts"
+                                                   asp-action="Edit"
+                                                   asp-route-id="@act.Id"
+                                                   class="btn btn-sm btn-outline-secondary">
+                                                    Редагувати
+                                                </a>
 
-                                            <a asp-controller="Acts"
-                                               asp-action="Delete"
-                                               asp-route-id="@act.Id"
-                                               class="btn btn-sm btn-outline-danger">
-                                                Видалити
-                                            </a>
+                                                <a asp-controller="Acts"
+                                                   asp-action="Delete"
+                                                   asp-route-id="@act.Id"
+                                                   class="btn btn-sm btn-outline-danger">
+                                                    Видалити
+                                                </a>
+                                            }
 
                                         </div>
 
@@ -882,10 +1082,10 @@
                                                 <div class="list-group-item">
 
                                                     <div class="d-flex
-                                                                                flex-wrap
-                                                                                justify-content-between
-                                                                                align-items-start
-                                                                                gap-3">
+                                                                                                flex-wrap
+                                                                                                justify-content-between
+                                                                                                align-items-start
+                                                                                                gap-3">
 
                                                         <div>
                                                             <strong>
@@ -910,8 +1110,8 @@
                                                         </div>
 
                                                         <div class="d-flex
-                                                                                    flex-wrap
-                                                                                    gap-2">
+                                                                                                    flex-wrap
+                                                                                                    gap-2">
 
                                                             <a asp-controller="Scenes"
                                                                asp-action="Details"
@@ -920,19 +1120,22 @@
                                                                 Деталі
                                                             </a>
 
-                                                            <a asp-controller="Scenes"
-                                                               asp-action="Edit"
-                                                               asp-route-id="@scene.Id"
-                                                               class="btn btn-sm btn-outline-secondary">
-                                                                Редагувати
-                                                            </a>
+                                                            @if (canManagePerformances)
+                                                            {
+                                                                <a asp-controller="Scenes"
+                                                                   asp-action="Edit"
+                                                                   asp-route-id="@scene.Id"
+                                                                   class="btn btn-sm btn-outline-secondary">
+                                                                    Редагувати
+                                                                </a>
 
-                                                            <a asp-controller="Scenes"
-                                                               asp-action="Delete"
-                                                               asp-route-id="@scene.Id"
-                                                               class="btn btn-sm btn-outline-danger">
-                                                                Видалити
-                                                            </a>
+                                                                <a asp-controller="Scenes"
+                                                                   asp-action="Delete"
+                                                                   asp-route-id="@scene.Id"
+                                                                   class="btn btn-sm btn-outline-danger">
+                                                                    Видалити
+                                                                </a>
+                                                            }
 
                                                         </div>
 

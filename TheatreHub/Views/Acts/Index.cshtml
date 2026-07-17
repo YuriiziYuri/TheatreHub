@@ -1,9 +1,19 @@
 ﻿@model IEnumerable<TheatreHub.Models.Act>
 
+@using Microsoft.AspNetCore.Authorization
+@using TheatreHub.Constants
+
+@inject IAuthorizationService AuthorizationService
+
 @{
     ViewData["Title"] = "Структура вистави";
     var performanceId =
         (int)ViewBag.PerformanceId;
+
+    var canManagePerformances =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManagePerformances)).Succeeded;
 }
 
 <div class="d-flex flex-wrap
@@ -25,11 +35,14 @@
     </div>
 
     <div class="d-flex flex-wrap gap-2">
-        <a asp-action="Create"
-           asp-route-performanceId="@performanceId"
-           class="btn btn-primary">
-            Додати дію
-        </a>
+        @if (canManagePerformances)
+        {
+            <a asp-action="Create"
+               asp-route-performanceId="@performanceId"
+               class="btn btn-primary">
+                Додати дію
+            </a>
+        }
 
         <a asp-controller="Performances"
            asp-action="Details"
@@ -63,9 +76,9 @@ else
                     <div class="card-body">
 
                         <div class="d-flex flex-wrap
-                                            justify-content-between
-                                            align-items-start
-                                            gap-3">
+                                                    justify-content-between
+                                                    align-items-start
+                                                    gap-3">
 
                             <div>
                                 <h2 class="h4 mb-1">
@@ -79,8 +92,8 @@ else
                             </div>
 
                             <div class="d-flex
-                                                flex-wrap
-                                                gap-2">
+                                                        flex-wrap
+                                                        gap-2">
 
                                 <a asp-action="Details"
                                    asp-route-id="@act.Id"
@@ -88,17 +101,20 @@ else
                                     Відкрити
                                 </a>
 
-                                <a asp-action="Edit"
-                                   asp-route-id="@act.Id"
-                                   class="btn btn-sm btn-outline-secondary">
-                                    Редагувати
-                                </a>
+                                @if (canManagePerformances)
+                                {
+                                    <a asp-action="Edit"
+                                       asp-route-id="@act.Id"
+                                       class="btn btn-sm btn-outline-secondary">
+                                        Редагувати
+                                    </a>
 
-                                <a asp-action="Delete"
-                                   asp-route-id="@act.Id"
-                                   class="btn btn-sm btn-outline-danger">
-                                    Видалити
-                                </a>
+                                    <a asp-action="Delete"
+                                       asp-route-id="@act.Id"
+                                       class="btn btn-sm btn-outline-danger">
+                                        Видалити
+                                    </a>
+                                }
                             </div>
                         </div>
 

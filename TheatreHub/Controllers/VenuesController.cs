@@ -2,16 +2,24 @@
 using Microsoft.EntityFrameworkCore;
 using TheatreHub.Data;
 using TheatreHub.Models;
+using Microsoft.AspNetCore.Authorization;
+using TheatreHub.Constants;
+using TheatreHub.Services.ActionLogs;
 
 namespace TheatreHub.Controllers;
 
+[Authorize]
 public class VenuesController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly IUserActionLogService _actionLogService;
 
-    public VenuesController(ApplicationDbContext context)
+    public VenuesController(
+        ApplicationDbContext context,
+        IUserActionLogService actionLogService)
     {
         _context = context;
+        _actionLogService = actionLogService;
     }
 
     // GET: Venues
@@ -48,6 +56,7 @@ public class VenuesController : Controller
     }
 
     // GET: Venues/Create
+    [Authorize(Policy = AppPolicies.CanManageVenues)]
     public IActionResult Create()
     {
         return View(new Venue
@@ -59,6 +68,7 @@ public class VenuesController : Controller
     // POST: Venues/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManageVenues)]
     public async Task<IActionResult> Create(
         [Bind(
             "Name,Address,City,ContactPerson," +
@@ -77,6 +87,14 @@ public class VenuesController : Controller
         _context.Venues.Add(venue);
         await _context.SaveChangesAsync();
 
+        await _actionLogService.LogAsync(
+            User,
+            "Create",
+            "Venue",
+            venue.Id,
+            venue.Name,
+            $"Створено майданчик «{venue.Name}».");
+
         TempData["SuccessMessage"] =
             $"Майданчик «{venue.Name}» успішно створено.";
 
@@ -84,6 +102,7 @@ public class VenuesController : Controller
     }
 
     // GET: Venues/Edit/5
+    [Authorize(Policy = AppPolicies.CanManageVenues)]
     public async Task<IActionResult> Edit(int? id)
     {
         if (id == null)
@@ -106,6 +125,7 @@ public class VenuesController : Controller
     // POST: Venues/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManageVenues)]
     public async Task<IActionResult> Edit(
         int id,
         [Bind(
@@ -148,6 +168,14 @@ public class VenuesController : Controller
 
         await _context.SaveChangesAsync();
 
+        await _actionLogService.LogAsync(
+            User,
+            "Edit",
+            "Venue",
+            existingVenue.Id,
+            existingVenue.Name,
+            $"Відредаговано майданчик «{existingVenue.Name}».");
+
         TempData["SuccessMessage"] =
             $"Майданчик «{existingVenue.Name}» успішно оновлено.";
 
@@ -155,6 +183,7 @@ public class VenuesController : Controller
     }
 
     // GET: Venues/Delete/5
+    [Authorize(Policy = AppPolicies.CanManageVenues)]
     public async Task<IActionResult> Delete(int? id)
     {
         if (id == null)
@@ -178,6 +207,7 @@ public class VenuesController : Controller
     // POST: Venues/Delete/5
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManageVenues)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         var venue = await _context.Venues
@@ -203,6 +233,14 @@ public class VenuesController : Controller
 
         _context.Venues.Remove(venue);
         await _context.SaveChangesAsync();
+
+        await _actionLogService.LogAsync(
+            User,
+            "Delete",
+            "Venue",
+            id,
+            venueName,
+            $"Видалено майданчик «{venueName}».");
 
         TempData["SuccessMessage"] =
             $"Майданчик «{venueName}» видалено.";

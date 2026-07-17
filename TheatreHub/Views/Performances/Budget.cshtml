@@ -1,0 +1,629 @@
+﻿@model TheatreHub.ViewModels.PerformanceBudgetViewModel
+
+@using TheatreHub.Models.Enums
+@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService AuthorizationService
+
+@{
+    ViewData["Title"] = "Бюджет вистави";
+
+    var canManageFinance =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManageFinance)).Succeeded;
+}
+
+@functions {
+    private static string FormatMoney(decimal amount, string? currency)
+    {
+        return $"{amount:N2} {currency ?? "UAH"}";
+    }
+
+    private static string FormatMoney(decimal? amount, string? currency)
+    {
+        return amount.HasValue
+            ? $"{amount.Value:N2} {currency ?? "UAH"}"
+            : "—";
+    }
+
+    private static string GetCategoryText(BudgetTransactionCategory category)
+    {
+        return category switch
+        {
+            BudgetTransactionCategory.Tickets => "Квитки",
+            BudgetTransactionCategory.InstitutionPayment => "Оплата від закладу",
+            BudgetTransactionCategory.Donation => "Благодійний внесок",
+            BudgetTransactionCategory.Grant => "Грант",
+            BudgetTransactionCategory.Partnership => "Партнерство",
+
+            BudgetTransactionCategory.Props => "Реквізит",
+            BudgetTransactionCategory.Costumes => "Костюми",
+            BudgetTransactionCategory.Makeup => "Грим",
+            BudgetTransactionCategory.Decorations => "Декорації",
+            BudgetTransactionCategory.Rent => "Оренда",
+            BudgetTransactionCategory.Transport => "Транспорт",
+            BudgetTransactionCategory.Fees => "Гонорари",
+            BudgetTransactionCategory.Marketing => "Реклама",
+            BudgetTransactionCategory.Equipment => "Техніка",
+
+            BudgetTransactionCategory.Other => "Інше",
+            _ => category.ToString()
+        };
+    }
+
+    private static string GetTypeText(BudgetTransactionType type)
+    {
+        return type switch
+        {
+            BudgetTransactionType.Income => "Дохід",
+            BudgetTransactionType.Expense => "Витрата",
+            _ => type.ToString()
+        };
+    }
+
+    private static string GetTypeBadgeClass(BudgetTransactionType type)
+    {
+        return type switch
+        {
+            BudgetTransactionType.Income => "text-bg-success",
+            BudgetTransactionType.Expense => "text-bg-danger",
+            _ => "text-bg-secondary"
+        };
+    }
+
+    private static string GetStatusText(BudgetTransactionStatus status)
+    {
+        return status switch
+        {
+            BudgetTransactionStatus.Planned => "Заплановано",
+            BudgetTransactionStatus.Confirmed => "Підтверджено",
+            BudgetTransactionStatus.Completed => "Виконано",
+            BudgetTransactionStatus.Cancelled => "Скасовано",
+            _ => status.ToString()
+        };
+    }
+
+    private static string GetStatusBadgeClass(BudgetTransactionStatus status)
+    {
+        return status switch
+        {
+            BudgetTransactionStatus.Planned => "text-bg-secondary",
+            BudgetTransactionStatus.Confirmed => "text-bg-primary",
+            BudgetTransactionStatus.Completed => "text-bg-success",
+            BudgetTransactionStatus.Cancelled => "text-bg-dark",
+            _ => "text-bg-secondary"
+        };
+    }
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+        <h1 class="h3 mb-1">
+            Бюджет вистави
+        </h1>
+
+        <p class="text-muted mb-0">
+            @Model.Performance.Title
+        </p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+        @if (canManageFinance)
+        {
+            <a asp-controller="BudgetTransactions"
+               asp-action="Create"
+               asp-route-performanceId="@Model.Performance.Id"
+               class="btn btn-primary">
+                Додати операцію
+            </a>
+        }
+
+        <a asp-controller="Performances"
+           asp-action="Details"
+           asp-route-id="@Model.Performance.Id"
+           class="btn btn-outline-secondary">
+            До вистави
+        </a>
+
+        <a asp-controller="BudgetTransactions"
+           asp-action="Index"
+           asp-route-performanceId="@Model.Performance.Id"
+           class="btn btn-outline-secondary">
+            Усі операції
+        </a>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form asp-controller="Performances"
+              asp-action="Budget"
+              method="get"
+              class="row g-3 align-items-end">
+
+            <input type="hidden"
+                   name="id"
+                   value="@Model.Performance.Id" />
+
+            <div class="col-md-3">
+                <label class="form-label">
+                    Дата від
+                </label>
+
+                <input type="date"
+                       name="dateFrom"
+                       value="@Model.DateFrom?.ToString("yyyy-MM-dd")"
+                       class="form-control" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">
+                    Дата до
+                </label>
+
+                <input type="date"
+                       name="dateTo"
+                       value="@Model.DateTo?.ToString("yyyy-MM-dd")"
+                       class="form-control" />
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">
+                    Валюта
+                </label>
+
+                <input type="text"
+                       name="currency"
+                       value="@Model.Currency"
+                       class="form-control"
+                       placeholder="UAH" />
+            </div>
+
+            <div class="col-md-4 d-flex flex-wrap gap-2">
+                <button type="submit"
+                        class="btn btn-primary">
+                    Застосувати
+                </button>
+
+                <a asp-controller="Performances"
+                   asp-action="Budget"
+                   asp-route-id="@Model.Performance.Id"
+                   class="btn btn-outline-secondary">
+                    Скинути
+                </a>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">
+                    Плановий бюджет вистави
+                </div>
+
+                <div class="h4 mb-0">
+                    @FormatMoney(Model.PlannedBudget, Model.Currency)
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">
+                    Планові витрати
+                </div>
+
+                <div class="h4 mb-0 text-danger">
+                    @FormatMoney(Model.PlannedExpenseTotal, Model.Currency)
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">
+                    Залишок планового бюджету
+                </div>
+
+                <div class="h4 mb-0 @(Model.PlannedBudgetRemaining >= 0 ? "text-success" : "text-danger")">
+                    @FormatMoney(Model.PlannedBudgetRemaining, Model.Currency)
+                </div>
+
+                <div class="small text-muted mt-1">
+                    Використано: @Model.PlannedBudgetUsagePercent.ToString("N2")%
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="row g-3 mb-4">
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">
+                    Планові доходи
+                </div>
+
+                <div class="h4 mb-0 text-success">
+                    @FormatMoney(Model.PlannedIncomeTotal, Model.Currency)
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">
+                    Планові витрати
+                </div>
+
+                <div class="h4 mb-0 text-danger">
+                    @FormatMoney(Model.PlannedExpenseTotal, Model.Currency)
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">
+                    Плановий прибуток
+                </div>
+
+                <div class="h4 mb-0 @(Model.PlannedProfit >= 0 ? "text-success" : "text-danger")">
+                    @FormatMoney(Model.PlannedProfit, Model.Currency)
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">
+                    Фактичні доходи
+                </div>
+
+                <div class="h4 mb-0 text-success">
+                    @FormatMoney(Model.ActualIncomeTotal, Model.Currency)
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">
+                    Фактичні витрати
+                </div>
+
+                <div class="h4 mb-0 text-danger">
+                    @FormatMoney(Model.ActualExpenseTotal, Model.Currency)
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">
+                    Фактичний прибуток
+                </div>
+
+                <div class="h4 mb-0 @(Model.ActualProfit >= 0 ? "text-success" : "text-danger")">
+                    @FormatMoney(Model.ActualProfit, Model.Currency)
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="row g-4 mb-4">
+
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h2 class="h5 mb-0">
+                    Доходи по категоріях
+                </h2>
+            </div>
+
+            <div class="card-body">
+                @if (!Model.IncomeByCategory.Any())
+                {
+                    <div class="text-muted">
+                        Доходів ще немає.
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Категорія</th>
+                                    <th>План</th>
+                                    <th>Факт</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach (var item in Model.IncomeByCategory)
+                                {
+                                    <tr>
+                                        <td>@GetCategoryText(item.Category)</td>
+                                        <td>@FormatMoney(item.PlannedTotal, Model.Currency)</td>
+                                        <td>@FormatMoney(item.ActualTotal, Model.Currency)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h2 class="h5 mb-0">
+                    Витрати по категоріях
+                </h2>
+            </div>
+
+            <div class="card-body">
+                @if (!Model.ExpenseByCategory.Any())
+                {
+                    <div class="text-muted">
+                        Витрат ще немає.
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Категорія</th>
+                                    <th>План</th>
+                                    <th>Факт</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach (var item in Model.ExpenseByCategory)
+                                {
+                                    <tr>
+                                        <td>@GetCategoryText(item.Category)</td>
+                                        <td>@FormatMoney(item.PlannedTotal, Model.Currency)</td>
+                                        <td>@FormatMoney(item.ActualTotal, Model.Currency)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <h2 class="h5 mb-0">
+            Прибуток по показах
+        </h2>
+
+        <a asp-controller="PerformanceShows"
+           asp-action="Index"
+           asp-route-performanceId="@Model.Performance.Id"
+           class="btn btn-sm btn-outline-secondary">
+            Покази вистави
+        </a>
+    </div>
+
+    <div class="card-body">
+        @if (!Model.ShowProfits.Any())
+        {
+            <div class="text-muted">
+                Немає фінансових операцій, прив’язаних до конкретних показів.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Показ</th>
+                            <th>Локація</th>
+                            <th>Планові доходи</th>
+                            <th>Планові витрати</th>
+                            <th>Плановий прибуток</th>
+                            <th>Фактичні доходи</th>
+                            <th>Фактичні витрати</th>
+                            <th>Фактичний прибуток</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var show in Model.ShowProfits)
+                        {
+                            <tr>
+                                <td>
+                                    @show.StartDateTime.ToString("dd.MM.yyyy HH:mm")
+                                </td>
+
+                                <td>
+                                    @show.LocationText
+                                </td>
+
+                                <td>
+                                    @FormatMoney(show.PlannedIncome, Model.Currency)
+                                </td>
+
+                                <td>
+                                    @FormatMoney(show.PlannedExpense, Model.Currency)
+                                </td>
+
+                                <td class="@(show.PlannedProfit >= 0 ? "text-success" : "text-danger")">
+                                    @FormatMoney(show.PlannedProfit, Model.Currency)
+                                </td>
+
+                                <td>
+                                    @FormatMoney(show.ActualIncome, Model.Currency)
+                                </td>
+
+                                <td>
+                                    @FormatMoney(show.ActualExpense, Model.Currency)
+                                </td>
+
+                                <td class="@(show.ActualProfit >= 0 ? "text-success" : "text-danger")">
+                                    @FormatMoney(show.ActualProfit, Model.Currency)
+                                </td>
+
+                                <td class="text-end">
+                                    <a asp-controller="PerformanceShows"
+                                       asp-action="Details"
+                                       asp-route-id="@show.PerformanceShowId"
+                                       class="btn btn-sm btn-outline-secondary">
+                                        Деталі
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <h2 class="h5 mb-0">
+            Останні фінансові операції
+        </h2>
+
+        <a asp-controller="BudgetTransactions"
+           asp-action="Index"
+           asp-route-performanceId="@Model.Performance.Id"
+           class="btn btn-sm btn-outline-secondary">
+            Усі операції
+        </a>
+    </div>
+
+    <div class="card-body">
+        @if (!Model.Transactions.Any())
+        {
+            <div class="text-muted">
+                Фінансових операцій для цієї вистави ще немає.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Операція</th>
+                            <th>Тип</th>
+                            <th>Категорія</th>
+                            <th>План</th>
+                            <th>Факт</th>
+                            <th>Статус</th>
+                            <th class="text-end">Дії</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var transaction in Model.Transactions.Take(10))
+                        {
+                            <tr>
+                                <td>
+                                    @transaction.TransactionDate.ToString("dd.MM.yyyy")
+                                </td>
+
+                                <td>
+                                    <div class="fw-semibold">
+                                        @transaction.Title
+                                    </div>
+
+                                    @if (transaction.PerformanceShow != null)
+                                    {
+                                        <div class="small text-muted">
+                                            Показ:
+                                            @transaction.PerformanceShow.StartDateTime.ToString("dd.MM.yyyy HH:mm")
+                                        </div>
+                                    }
+
+                                    @if (transaction.ProductionItem != null)
+                                    {
+                                        <div class="small text-muted">
+                                            Елемент:
+                                            @transaction.ProductionItem.Name
+                                        </div>
+                                    }
+                                </td>
+
+                                <td>
+                                    <span class="badge @GetTypeBadgeClass(transaction.Type)">
+                                        @GetTypeText(transaction.Type)
+                                    </span>
+                                </td>
+
+                                <td>
+                                    @GetCategoryText(transaction.Category)
+                                </td>
+
+                                <td>
+                                    @FormatMoney(transaction.PlannedAmount, transaction.Currency)
+                                </td>
+
+                                <td>
+                                    @FormatMoney(transaction.ActualAmount, transaction.Currency)
+                                </td>
+
+                                <td>
+                                    <span class="badge @GetStatusBadgeClass(transaction.Status)">
+                                        @GetStatusText(transaction.Status)
+                                    </span>
+                                </td>
+
+                                <td class="text-end">
+                                    <a asp-controller="BudgetTransactions"
+                                       asp-action="Details"
+                                       asp-route-id="@transaction.Id"
+                                       class="btn btn-sm btn-outline-secondary">
+                                        Деталі
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

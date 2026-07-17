@@ -1,4 +1,8 @@
-﻿<!DOCTYPE html>
+@using TheatreHub.Constants
+@using TheatreHub.Services.Notifications
+@inject INotificationService NotificationService
+
+<!DOCTYPE html>
 <html lang="uk">
 <head>
     <meta charset="utf-8" />
@@ -7,6 +11,10 @@
     <title>@ViewData["Title"] — TheatreHub</title>
 
     <script type="importmap"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet"
           href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
@@ -20,11 +28,23 @@
           asp-append-version="true" />
 </head>
 
+@{
+        var notificationCount = 0;
+
+        if (User.Identity?.IsAuthenticated == true)
+        {
+                var notifications =
+                        await NotificationService.GetNotificationsAsync(User);
+
+                notificationCount = notifications.TotalCount;
+        }
+}
+
 <body class="d-flex flex-column min-vh-100">
 
     <header>
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
-            <div class="container">
+        <nav class="navbar navbar-expand-lg navbar-dark custom-navbar shadow-sm">
+            <div class="container-fluid">
 
                 <a class="navbar-brand fw-bold"
                    asp-area=""
@@ -58,84 +78,131 @@
                             </a>
                         </li>
 
-                        <a class="nav-link"
-                           asp-controller="PerformanceShows"
-                           asp-action="Index">
-                            Покази
-                        </a>
-
-                        <li class="nav-item">
-                            <a class="nav-link"
-                               asp-area=""
-                               asp-controller="Performances"
-                               asp-action="Index">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle"
+                               href="#"
+                               role="button"
+                               data-bs-toggle="dropdown"
+                               aria-expanded="false">
                                 Вистави
                             </a>
+
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item"
+                                       asp-area=""
+                                       asp-controller="Performances"
+                                       asp-action="Index">
+                                        Вистави
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="dropdown-item"
+                                       asp-controller="PerformanceShows"
+                                       asp-action="Index">
+                                        Покази
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="dropdown-item"
+                                       asp-area=""
+                                       asp-controller="Actors"
+                                       asp-action="Index">
+                                        Актори
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="dropdown-item"
+                                       asp-area=""
+                                       asp-controller="CharacterRoles"
+                                       asp-action="Index">
+                                        Персонажі
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="dropdown-item"
+                                       asp-controller="RoleAssignments"
+                                       asp-action="Index">
+                                        Акторські склади
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
 
                         <li class="nav-item">
                             <a class="nav-link"
-                               asp-area=""
-                               asp-controller="Actors"
+                               asp-controller="Rehearsals"
                                asp-action="Index">
-                                Актори
+                                Репетиції
                             </a>
                         </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link"
-                               asp-area=""
-                               asp-controller="CharacterRoles"
-                               asp-action="Index">
-                                Персонажі
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a class="nav-link"
-                               asp-controller="RoleAssignments"
-                               asp-action="Index">
-                                Акторські склади
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                           <a class="nav-link"
-                              asp-controller="Rehearsals"
-                              asp-action="Index">
-                               Репетиції
-                           </a>
-                       </li>
-
-                        <li class="nav-item">
-                            <a class="nav-link"
-                               asp-controller="Venues"
-                               asp-action="Index">
-                                Майданчики
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a class="nav-link"
-                               asp-controller="Halls"
-                               asp-action="Index">
-                                Зали
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                        <a class="nav-link"
-                           asp-controller="TheatreTasks"
-                           asp-action="Index">
-                            Завдання
-                        </a>
-
+                        @if (User.IsInRole(UserRoles.SystemAdmin) ||
+                                                User.IsInRole(UserRoles.GeneralDirector) ||
+                                                User.IsInRole(UserRoles.StageDirector) ||
+                                                User.IsInRole(UserRoles.AssistantDirector) ||
+                                                User.IsInRole(UserRoles.ProductionStaff) ||
+                                                User.IsInRole(UserRoles.Playwright))
+                        {
                             <li class="nav-item">
-                            <a class="nav-link"
-                               asp-controller="ProductionItems"
-                               asp-action="Index">
-                                Реквізит
-                            </a>
+                                <a class="nav-link"
+                                   asp-controller="TheatreTasks"
+                                   asp-action="Index">
+                                    Завдання
+                                </a>
+                            </li>
+                        }
+
+                        @if (User.IsInRole(UserRoles.SystemAdmin) ||
+                                                User.IsInRole(UserRoles.GeneralDirector) ||
+                                                User.IsInRole(UserRoles.StageDirector) ||
+                                                User.IsInRole(UserRoles.ProductionStaff))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-controller="ProductionItems"
+                                   asp-action="Index">
+                                    Постановка
+                                </a>
+                            </li>
+                        }
+
+                        @if (User.IsInRole(UserRoles.SystemAdmin) ||
+                                                User.IsInRole(UserRoles.GeneralDirector) ||
+                                                User.IsInRole(UserRoles.StageDirector))
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle"
+                                   href="#"
+                                   role="button"
+                                   data-bs-toggle="dropdown"
+                                   aria-expanded="false">
+                                    Локації
+                                </a>
+
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a class="dropdown-item"
+                                           asp-controller="Venues"
+                                           asp-action="Index">
+                                            Майданчики
+                                        </a>
+                                    </li>
+
+                                    <li>
+                                        <a class="dropdown-item"
+                                           asp-controller="Halls"
+                                           asp-action="Index">
+                                            Зали
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        }
 
                         <li class="nav-item">
                             <a class="nav-link"
@@ -145,27 +212,98 @@
                             </a>
                         </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link"
-                               asp-area=""
-                               asp-controller="Home"
-                               asp-action="Privacy">
-                                Про систему
-                            </a>
-                        </li>
+                        @if (User.IsInRole(UserRoles.SystemAdmin) ||
+                                                User.IsInRole(UserRoles.GeneralDirector) ||
+                                                User.IsInRole(UserRoles.FinanceManager))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-controller="BudgetTransactions"
+                                   asp-action="Index">
+                                    Фінанси
+                                </a>
+                            </li>
+                        }
+
+                        @if (User.IsInRole(UserRoles.SystemAdmin) ||
+                                                User.IsInRole(UserRoles.GeneralDirector))
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle"
+                                   href="#"
+                                   role="button"
+                                   data-bs-toggle="dropdown"
+                                   aria-expanded="false">
+                                    Адміністрування
+                                </a>
+
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    @if (User.IsInRole(UserRoles.SystemAdmin))
+                                    {
+                                        <li>
+                                            <a class="dropdown-item"
+                                               asp-controller="AdminUsers"
+                                               asp-action="Index">
+                                                Користувачі
+                                            </a>
+                                        </li>
+                                    }
+
+                                    <li>
+                                        <a class="dropdown-item"
+                                           asp-controller="AdminActionLogs"
+                                           asp-action="Index">
+                                            Журнал дій
+                                        </a>
+                                    </li>
+
+                                    <li>
+                                        <a class="dropdown-item"
+                                           asp-controller="AdminBackups"
+                                           asp-action="Index">
+                                            Резервні копії
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        }
 
                     </ul>
 
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <ul class="navbar-nav me-0">
+                            <li class="nav-item d-flex align-items-center">
+                                <a class="nav-link notification-link text-light position-relative d-flex align-items-center justify-content-center"
+                                   asp-controller="Notifications"
+                                   asp-action="Index"
+                                   title="Сповіщення"
+                                   aria-label="Сповіщення">
+
+                                    <span class="notification-icon">🔔</span>
+
+                                    @if (notificationCount > 0)
+                                    {
+                                        <span class="notification-badge badge rounded-pill bg-danger">
+                                            @notificationCount
+                                        </span>
+                                    }
+                                </a>
+                            </li>
+                        </ul>
+                    }
+
+                    <partial name="_LoginPartial" />
                 </div>
             </div>
         </nav>
     </header>
 
-    <main class="container flex-grow-1 py-4">
+    <main class="container-fluid flex-grow-1 py-4 px-4">
         @RenderBody()
     </main>
 
-    <footer class="border-top bg-light text-muted py-3 mt-auto">
+    <footer class="border-top custom-footer py-3 mt-auto">
         <div class="container text-center">
             &copy; 2026 TheatreHub —
             інформаційна система керування театром

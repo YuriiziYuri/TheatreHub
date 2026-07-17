@@ -3,16 +3,24 @@ using Microsoft.EntityFrameworkCore;
 using TheatreHub.Data;
 using TheatreHub.Models;
 using TheatreHub.Models.Enums;
+using Microsoft.AspNetCore.Authorization;
+using TheatreHub.Constants;
+using TheatreHub.Services.ActionLogs;
 
 namespace TheatreHub.Controllers;
 
+[Authorize]
 public class ActsController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly IUserActionLogService _actionLogService;
 
-    public ActsController(ApplicationDbContext context)
+    public ActsController(
+        ApplicationDbContext context,
+        IUserActionLogService actionLogService)
     {
         _context = context;
+        _actionLogService = actionLogService;
     }
 
     // GET: Acts?performanceId=5
@@ -116,6 +124,7 @@ public class ActsController : Controller
     }
 
     // GET: Acts/Create?performanceId=5
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Create(
         int performanceId)
     {
@@ -156,6 +165,7 @@ public class ActsController : Controller
     // POST: Acts/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Create(
         [Bind(
             "PerformanceId,Number,Title," +
@@ -192,6 +202,21 @@ public class ActsController : Controller
             return View(act);
         }
 
+        var performanceTitle = await _context.Performances
+            .Where(performance =>
+                performance.Id == act.PerformanceId)
+            .Select(performance =>
+                performance.Title)
+            .FirstOrDefaultAsync();
+
+        await _actionLogService.LogAsync(
+            User,
+            "Create",
+            "Act",
+            act.Id,
+            act.DisplayName,
+            $"Створено дію «{act.DisplayName}» у виставі «{performanceTitle}».");
+
         TempData["SuccessMessage"] =
             $"Дію «{act.DisplayName}» успішно створено.";
 
@@ -204,6 +229,7 @@ public class ActsController : Controller
     }
 
     // GET: Acts/Edit/5
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Edit(int? id)
     {
         if (id == null)
@@ -231,6 +257,7 @@ public class ActsController : Controller
     // POST: Acts/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Edit(
         int id,
         [Bind(
@@ -287,6 +314,21 @@ public class ActsController : Controller
             return View(act);
         }
 
+        var performanceTitle = await _context.Performances
+            .Where(performance =>
+                performance.Id == existingAct.PerformanceId)
+            .Select(performance =>
+                performance.Title)
+            .FirstOrDefaultAsync();
+
+        await _actionLogService.LogAsync(
+            User,
+            "Edit",
+            "Act",
+            existingAct.Id,
+            existingAct.DisplayName,
+            $"Відредаговано дію «{existingAct.DisplayName}» у виставі «{performanceTitle}».");
+
         TempData["SuccessMessage"] =
             $"Дію «{existingAct.DisplayName}» успішно оновлено.";
 
@@ -300,6 +342,7 @@ public class ActsController : Controller
     }
 
     // GET: Acts/Delete/5
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Delete(int? id)
     {
         if (id == null)
@@ -327,6 +370,7 @@ public class ActsController : Controller
     // POST: Acts/Delete/5
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> DeleteConfirmed(
         int id)
     {
@@ -379,6 +423,14 @@ public class ActsController : Controller
 
         _context.Acts.Remove(act);
         await _context.SaveChangesAsync();
+
+        await _actionLogService.LogAsync(
+            User,
+            "Delete",
+            "Act",
+            id,
+            actName,
+            $"Видалено дію «{actName}».");
 
         TempData["SuccessMessage"] =
             $"Дію «{actName}» видалено.";

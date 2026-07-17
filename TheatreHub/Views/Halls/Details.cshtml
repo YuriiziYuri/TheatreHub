@@ -1,7 +1,15 @@
 @model TheatreHub.Models.Hall
 
+@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService AuthorizationService
+
 @{
     ViewData["Title"] = "Деталі залу";
+
+    var canManageVenues =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManageVenues)).Succeeded;
 }
 
 @if (TempData["SuccessMessage"] != null)
@@ -143,11 +151,14 @@
                 }
 
                 <div class="d-flex flex-wrap gap-2">
-                    <a asp-action="Edit"
-                       asp-route-id="@Model.Id"
-                       class="btn btn-primary">
-                        Редагувати
-                    </a>
+                    @if (canManageVenues)
+                    {
+                        <a asp-action="Edit"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-primary">
+                            Редагувати
+                        </a>
+                    }
 
                     <a asp-controller="Venues"
                        asp-action="Details"

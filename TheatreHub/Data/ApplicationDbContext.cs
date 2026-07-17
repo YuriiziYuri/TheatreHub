@@ -1,9 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using TheatreHub.Models;
 
 namespace TheatreHub.Data;
 
-public class ApplicationDbContext : DbContext
+public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 {
     public ApplicationDbContext(
         DbContextOptions<ApplicationDbContext> options)
@@ -50,10 +51,43 @@ public class ApplicationDbContext : DbContext
     Set<PerformanceShow>();
     public DbSet<TheatreTaskComment> TheatreTaskComments =>
     Set<TheatreTaskComment>();
+    public DbSet<BudgetTransaction> BudgetTransactions { get; set; }
+    public DbSet<NotificationReadState> NotificationReadStates { get; set; }
+    public DbSet<UserActionLog> UserActionLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<ApplicationUser>()
+            .HasOne(user => user.Actor)
+            .WithMany()
+            .HasForeignKey(user => user.ActorId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<NotificationReadState>()
+      .HasIndex(state => new
+      {
+        state.UserId,
+        state.NotificationKey
+      })
+      .IsUnique();
+
+        modelBuilder.Entity<NotificationReadState>()
+            .Property(state => state.NotificationKey)
+            .HasMaxLength(500);
+
+        modelBuilder.Entity<UserActionLog>()
+    .HasIndex(log => log.UserId);
+
+        modelBuilder.Entity<UserActionLog>()
+            .HasIndex(log => log.ActionType);
+
+        modelBuilder.Entity<UserActionLog>()
+            .HasIndex(log => log.EntityType);
+
+        modelBuilder.Entity<UserActionLog>()
+            .HasIndex(log => log.CreatedAt);
 
         ConfigureCharacterRoles(modelBuilder);
         ConfigureRoleAssignments(modelBuilder);
@@ -66,6 +100,7 @@ public class ApplicationDbContext : DbContext
         ConfigureTheatreTaskComments(modelBuilder);
         ConfigureProductionItems(modelBuilder);
         ConfigurePerformanceShows(modelBuilder);
+        ConfigureBudgetTransactions(modelBuilder);
     }
 
     private static void ConfigureCharacterRoles(
@@ -371,6 +406,63 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<PerformanceShow>()
             .HasIndex(show => show.Type);
+    }
+
+    private static void ConfigureBudgetTransactions(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<BudgetTransaction>()
+            .HasOne(transaction => transaction.Performance)
+            .WithMany()
+            .HasForeignKey(transaction => transaction.PerformanceId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<BudgetTransaction>()
+            .HasOne(transaction => transaction.PerformanceShow)
+            .WithMany()
+            .HasForeignKey(transaction => transaction.PerformanceShowId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<BudgetTransaction>()
+            .HasOne(transaction => transaction.ProductionItem)
+            .WithMany()
+            .HasForeignKey(transaction => transaction.ProductionItemId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<BudgetTransaction>()
+            .Property(transaction => transaction.PlannedAmount)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<BudgetTransaction>()
+            .Property(transaction => transaction.ActualAmount)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<BudgetTransaction>()
+            .Property(transaction => transaction.TicketPrice)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<BudgetTransaction>()
+            .HasIndex(transaction => transaction.PerformanceId);
+
+        modelBuilder.Entity<BudgetTransaction>()
+            .HasIndex(transaction => transaction.PerformanceShowId);
+
+        modelBuilder.Entity<BudgetTransaction>()
+            .HasIndex(transaction => transaction.ProductionItemId);
+
+        modelBuilder.Entity<BudgetTransaction>()
+            .HasIndex(transaction => transaction.Type);
+
+        modelBuilder.Entity<BudgetTransaction>()
+            .HasIndex(transaction => transaction.Category);
+
+        modelBuilder.Entity<BudgetTransaction>()
+            .HasIndex(transaction => transaction.Status);
+
+        modelBuilder.Entity<BudgetTransaction>()
+            .HasIndex(transaction => transaction.TransactionDate);
+
+        modelBuilder.Entity<BudgetTransaction>()
+            .HasIndex(transaction => transaction.Currency);
     }
 
 }

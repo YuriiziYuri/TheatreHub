@@ -103,6 +103,28 @@
                         </div>
                     </div>
 
+                    <div class="mb-3">
+                        <label asp-for="PlannedBudget"
+                               class="form-label fw-semibold">
+                            Плановий бюджет
+                        </label>
+
+                        <input asp-for="PlannedBudget"
+                               class="form-control"
+                               type="number"
+                               step="0.01"
+                               min="0"
+                               placeholder="Наприклад: 50000" />
+
+                        <span asp-validation-for="PlannedBudget"
+                              class="text-danger">
+                        </span>
+
+                        <div class="form-text">
+                            Орієнтовна сума, яку планується витратити на підготовку вистави.
+                        </div>
+                    </div>
+
                     <div class="mb-4">
                         <label asp-for="Status"
                                class="form-label fw-semibold">

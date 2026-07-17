@@ -1,7 +1,17 @@
 ﻿@model IEnumerable<TheatreHub.Models.Venue>
 
+@using Microsoft.AspNetCore.Authorization
+@using TheatreHub.Constants
+
+@inject IAuthorizationService AuthorizationService
+
 @{
     ViewData["Title"] = "Майданчики";
+
+    var canManageVenues =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManageVenues)).Succeeded;
 }
 
 <div class="d-flex flex-wrap
@@ -18,10 +28,13 @@
         </p>
     </div>
 
-    <a asp-action="Create"
-       class="btn btn-primary">
-        Додати майданчик
-    </a>
+    @if (canManageVenues)
+    {
+        <a asp-action="Create"
+           class="btn btn-primary">
+            Додати майданчик
+        </a>
+    }
 </div>
 
 @if (TempData["SuccessMessage"] != null)
@@ -112,17 +125,20 @@ else
                                     Деталі
                                 </a>
 
-                                <a asp-action="Edit"
-                                   asp-route-id="@item.Id"
-                                   class="btn btn-sm btn-outline-secondary">
-                                    Змінити
-                                </a>
+                                @if (canManageVenues)
+                                {
+                                    <a asp-action="Edit"
+                                       asp-route-id="@item.Id"
+                                       class="btn btn-sm btn-outline-secondary">
+                                        Змінити
+                                    </a>
 
-                                <a asp-action="Delete"
-                                   asp-route-id="@item.Id"
-                                   class="btn btn-sm btn-outline-danger">
-                                    Видалити
-                                </a>
+                                    <a asp-action="Delete"
+                                       asp-route-id="@item.Id"
+                                       class="btn btn-sm btn-outline-danger">
+                                        Видалити
+                                    </a>
+                                }
                             </td>
                         </tr>
                     }

@@ -1,46 +1,91 @@
-﻿@model IEnumerable<TheatreHub.Models.Scene>
+﻿@model IEnumerable<TheatreHub.Models.PerformanceShow>
+@using TheatreHub.Models
+@using TheatreHub.Models.Enums
+@using Microsoft.AspNetCore.Authorization
+@using TheatreHub.Constants
+
+@inject IAuthorizationService AuthorizationService
 
 @{
-    ViewData["Title"] = "Сцени";
-    var actId = (int)ViewBag.ActId;
+    ViewData["Title"] = "Покази";
+
+    var canManagePerformances =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManagePerformances)).Succeeded;
+
+    var performances =
+        ViewBag.Performances as List<Performance> ?? [];
+
+    int? selectedPerformanceId =
+        ViewBag.PerformanceId as int?;
+
+    PerformanceShowType? selectedType =
+        ViewBag.Type is PerformanceShowType typeValue
+            ? typeValue
+            : null;
+
+    PerformanceShowStatus? selectedStatus =
+        ViewBag.Status is PerformanceShowStatus statusValue
+            ? statusValue
+            : null;
 }
 
-<div class="d-flex flex-wrap
-            justify-content-between
-            align-items-center
-            gap-3
-            mb-4">
+@functions {
+    private static string GetTypeText(PerformanceShowType type)
+    {
+        return type switch
+        {
+            PerformanceShowType.Premiere => "Прем’єра",
+            PerformanceShowType.Regular => "Звичайний показ",
+            PerformanceShowType.Touring => "Виїзний показ",
+            PerformanceShowType.Closed => "Закритий показ",
+            PerformanceShowType.Charity => "Благодійний показ",
+            PerformanceShowType.Other => "Інше",
+            _ => type.ToString()
+        };
+    }
 
-    <div>
-        <h1 class="h2 mb-1">
-            Сцени
-        </h1>
+    private static string GetStatusText(PerformanceShowStatus status)
+    {
+        return status switch
+        {
+            PerformanceShowStatus.Planned => "Заплановано",
+            PerformanceShowStatus.Confirmed => "Підтверджено",
+            PerformanceShowStatus.Completed => "Проведено",
+            PerformanceShowStatus.Cancelled => "Скасовано",
+            PerformanceShowStatus.Postponed => "Перенесено",
+            _ => status.ToString()
+        };
+    }
 
-        <p class="text-muted mb-1">
-            Вистава:
-            <strong>@ViewBag.PerformanceTitle</strong>
-        </p>
+    private static string GetStatusClass(PerformanceShowStatus status)
+    {
+        return status switch
+        {
+            PerformanceShowStatus.Planned => "text-bg-secondary",
+            PerformanceShowStatus.Confirmed => "text-bg-primary",
+            PerformanceShowStatus.Completed => "text-bg-success",
+            PerformanceShowStatus.Cancelled => "text-bg-dark",
+            PerformanceShowStatus.Postponed => "text-bg-warning",
+            _ => "text-bg-secondary"
+        };
+    }
 
-        <p class="text-muted mb-0">
-            @ViewBag.ActName
-        </p>
-    </div>
+    private static string GetLocationText(PerformanceShow show)
+    {
+        if (show.Hall != null)
+        {
+            return show.Hall.Venue == null
+                ? show.Hall.Name
+                : $"{show.Hall.Venue.Name} — {show.Hall.Name}";
+        }
 
-    <div class="d-flex flex-wrap gap-2">
-        <a asp-action="Create"
-           asp-route-actId="@actId"
-           class="btn btn-primary">
-            Додати сцену
-        </a>
-
-        <a asp-controller="Acts"
-           asp-action="Details"
-           asp-route-id="@actId"
-           class="btn btn-outline-secondary">
-            До дії
-        </a>
-    </div>
-</div>
+        return string.IsNullOrWhiteSpace(show.ExternalLocation)
+            ? "Локацію не вказано"
+            : show.ExternalLocation;
+    }
+}
 
 @if (TempData["SuccessMessage"] != null)
 {
@@ -49,85 +94,265 @@
     </div>
 }
 
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+        <h1 class="h3 mb-1">
+            Покази
+        </h1>
+
+        <p class="text-muted mb-0">
+            Планування та облік реальних показів вистав.
+        </p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-controller="Calendar"
+           asp-action="Index"
+           asp-route-eventType="show"
+           class="btn btn-outline-secondary">
+            Календар показів
+        </a>
+
+        @if (canManagePerformances)
+        {
+            <a asp-action="Create"
+               class="btn btn-primary">
+                Додати показ
+            </a>
+        }
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+
+        <form asp-action="Index"
+              method="get"
+              class="row g-3 align-items-end">
+
+            <div class="col-md-4">
+                <label class="form-label">
+                    Вистава
+                </label>
+
+                <select name="performanceId"
+                        class="form-select">
+
+                    <option value="">
+                        Усі вистави
+                    </option>
+
+                    @foreach (var performance in performances)
+                    {
+                        <option value="@performance.Id"
+                                selected="@(selectedPerformanceId == performance.Id ? "selected" : null)">
+                            @performance.Title
+                        </option>
+                    }
+
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">
+                    Тип
+                </label>
+
+                <select name="type"
+                        class="form-select">
+
+                    <option value="">
+                        Усі типи
+                    </option>
+
+                    @foreach (var type in Enum.GetValues<PerformanceShowType>())
+                    {
+                        <option value="@type"
+                                selected="@(selectedType == type ? "selected" : null)">
+                            @GetTypeText(type)
+                        </option>
+                    }
+
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">
+                    Статус
+                </label>
+
+                <select name="status"
+                        class="form-select">
+
+                    <option value="">
+                        Усі статуси
+                    </option>
+
+                    @foreach (var status in Enum.GetValues<PerformanceShowStatus>())
+                    {
+                        <option value="@status"
+                                selected="@(selectedStatus == status ? "selected" : null)">
+                            @GetStatusText(status)
+                        </option>
+                    }
+
+                </select>
+            </div>
+
+            <div class="col-md-2 d-flex flex-wrap gap-2">
+                <button type="submit"
+                        class="btn btn-primary">
+                    Фільтр
+                </button>
+
+                <a asp-action="Index"
+                   class="btn btn-outline-secondary">
+                    Скинути
+                </a>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
 @if (!Model.Any())
 {
     <div class="alert alert-info">
-        У цій дії ще немає сцен.
+        Показів поки немає.
     </div>
 }
 else
 {
-    <div class="card border-0 shadow-sm">
-        <div class="table-responsive">
+    <div class="list-group">
 
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Сцена</th>
-                        <th>Порядок</th>
-                        <th>Тривалість</th>
-                        <th>Короткий зміст</th>
-                        <th class="text-end">Дії</th>
-                    </tr>
-                </thead>
+        @foreach (var show in Model)
+        {
+            <div class="list-group-item">
 
-                <tbody>
-                    @foreach (var scene in Model)
-                    {
-                        <tr>
-                            <td>
-                                <strong>
-                                    Сцена @scene.Number.
-                                    @scene.Title
-                                </strong>
-                            </td>
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
 
-                            <td>
-                                @scene.Position
-                            </td>
+                    <div>
+                        <h2 class="h5 mb-1">
+                            @show.Performance.Title
+                        </h2>
 
-                            <td>
-                                @scene.DurationMinutes хв
-                            </td>
+                        <div class="small text-muted">
+                            @show.StartDateTime.ToString("dd.MM.yyyy HH:mm")
+                            —
+                            @show.EndDateTime.ToString("HH:mm")
+                        </div>
 
-                            <td>
-                                @if (string.IsNullOrWhiteSpace(
-                                                        scene.Synopsis))
-                                {
-                                    <span class="text-muted">
-                                        Не вказано
-                                    </span>
-                                }
-                                else
-                                {
-                                    @scene.Synopsis
-                                }
-                            </td>
+                        <div class="small text-muted">
+                            @GetLocationText(show)
+                        </div>
 
-                            <td class="text-end text-nowrap">
-                                <a asp-action="Details"
-                                   asp-route-id="@scene.Id"
-                                   class="btn btn-sm btn-outline-primary">
-                                    Деталі
-                                </a>
+                        <div class="small text-muted">
+                            Тип: @GetTypeText(show.Type)
+                        </div>
 
+                        @if (show.ExpectedAudienceCount.HasValue ||
+                                        show.ActualAudienceCount.HasValue)
+                        {
+                            <div class="small text-muted">
+                                Глядачі:
+                                очікувано @(show.ExpectedAudienceCount?.ToString() ?? "—"),
+                                фактично @(show.ActualAudienceCount?.ToString() ?? "—")
+                            </div>
+                        }
+                    </div>
+
+                    <div class="text-end">
+
+                        <div class="mb-2">
+                            <span class="badge @GetStatusClass(show.Status)">
+                                @GetStatusText(show.Status)
+                            </span>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 justify-content-end">
+
+                            <a asp-action="Details"
+                               asp-route-id="@show.Id"
+                               class="btn btn-sm btn-outline-primary">
+                                Деталі
+                            </a>
+
+                            @if (canManagePerformances)
+                            {
                                 <a asp-action="Edit"
-                                   asp-route-id="@scene.Id"
+                                   asp-route-id="@show.Id"
                                    class="btn btn-sm btn-outline-secondary">
-                                    Змінити
+                                    Редагувати
                                 </a>
+
+                                @if (show.Status != PerformanceShowStatus.Confirmed)
+                                {
+                                    <form asp-action="ChangeStatus"
+                                          method="post"
+                                          class="d-inline">
+
+                                        <input type="hidden"
+                                               name="id"
+                                               value="@show.Id" />
+
+                                        <input type="hidden"
+                                               name="status"
+                                               value="@PerformanceShowStatus.Confirmed" />
+
+                                        <input type="hidden"
+                                               name="returnUrl"
+                                               value="@Context.Request.Path@Context.Request.QueryString" />
+
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-primary">
+                                            Підтвердити
+                                        </button>
+
+                                    </form>
+                                }
+
+                                @if (show.Status != PerformanceShowStatus.Completed)
+                                {
+                                    <form asp-action="ChangeStatus"
+                                          method="post"
+                                          class="d-inline">
+
+                                        <input type="hidden"
+                                               name="id"
+                                               value="@show.Id" />
+
+                                        <input type="hidden"
+                                               name="status"
+                                               value="@PerformanceShowStatus.Completed" />
+
+                                        <input type="hidden"
+                                               name="returnUrl"
+                                               value="@Context.Request.Path@Context.Request.QueryString" />
+
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-success">
+                                            Проведено
+                                        </button>
+
+                                    </form>
+                                }
 
                                 <a asp-action="Delete"
-                                   asp-route-id="@scene.Id"
+                                   asp-route-id="@show.Id"
                                    class="btn btn-sm btn-outline-danger">
                                     Видалити
                                 </a>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                            }
 
-        </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+        }
+
     </div>
 }

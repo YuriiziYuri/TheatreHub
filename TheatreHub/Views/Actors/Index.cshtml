@@ -1,7 +1,17 @@
 ﻿@model IEnumerable<TheatreHub.Models.Actor>
 
+@using Microsoft.AspNetCore.Authorization
+@using TheatreHub.Constants
+
+@inject IAuthorizationService AuthorizationService
+
 @{
     ViewData["Title"] = "Актори";
+
+    var canManagePerformances =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManagePerformances)).Succeeded;
 }
 
 <div class="d-flex justify-content-between align-items-start mb-4">
@@ -12,9 +22,12 @@
         </p>
     </div>
 
-    <a asp-action="Create" class="btn btn-primary">
-        Додати актора
-    </a>
+    @if (canManagePerformances)
+    {
+        <a asp-action="Create" class="btn btn-primary">
+            Додати актора
+        </a>
+    }
 </div>
 
 @if (!Model.Any())
@@ -57,19 +70,19 @@ else
                                 {
                                     <span class="text-muted">Не вказано</span>
                                 }
-                            </td>
+                        </td>
 
-                            <td>
-                                @(string.IsNullOrWhiteSpace(actor.PhoneNumber)
-                                    ? "Не вказано"
-                                    : actor.PhoneNumber)
-                            </td>
+                        <td>
+                            @(string.IsNullOrWhiteSpace(actor.PhoneNumber)
+                                                    ? "Не вказано"
+                                                    : actor.PhoneNumber)
+                                                                    </td>
 
-                            <td>
-                                @(string.IsNullOrWhiteSpace(actor.Notes)
-                                    ? "—"
-                                    : actor.Notes)
-                            </td>
+                        <td>
+                            @(string.IsNullOrWhiteSpace(actor.Notes)
+                                                    ? "—"
+                                                    : actor.Notes)
+                    </td>
 
                             <td class="text-end text-nowrap">
                                 <a asp-action="Details"
@@ -78,17 +91,20 @@ else
                                     Деталі
                                 </a>
 
-                                <a asp-action="Edit"
-                                   asp-route-id="@actor.Id"
-                                   class="btn btn-sm btn-outline-primary">
-                                    Змінити
-                                </a>
+                        @if (canManagePerformances)
+                                {
+                                    <a asp-action="Edit"
+                                       asp-route-id="@actor.Id"
+                                       class="btn btn-sm btn-outline-primary">
+                                        Змінити
+                                    </a>
 
-                                <a asp-action="Delete"
-                                   asp-route-id="@actor.Id"
-                                   class="btn btn-sm btn-outline-danger">
-                                    Видалити
-                                </a>
+                                    <a asp-action="Delete"
+                                       asp-route-id="@actor.Id"
+                                       class="btn btn-sm btn-outline-danger">
+                                        Видалити
+                                    </a>
+                                }
                             </td>
                         </tr>
                     }

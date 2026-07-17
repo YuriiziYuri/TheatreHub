@@ -1,8 +1,15 @@
 ﻿@model IEnumerable<TheatreHub.Models.Performance>
 @using TheatreHub.Models.Enums
+@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService AuthorizationService
 
 @{
     ViewData["Title"] = "Вистави";
+
+    var canManagePerformances =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManagePerformances)).Succeeded;
 }
 
 <div class="d-flex justify-content-between align-items-start mb-4">
@@ -13,10 +20,13 @@
         </p>
     </div>
 
-    <a asp-action="Create"
-       class="btn btn-primary">
-        Додати виставу
-    </a>
+    @if (canManagePerformances)
+    {
+        <a asp-action="Create"
+           class="btn btn-primary">
+            Додати виставу
+        </a>
+    }
 </div>
 
 @if (!Model.Any())
@@ -70,14 +80,14 @@ else
                                         @performance.Description
                                     </div>
                                 }
-                            </td>
+                        </td>
 
-                            <td>@performance.Genre</td>
+                        <td>@performance.Genre</td>
 
-                            <td>
-                                @(performance.PremiereDate?.ToString("dd.MM.yyyy")
-                                    ?? "Не вказано")
-                            </td>
+                        <td>
+                            @(performance.PremiereDate?.ToString("dd.MM.yyyy")
+                                                    ?? "Не вказано")
+                    </td>
 
                             <td>
                                 @performance.DurationMinutes хв
@@ -86,28 +96,31 @@ else
                             <td>
                                 <span class="badge @statusClass">
                                     @Html.DisplayFor(
-                                        modelItem => performance.Status)
-                                </span>
-                            </td>
+                                                        modelItem => performance.Status)
+                        </span>
+                    </td>
 
-                            <td class="text-end text-nowrap">
-                                <a asp-action="Details"
-                                   asp-route-id="@performance.Id"
-                                   class="btn btn-sm btn-outline-secondary">
-                                    Деталі
-                                </a>
+                    <td class="text-end text-nowrap">
+                        <a asp-action="Details"
+                           asp-route-id="@performance.Id"
+                           class="btn btn-sm btn-outline-secondary">
+                            Деталі
+                        </a>
 
-                                <a asp-action="Edit"
-                                   asp-route-id="@performance.Id"
-                                   class="btn btn-sm btn-outline-primary">
-                                    Змінити
-                                </a>
+                        @if (canManagePerformances)
+                                {
+                                    <a asp-action="Edit"
+                                       asp-route-id="@performance.Id"
+                                       class="btn btn-sm btn-outline-primary">
+                                        Змінити
+                                    </a>
 
-                                <a asp-action="Delete"
-                                   asp-route-id="@performance.Id"
-                                   class="btn btn-sm btn-outline-danger">
-                                    Видалити
-                                </a>
+                                    <a asp-action="Delete"
+                                       asp-route-id="@performance.Id"
+                                       class="btn btn-sm btn-outline-danger">
+                                        Видалити
+                                    </a>
+                                }
                             </td>
                         </tr>
                     }

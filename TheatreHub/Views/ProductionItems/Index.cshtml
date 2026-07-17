@@ -1,6 +1,10 @@
 ﻿@model IEnumerable<TheatreHub.Models.ProductionItem>
 @using TheatreHub.Models
 @using TheatreHub.Models.Enums
+@using Microsoft.AspNetCore.Authorization
+@using TheatreHub.Constants
+
+@inject IAuthorizationService AuthorizationService
 
 @{
     ViewData["Title"] = "Реквізит і постановочні елементи";
@@ -20,6 +24,11 @@
         ViewBag.Status is ProductionItemStatus statusValue
             ? statusValue
             : null;
+
+    var canManageProduction =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManageProduction)).Succeeded;
 }
 
 @functions {
@@ -82,10 +91,13 @@
         </p>
     </div>
 
-    <a asp-action="Create"
-       class="btn btn-primary">
-        Додати елемент
-    </a>
+    @if (canManageProduction)
+    {
+        <a asp-action="Create"
+           class="btn btn-primary">
+            Додати елемент
+        </a>
+    }
 </div>
 
 <div class="card border-0 shadow-sm mb-4">
@@ -269,69 +281,72 @@ else
                                 Деталі
                             </a>
 
-                            <a asp-action="Edit"
-                               asp-route-id="@item.Id"
-                               class="btn btn-sm btn-outline-secondary">
-                                Редагувати
-                            </a>
-
-                            @if (item.Status != ProductionItemStatus.InProgress)
+                            @if (canManageProduction)
                             {
-                                <form asp-action="ChangeStatus"
-                                      method="post"
-                                      class="d-inline">
+                                <a asp-action="Edit"
+                                   asp-route-id="@item.Id"
+                                   class="btn btn-sm btn-outline-secondary">
+                                    Редагувати
+                                </a>
 
-                                    <input type="hidden"
-                                           name="id"
-                                           value="@item.Id" />
+                                @if (item.Status != ProductionItemStatus.InProgress)
+                                {
+                                    <form asp-action="ChangeStatus"
+                                          method="post"
+                                          class="d-inline">
 
-                                    <input type="hidden"
-                                           name="status"
-                                           value="@ProductionItemStatus.InProgress" />
+                                        <input type="hidden"
+                                               name="id"
+                                               value="@item.Id" />
 
-                                    <input type="hidden"
-                                           name="returnUrl"
-                                           value="@Context.Request.Path@Context.Request.QueryString" />
+                                        <input type="hidden"
+                                               name="status"
+                                               value="@ProductionItemStatus.InProgress" />
 
-                                    <button type="submit"
-                                            class="btn btn-sm btn-outline-primary">
-                                        У роботу
-                                    </button>
+                                        <input type="hidden"
+                                               name="returnUrl"
+                                               value="@Context.Request.Path@Context.Request.QueryString" />
 
-                                </form>
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-primary">
+                                            У роботу
+                                        </button>
+
+                                    </form>
+                                }
+
+                                @if (item.Status != ProductionItemStatus.Ready)
+                                {
+                                    <form asp-action="ChangeStatus"
+                                          method="post"
+                                          class="d-inline">
+
+                                        <input type="hidden"
+                                               name="id"
+                                               value="@item.Id" />
+
+                                        <input type="hidden"
+                                               name="status"
+                                               value="@ProductionItemStatus.Ready" />
+
+                                        <input type="hidden"
+                                               name="returnUrl"
+                                               value="@Context.Request.Path@Context.Request.QueryString" />
+
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-success">
+                                            Готово
+                                        </button>
+
+                                    </form>
+                                }
+
+                                <a asp-action="Delete"
+                                   asp-route-id="@item.Id"
+                                   class="btn btn-sm btn-outline-danger">
+                                    Видалити
+                                </a>
                             }
-
-                            @if (item.Status != ProductionItemStatus.Ready)
-                            {
-                                <form asp-action="ChangeStatus"
-                                      method="post"
-                                      class="d-inline">
-
-                                    <input type="hidden"
-                                           name="id"
-                                           value="@item.Id" />
-
-                                    <input type="hidden"
-                                           name="status"
-                                           value="@ProductionItemStatus.Ready" />
-
-                                    <input type="hidden"
-                                           name="returnUrl"
-                                           value="@Context.Request.Path@Context.Request.QueryString" />
-
-                                    <button type="submit"
-                                            class="btn btn-sm btn-outline-success">
-                                        Готово
-                                    </button>
-
-                                </form>
-                            }
-
-                            <a asp-action="Delete"
-                               asp-route-id="@item.Id"
-                               class="btn btn-sm btn-outline-danger">
-                                Видалити
-                            </a>
 
                         </div>
 

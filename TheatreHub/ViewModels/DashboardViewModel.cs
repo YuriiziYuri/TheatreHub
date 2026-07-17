@@ -17,6 +17,17 @@ public class DashboardViewModel
     public int CriticalTasksCount { get; set; }
 
     public int ProblemProductionItemsCount { get; set; }
+    public decimal PlannedIncomeTotal { get; set; }
+
+    public decimal PlannedExpenseTotal { get; set; }
+
+    public decimal PlannedProfit { get; set; }
+
+    public decimal ActualIncomeTotal { get; set; }
+
+    public decimal ActualExpenseTotal { get; set; }
+
+    public decimal ActualProfit { get; set; }
 
     public List<DashboardRehearsalItemViewModel> UpcomingRehearsals { get; set; } = [];
 
@@ -25,6 +36,8 @@ public class DashboardViewModel
     public List<DashboardProductionItemViewModel> ProblemProductionItems { get; set; } = [];
 
     public List<DashboardPerformanceItemViewModel> AttentionPerformances { get; set; } = [];
+
+    public List<DashboardActionLogItemViewModel> RecentActionLogs { get; set; } = [];
 }
 
 public class DashboardRehearsalItemViewModel
@@ -100,4 +113,19 @@ public class DashboardPerformanceItemViewModel
         RolesWithoutMainCast > 0 ||
         OpenTasksCount > 0 ||
         ProblemProductionItemsCount > 0;
+}
+
+public class DashboardActionLogItemViewModel
+{
+    public DateTime CreatedAt { get; set; }
+
+    public string UserFullName { get; set; } = string.Empty;
+
+    public string ActionType { get; set; } = string.Empty;
+
+    public string EntityType { get; set; } = string.Empty;
+
+    public string? EntityTitle { get; set; }
+
+    public string Description { get; set; } = string.Empty;
 }

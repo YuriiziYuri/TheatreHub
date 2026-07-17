@@ -1,6 +1,16 @@
 ﻿@model IEnumerable<TheatreHub.Models.Rehearsal>
 
+@using Microsoft.AspNetCore.Authorization
+@using TheatreHub.Constants
+
+@inject IAuthorizationService AuthorizationService
+
 @{
+    var canManageRehearsals =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManageRehearsals)).Succeeded;
+
     ViewData["Title"] = "Репетиції";
 }
 
@@ -23,10 +33,13 @@
             Календар репетицій
         </a>
 
-        <a asp-action="Create"
-           class="btn btn-primary">
-            Створити репетицію
-        </a>
+        @if (canManageRehearsals)
+        {
+            <a asp-action="Create"
+               class="btn btn-primary">
+                Створити репетицію
+            </a>
+        }
     </div>
 </div>
 
@@ -144,27 +157,30 @@ else
                             Деталі
                         </a>
 
-                        <a asp-action="Edit"
-                           asp-route-id="@item.Id"
-                           class="btn btn-sm btn-outline-secondary">
-                            Змінити
-                        </a>
+                        @if (canManageRehearsals)
+                                {
+                                    <a asp-action="Edit"
+                                       asp-route-id="@item.Id"
+                                       class="btn btn-sm btn-outline-secondary">
+                                        Змінити
+                                    </a>
 
-                        <a asp-action="Attendance"
-                           asp-route-id="@item.Id"
-                           class="btn btn-sm btn-outline-success">
-                            Відвідування
-                        </a>
+                                    <a asp-action="Attendance"
+                                       asp-route-id="@item.Id"
+                                       class="btn btn-sm btn-outline-success">
+                                        Відвідування
+                                    </a>
 
-                        <a asp-action="Delete"
-                           asp-route-id="@item.Id"
-                           class="btn btn-sm btn-outline-danger">
-                            Видалити
-                        </a>
-
-                    </td>
-                </tr>
+                                    <a asp-action="Delete"
+                                       asp-route-id="@item.Id"
+                                       class="btn btn-sm btn-outline-danger">
+                                        Видалити
+                                    </a>
                                 }
+
+                            </td>
+                        </tr>
+                    }
                 </tbody>
 
             </table>

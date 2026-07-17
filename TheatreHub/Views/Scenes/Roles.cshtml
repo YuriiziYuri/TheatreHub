@@ -1,7 +1,15 @@
-﻿@model TheatreHub.ViewModels.SceneRolesViewModel
+﻿@using Microsoft.AspNetCore.Authorization
+@using TheatreHub.Constants
+@inject IAuthorizationService AuthorizationService
+@model TheatreHub.ViewModels.SceneRolesViewModel
 
 @{
     ViewData["Title"] = "Ролі сцени";
+
+    var canManagePerformances =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManagePerformances)).Succeeded;
 }
 
 <div class="mb-4">
@@ -134,10 +142,13 @@
 
         <div class="d-flex flex-wrap gap-2 mt-4">
 
-            <button type="submit"
-                    class="btn btn-primary">
-                Зберегти ролі сцени
-            </button>
+            @if (canManagePerformances)
+            {
+                <button type="submit"
+                        class="btn btn-primary">
+                    Зберегти ролі сцени
+                </button>
+            }
 
             <a asp-action="Details"
                asp-route-id="@Model.SceneId"

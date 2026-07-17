@@ -1,10 +1,29 @@
 @model TheatreHub.Models.Act
+@using Microsoft.AspNetCore.Authorization
+@using TheatreHub.Constants
 @using TheatreHub.Models
 @using TheatreHub.Models.Enums
 @using TheatreHub.ViewModels
 
+@inject IAuthorizationService AuthorizationService
+
 @{
     ViewData["Title"] = "Деталі дії";
+
+    var canManagePerformances =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManagePerformances)).Succeeded;
+
+    var canManageTasks =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManageTasks)).Succeeded;
+
+    var canManageRehearsals =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManageRehearsals)).Succeeded;
 }
 
 @if (TempData["SuccessMessage"] != null)
@@ -42,11 +61,14 @@
 
             <div class="d-flex flex-wrap gap-2">
 
-                <a asp-action="Edit"
-                   asp-route-id="@Model.Id"
-                   class="btn btn-primary">
-                    Редагувати
-                </a>
+                @if (canManagePerformances)
+                {
+                    <a asp-action="Edit"
+                       asp-route-id="@Model.Id"
+                       class="btn btn-primary">
+                        Редагувати
+                    </a>
+                }
 
                 <a asp-action="Index"
                    asp-route-performanceId="@Model.PerformanceId"
@@ -81,12 +103,15 @@
                 Сцени
             </h2>
 
-            <a asp-controller="Scenes"
-               asp-action="Create"
-               asp-route-actId="@Model.Id"
-               class="btn btn-sm btn-primary">
-                Додати сцену
-            </a>
+            @if (canManagePerformances)
+            {
+                <a asp-controller="Scenes"
+                   asp-action="Create"
+                   asp-route-actId="@Model.Id"
+                   class="btn btn-sm btn-primary">
+                    Додати сцену
+                </a>
+            }
         </div>
 
         @if (!Model.Scenes.Any())
@@ -102,9 +127,9 @@
                 {
                     <div class="list-group-item">
                         <div class="d-flex
-                                            justify-content-between
-                                            align-items-start
-                                            gap-3">
+                                                    justify-content-between
+                                                    align-items-start
+                                                    gap-3">
 
                             <div>
                                 <strong>
@@ -127,19 +152,22 @@
                                     Деталі
                                 </a>
 
-                                <a asp-controller="Scenes"
-                                   asp-action="Edit"
-                                   asp-route-id="@scene.Id"
-                                   class="btn btn-sm btn-outline-secondary">
-                                    Редагувати
-                                </a>
+                                @if (canManagePerformances)
+                                {
+                                    <a asp-controller="Scenes"
+                                       asp-action="Edit"
+                                       asp-route-id="@scene.Id"
+                                       class="btn btn-sm btn-outline-secondary">
+                                        Редагувати
+                                    </a>
 
-                                <a asp-controller="Scenes"
-                                   asp-action="Delete"
-                                   asp-route-id="@scene.Id"
-                                   class="btn btn-sm btn-outline-danger">
-                                    Видалити
-                                </a>
+                                    <a asp-controller="Scenes"
+                                       asp-action="Delete"
+                                       asp-route-id="@scene.Id"
+                                       class="btn btn-sm btn-outline-danger">
+                                        Видалити
+                                    </a>
+                                }
                             </div>
                         </div>
                     </div>
@@ -229,12 +257,15 @@
                 </p>
             </div>
 
-            <a asp-controller="TheatreTasks"
-               asp-action="Create"
-               asp-route-actId="@Model.Id"
-               class="btn btn-outline-primary">
-                Створити завдання дії
-            </a>
+            @if (canManageTasks)
+            {
+                <a asp-controller="TheatreTasks"
+                   asp-action="Create"
+                   asp-route-actId="@Model.Id"
+                   class="btn btn-outline-primary">
+                    Створити завдання дії
+                </a>
+            }
 
         </div>
 
@@ -253,9 +284,9 @@
                     <div class="list-group-item">
 
                         <div class="d-flex flex-wrap
-                                    justify-content-between
-                                    align-items-start
-                                    gap-3">
+                                            justify-content-between
+                                            align-items-start
+                                            gap-3">
 
                             <div>
                                 <strong>
@@ -313,7 +344,7 @@
                                         Деталі
                                     </a>
 
-                            @if (task.Status != TheatreTaskStatus.Done)
+                            @if (canManageTasks && task.Status != TheatreTaskStatus.Done)
                                     {
                                         <form asp-controller="TheatreTasks"
                                               asp-action="ChangeStatus"
@@ -367,12 +398,15 @@
                 </p>
             </div>
 
-            <a asp-controller="Rehearsals"
-               asp-action="Create"
-               asp-route-actId="@Model.Id"
-               class="btn btn-outline-success">
-                Створити репетицію дії
-            </a>
+            @if (canManageRehearsals)
+            {
+                <a asp-controller="Rehearsals"
+                   asp-action="Create"
+                   asp-route-actId="@Model.Id"
+                   class="btn btn-outline-success">
+                    Створити репетицію дії
+                </a>
+            }
 
         </div>
 
@@ -392,9 +426,9 @@
                     <div class="list-group-item">
 
                         <div class="d-flex flex-wrap
-                                    justify-content-between
-                                    align-items-start
-                                    gap-3">
+                                            justify-content-between
+                                            align-items-start
+                                            gap-3">
 
                             <div>
                                 <strong>
@@ -438,19 +472,22 @@
                                     Деталі
                                 </a>
 
-                                <a asp-controller="Rehearsals"
-                                   asp-action="Attendance"
-                                   asp-route-id="@rehearsal.Id"
-                                   class="btn btn-sm btn-outline-success">
-                                    Відвідування
-                                </a>
+                                @if (canManageRehearsals)
+                                {
+                                    <a asp-controller="Rehearsals"
+                                       asp-action="Attendance"
+                                       asp-route-id="@rehearsal.Id"
+                                       class="btn btn-sm btn-outline-success">
+                                        Відвідування
+                                    </a>
 
-                                <a asp-controller="Rehearsals"
-                                   asp-action="Edit"
-                                   asp-route-id="@rehearsal.Id"
-                                   class="btn btn-sm btn-outline-secondary">
-                                    Редагувати
-                                </a>
+                                    <a asp-controller="Rehearsals"
+                                       asp-action="Edit"
+                                       asp-route-id="@rehearsal.Id"
+                                       class="btn btn-sm btn-outline-secondary">
+                                        Редагувати
+                                    </a>
+                                }
 
                             </div>
 

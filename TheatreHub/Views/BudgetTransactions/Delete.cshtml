@@ -1,0 +1,157 @@
+@model TheatreHub.Models.BudgetTransaction
+
+@using TheatreHub.Models.Enums
+
+@{
+    ViewData["Title"] = "Видалити фінансову операцію";
+}
+
+@functions {
+    private static string FormatMoney(decimal amount, string? currency)
+    {
+        return $"{amount:N2} {currency ?? "UAH"}";
+    }
+
+    private static string FormatMoney(decimal? amount, string? currency)
+    {
+        return amount.HasValue
+            ? $"{amount.Value:N2} {currency ?? "UAH"}"
+            : "—";
+    }
+
+    private static string GetTypeText(BudgetTransactionType type)
+    {
+        return type switch
+        {
+            BudgetTransactionType.Income => "Дохід",
+            BudgetTransactionType.Expense => "Витрата",
+            _ => type.ToString()
+        };
+    }
+
+    private static string GetCategoryText(BudgetTransactionCategory category)
+    {
+        return category switch
+        {
+            BudgetTransactionCategory.Tickets => "Квитки",
+            BudgetTransactionCategory.InstitutionPayment => "Оплата від закладу",
+            BudgetTransactionCategory.Donation => "Благодійний внесок",
+            BudgetTransactionCategory.Grant => "Грант",
+            BudgetTransactionCategory.Partnership => "Партнерство",
+
+            BudgetTransactionCategory.Props => "Реквізит",
+            BudgetTransactionCategory.Costumes => "Костюми",
+            BudgetTransactionCategory.Makeup => "Грим",
+            BudgetTransactionCategory.Decorations => "Декорації",
+            BudgetTransactionCategory.Rent => "Оренда",
+            BudgetTransactionCategory.Transport => "Транспорт",
+            BudgetTransactionCategory.Fees => "Гонорари",
+            BudgetTransactionCategory.Marketing => "Реклама",
+            BudgetTransactionCategory.Equipment => "Техніка",
+
+            BudgetTransactionCategory.Other => "Інше",
+            _ => category.ToString()
+        };
+    }
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+        <h1 class="h3 mb-1 text-danger">
+            Видалити фінансову операцію
+        </h1>
+
+        <p class="text-muted mb-0">
+            Перевір дані перед видаленням.
+        </p>
+    </div>
+
+    <div>
+        <a asp-action="Details"
+           asp-route-id="@Model.Id"
+           class="btn btn-outline-secondary">
+            Назад до деталей
+        </a>
+    </div>
+</div>
+
+<div class="alert alert-warning">
+    <strong>Увага.</strong>
+    Цю фінансову операцію буде повністю видалено з системи.
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-4">
+                Назва
+            </dt>
+            <dd class="col-sm-8">
+                @Model.Title
+            </dd>
+
+            <dt class="col-sm-4">
+                Вистава
+            </dt>
+            <dd class="col-sm-8">
+                @Model.Performance.Title
+            </dd>
+
+            <dt class="col-sm-4">
+                Тип
+            </dt>
+            <dd class="col-sm-8">
+                @GetTypeText(Model.Type)
+            </dd>
+
+            <dt class="col-sm-4">
+                Категорія
+            </dt>
+            <dd class="col-sm-8">
+                @GetCategoryText(Model.Category)
+            </dd>
+
+            <dt class="col-sm-4">
+                Дата
+            </dt>
+            <dd class="col-sm-8">
+                @Model.TransactionDate.ToString("dd.MM.yyyy")
+            </dd>
+
+            <dt class="col-sm-4">
+                Планова сума
+            </dt>
+            <dd class="col-sm-8">
+                @FormatMoney(Model.PlannedAmount, Model.Currency)
+            </dd>
+
+            <dt class="col-sm-4">
+                Фактична сума
+            </dt>
+            <dd class="col-sm-8">
+                @FormatMoney(Model.ActualAmount, Model.Currency)
+            </dd>
+        </dl>
+
+        <form asp-action="Delete"
+              method="post"
+              class="d-flex flex-wrap justify-content-end gap-2 mt-4">
+
+            @Html.AntiForgeryToken()
+
+            <input type="hidden"
+                   asp-for="Id" />
+
+            <a asp-action="Details"
+               asp-route-id="@Model.Id"
+               class="btn btn-outline-secondary">
+                Скасувати
+            </a>
+
+            <button type="submit"
+                    class="btn btn-danger">
+                Видалити
+            </button>
+        </form>
+    </div>
+</div>

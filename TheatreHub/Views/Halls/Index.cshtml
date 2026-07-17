@@ -1,8 +1,16 @@
 ﻿@model IEnumerable<TheatreHub.Models.Hall>
 
+@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService AuthorizationService
+
 @{
     ViewData["Title"] = "Зали";
     int? venueId = ViewBag.VenueId;
+
+    var canManageVenues =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManageVenues)).Succeeded;
 }
 
 <div class="d-flex flex-wrap
@@ -32,11 +40,14 @@
         </p>
     </div>
 
-    <a asp-action="Create"
-       asp-route-venueId="@venueId"
-       class="btn btn-primary">
-        Додати зал
-    </a>
+    @if (canManageVenues)
+    {
+        <a asp-action="Create"
+           asp-route-venueId="@venueId"
+           class="btn btn-primary">
+            Додати зал
+        </a>
+    }
 </div>
 
 @if (TempData["SuccessMessage"] != null)
@@ -125,17 +136,20 @@ else
                                     Деталі
                                 </a>
 
-                                <a asp-action="Edit"
-                                   asp-route-id="@item.Id"
-                                   class="btn btn-sm btn-outline-secondary">
-                                    Змінити
-                                </a>
+                                @if (canManageVenues)
+                                {
+                                    <a asp-action="Edit"
+                                       asp-route-id="@item.Id"
+                                       class="btn btn-sm btn-outline-secondary">
+                                        Змінити
+                                    </a>
 
-                                <a asp-action="Delete"
-                                   asp-route-id="@item.Id"
-                                   class="btn btn-sm btn-outline-danger">
-                                    Видалити
-                                </a>
+                                    <a asp-action="Delete"
+                                       asp-route-id="@item.Id"
+                                       class="btn btn-sm btn-outline-danger">
+                                        Видалити
+                                    </a>
+                                }
                             </td>
                         </tr>
                     }

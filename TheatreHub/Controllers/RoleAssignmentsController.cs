@@ -3,16 +3,24 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using TheatreHub.Data;
 using TheatreHub.Models;
+using Microsoft.AspNetCore.Authorization;
+using TheatreHub.Constants;
+using TheatreHub.Services.ActionLogs;
 
 namespace TheatreHub.Controllers;
 
+[Authorize]
 public class RoleAssignmentsController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly IUserActionLogService _actionLogService;
 
-    public RoleAssignmentsController(ApplicationDbContext context)
+    public RoleAssignmentsController(
+        ApplicationDbContext context,
+        IUserActionLogService actionLogService)
     {
         _context = context;
+        _actionLogService = actionLogService;
     }
 
     // GET: RoleAssignments
@@ -67,6 +75,7 @@ public class RoleAssignmentsController : Controller
     }
 
     // GET: RoleAssignments/Create
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Create(int? characterRoleId)
     {
         var assignment = new RoleAssignment
@@ -86,6 +95,7 @@ public class RoleAssignmentsController : Controller
     // POST: RoleAssignments/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Create(
         [Bind(
             "CharacterRoleId,ActorId,CastType,StartDate," +
@@ -127,6 +137,17 @@ public class RoleAssignmentsController : Controller
             return View(assignment);
         }
 
+        var assignmentTitle =
+            await GetAssignmentTitleAsync(assignment.Id);
+
+        await _actionLogService.LogAsync(
+            User,
+            "Create",
+            "RoleAssignment",
+            assignment.Id,
+            assignmentTitle,
+            $"Створено акторське призначення: {assignmentTitle}.");
+
         TempData["SuccessMessage"] =
             "Акторське призначення успішно створено.";
 
@@ -139,6 +160,7 @@ public class RoleAssignmentsController : Controller
     }
 
     // GET: RoleAssignments/Edit/5
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Edit(int? id)
     {
         if (id == null)
@@ -166,6 +188,7 @@ public class RoleAssignmentsController : Controller
     // POST: RoleAssignments/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Edit(
         int id,
         [Bind(
@@ -259,6 +282,17 @@ public class RoleAssignmentsController : Controller
             return View(assignment);
         }
 
+        var assignmentTitle =
+            await GetAssignmentTitleAsync(existingAssignment.Id);
+
+        await _actionLogService.LogAsync(
+            User,
+            "Edit",
+            "RoleAssignment",
+            existingAssignment.Id,
+            assignmentTitle,
+            $"Оновлено акторське призначення: {assignmentTitle}.");
+
         TempData["SuccessMessage"] =
             "Акторське призначення успішно оновлено.";
 
@@ -274,9 +308,13 @@ public class RoleAssignmentsController : Controller
     // POST: RoleAssignments/Delete/5
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Delete(int id)
     {
         var assignment = await _context.RoleAssignments
+            .Include(item => item.CharacterRole)
+                .ThenInclude(role => role.Performance)
+            .Include(item => item.Actor)
             .FirstOrDefaultAsync(item => item.Id == id);
 
         if (assignment == null)
@@ -287,8 +325,19 @@ public class RoleAssignmentsController : Controller
         var characterRoleId =
             assignment.CharacterRoleId;
 
+        var assignmentTitle =
+            BuildAssignmentTitle(assignment);
+
         _context.RoleAssignments.Remove(assignment);
         await _context.SaveChangesAsync();
+
+        await _actionLogService.LogAsync(
+            User,
+            "Delete",
+            "RoleAssignment",
+            id,
+            assignmentTitle,
+            $"Видалено акторське призначення: {assignmentTitle}.");
 
         TempData["SuccessMessage"] =
             "Акторське призначення видалено.";
@@ -473,6 +522,42 @@ public class RoleAssignmentsController : Controller
                 "Id",
                 "Label",
                 selectedActorId);
+    }
+
+
+    private async Task<string> GetAssignmentTitleAsync(int id)
+    {
+        var assignment = await _context.RoleAssignments
+            .AsNoTracking()
+            .Include(item => item.CharacterRole)
+                .ThenInclude(role => role.Performance)
+            .Include(item => item.Actor)
+            .FirstOrDefaultAsync(item => item.Id == id);
+
+        if (assignment == null)
+        {
+            return $"Призначення #{id}";
+        }
+
+        return BuildAssignmentTitle(assignment);
+    }
+
+    private static string BuildAssignmentTitle(
+        RoleAssignment assignment)
+    {
+        var performanceTitle =
+            assignment.CharacterRole?.Performance?.Title
+            ?? "Вистава не вказана";
+
+        var roleName =
+            assignment.CharacterRole?.Name
+            ?? "Роль не вказана";
+
+        var actorName =
+            assignment.Actor?.FullName
+            ?? "Актор не вказаний";
+
+        return $"{performanceTitle} — {roleName} — {actorName}";
     }
 
     private static void NormalizeAssignment(

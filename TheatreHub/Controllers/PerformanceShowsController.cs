@@ -4,17 +4,24 @@ using Microsoft.EntityFrameworkCore;
 using TheatreHub.Data;
 using TheatreHub.Models;
 using TheatreHub.Models.Enums;
-using TheatreHub.ViewModels;
+using Microsoft.AspNetCore.Authorization;
+using TheatreHub.Constants;
+using TheatreHub.Services.ActionLogs;
 
 namespace TheatreHub.Controllers;
 
+[Authorize]
 public class PerformanceShowsController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly IUserActionLogService _actionLogService;
 
-    public PerformanceShowsController(ApplicationDbContext context)
+  public PerformanceShowsController(
+    ApplicationDbContext context,
+    IUserActionLogService actionLogService)
     {
         _context = context;
+        _actionLogService = actionLogService;
     }
 
     // GET: PerformanceShows
@@ -27,7 +34,7 @@ public class PerformanceShowsController : Controller
             .AsNoTracking()
             .Include(show => show.Performance)
             .Include(show => show.Hall)
-                .ThenInclude(hall => hall!.Venue!)
+                .ThenInclude(hall => hall!.Venue)
             .AsQueryable();
 
         if (performanceId.HasValue)
@@ -64,161 +71,6 @@ public class PerformanceShowsController : Controller
         return View(shows);
     }
 
-    // GET: PerformanceShows/Calendar
-    public async Task<IActionResult> Calendar(
-        DateTime? startDate,
-        DateTime? endDate,
-        int? performanceId,
-        int? hallId,
-        PerformanceShowType? type,
-        PerformanceShowStatus? status)
-    {
-        var today = DateTime.Today;
-
-        var calendarStartDate =
-            startDate?.Date ?? today;
-
-        var calendarEndDate =
-            endDate?.Date ?? today.AddDays(14);
-
-        if (calendarEndDate < calendarStartDate)
-        {
-            calendarEndDate =
-                calendarStartDate.AddDays(14);
-        }
-
-        var queryStart =
-            calendarStartDate;
-
-        var queryEnd =
-            calendarEndDate.AddDays(1);
-
-        var query = _context.PerformanceShows
-            .AsNoTracking()
-            .Include(show => show.Performance)
-            .Include(show => show.Hall)
-                .ThenInclude(hall => hall!.Venue!)
-            .Where(show =>
-                show.StartDateTime < queryEnd &&
-                show.EndDateTime >= queryStart);
-
-        if (performanceId.HasValue)
-        {
-            query = query.Where(show =>
-                show.PerformanceId == performanceId.Value);
-        }
-
-        if (hallId.HasValue)
-        {
-            query = query.Where(show =>
-                show.HallId == hallId.Value);
-        }
-
-        if (type.HasValue)
-        {
-            query = query.Where(show =>
-                show.Type == type.Value);
-        }
-
-        if (status.HasValue)
-        {
-            query = query.Where(show =>
-                show.Status == status.Value);
-        }
-
-        var shows = await query
-            .OrderBy(show =>
-                show.StartDateTime)
-            .ToListAsync();
-
-        var showItems = shows
-            .Select(show =>
-                new PerformanceShowCalendarItemViewModel
-                {
-                    Id = show.Id,
-
-                    PerformanceTitle =
-                        show.Performance.Title,
-
-                    TypeText =
-                        GetTypeText(show.Type),
-
-                    StatusText =
-                        GetStatusText(show.Status),
-
-                    StatusBadgeClass =
-                        GetStatusBadgeClass(show.Status),
-
-                    LocationText =
-                        GetLocationText(show),
-
-                    StartDateTime =
-                        show.StartDateTime,
-
-                    EndDateTime =
-                        show.EndDateTime,
-
-                    ExpectedAudienceCount =
-                        show.ExpectedAudienceCount,
-
-                    ActualAudienceCount =
-                        show.ActualAudienceCount
-                })
-            .ToList();
-
-        var days = new List<PerformanceShowCalendarDayViewModel>();
-
-        for (var date = calendarStartDate;
-             date <= calendarEndDate;
-             date = date.AddDays(1))
-        {
-            var dayShows = showItems
-                .Where(show =>
-                    show.StartDateTime.Date == date)
-                .OrderBy(show =>
-                    show.StartDateTime)
-                .ToList();
-
-            days.Add(
-                new PerformanceShowCalendarDayViewModel
-                {
-                    Date = date,
-                    Shows = dayShows
-                });
-        }
-
-        var model = new PerformanceShowCalendarViewModel
-        {
-            StartDate = calendarStartDate,
-            EndDate = calendarEndDate,
-            PerformanceId = performanceId,
-            HallId = hallId,
-            Type = type,
-            Status = status,
-            Days = days,
-
-            Performances = await _context.Performances
-                .AsNoTracking()
-                .OrderBy(performance =>
-                    performance.Title)
-                .ToListAsync(),
-
-            Halls = await _context.Halls
-                .AsNoTracking()
-                .Include(hall => hall.Venue!)
-                .Where(hall =>
-                    hall.IsActive &&
-                    hall.Venue!.IsActive)
-                .OrderBy(hall =>
-                    hall.Venue!.Name)
-                .ThenBy(hall =>
-                    hall.Name)
-                .ToListAsync()
-        };
-
-        return View(model);
-    }
-
     // GET: PerformanceShows/Details/5
     public async Task<IActionResult> Details(int? id)
     {
@@ -231,7 +83,7 @@ public class PerformanceShowsController : Controller
             .AsNoTracking()
             .Include(item => item.Performance)
             .Include(item => item.Hall)
-                .ThenInclude(hall => hall!.Venue!)
+                .ThenInclude(hall => hall!.Venue)
             .FirstOrDefaultAsync(item =>
                 item.Id == id.Value);
 
@@ -240,10 +92,55 @@ public class PerformanceShowsController : Controller
             return NotFound();
         }
 
+        var budgetTransactions = await _context.BudgetTransactions
+            .AsNoTracking()
+            .Where(transaction =>
+                transaction.PerformanceShowId == show.Id &&
+                transaction.Status != BudgetTransactionStatus.Cancelled)
+            .ToListAsync();
+
+        ViewBag.PlannedIncomeTotal =
+            budgetTransactions
+                .Where(transaction =>
+                    transaction.Type == BudgetTransactionType.Income)
+                .Sum(transaction =>
+                    transaction.PlannedAmount);
+
+        ViewBag.PlannedExpenseTotal =
+            budgetTransactions
+                .Where(transaction =>
+                    transaction.Type == BudgetTransactionType.Expense)
+                .Sum(transaction =>
+                    transaction.PlannedAmount);
+
+        ViewBag.PlannedProfit =
+            ViewBag.PlannedIncomeTotal - ViewBag.PlannedExpenseTotal;
+
+        ViewBag.ActualIncomeTotal =
+            budgetTransactions
+                .Where(transaction =>
+                    transaction.Type == BudgetTransactionType.Income)
+                .Sum(transaction =>
+                    transaction.ActualAmount ?? 0);
+
+        ViewBag.ActualExpenseTotal =
+            budgetTransactions
+                .Where(transaction =>
+                    transaction.Type == BudgetTransactionType.Expense)
+                .Sum(transaction =>
+                    transaction.ActualAmount ?? 0);
+
+        ViewBag.ActualProfit =
+            ViewBag.ActualIncomeTotal - ViewBag.ActualExpenseTotal;
+
+        ViewBag.BudgetTransactionsCount =
+            budgetTransactions.Count;
+
         return View(show);
     }
 
     // GET: PerformanceShows/Create
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Create(
         int? performanceId,
         int? hallId)
@@ -266,6 +163,7 @@ public class PerformanceShowsController : Controller
     // POST: PerformanceShows/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Create(
         [Bind(
             "PerformanceId,HallId,ExternalLocation," +
@@ -288,6 +186,18 @@ public class PerformanceShowsController : Controller
 
         _context.PerformanceShows.Add(show);
         await _context.SaveChangesAsync();
+        var performanceTitle = await _context.Performances
+            .Where(performance => performance.Id == show.PerformanceId)
+            .Select(performance => performance.Title)
+            .FirstOrDefaultAsync();
+
+        await _actionLogService.LogAsync(
+            User,
+            "Create",
+            "PerformanceShow",
+            show.Id,
+            performanceTitle,
+            $"Створено показ вистави «{performanceTitle}» на {show.StartDateTime:dd.MM.yyyy HH:mm}.");
 
         TempData["SuccessMessage"] =
             "Показ успішно створено.";
@@ -298,6 +208,7 @@ public class PerformanceShowsController : Controller
     }
 
     // GET: PerformanceShows/Edit/5
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Edit(int? id)
     {
         if (id == null)
@@ -323,6 +234,7 @@ public class PerformanceShowsController : Controller
     // POST: PerformanceShows/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Edit(
         int id,
         [Bind(
@@ -358,37 +270,30 @@ public class PerformanceShowsController : Controller
             return NotFound();
         }
 
-        existingShow.PerformanceId =
-            show.PerformanceId;
-
-        existingShow.HallId =
-            show.HallId;
-
-        existingShow.ExternalLocation =
-            show.ExternalLocation;
-
-        existingShow.StartDateTime =
-            show.StartDateTime;
-
-        existingShow.EndDateTime =
-            show.EndDateTime;
-
-        existingShow.Type =
-            show.Type;
-
-        existingShow.Status =
-            show.Status;
-
-        existingShow.ExpectedAudienceCount =
-            show.ExpectedAudienceCount;
-
-        existingShow.ActualAudienceCount =
-            show.ActualAudienceCount;
-
-        existingShow.Notes =
-            show.Notes;
+        existingShow.PerformanceId = show.PerformanceId;
+        existingShow.HallId = show.HallId;
+        existingShow.ExternalLocation = show.ExternalLocation;
+        existingShow.StartDateTime = show.StartDateTime;
+        existingShow.EndDateTime = show.EndDateTime;
+        existingShow.Type = show.Type;
+        existingShow.Status = show.Status;
+        existingShow.ExpectedAudienceCount = show.ExpectedAudienceCount;
+        existingShow.ActualAudienceCount = show.ActualAudienceCount;
+        existingShow.Notes = show.Notes;
 
         await _context.SaveChangesAsync();
+        var performanceTitle = await _context.Performances
+            .Where(performance => performance.Id == existingShow.PerformanceId)
+            .Select(performance => performance.Title)
+            .FirstOrDefaultAsync();
+
+        await _actionLogService.LogAsync(
+            User,
+            "Edit",
+            "PerformanceShow",
+            existingShow.Id,
+            performanceTitle,
+            $"Оновлено показ вистави «{performanceTitle}» на {existingShow.StartDateTime:dd.MM.yyyy HH:mm}.");
 
         TempData["SuccessMessage"] =
             "Показ успішно оновлено.";
@@ -399,6 +304,7 @@ public class PerformanceShowsController : Controller
     }
 
     // GET: PerformanceShows/Delete/5
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Delete(int? id)
     {
         if (id == null)
@@ -410,7 +316,7 @@ public class PerformanceShowsController : Controller
             .AsNoTracking()
             .Include(item => item.Performance)
             .Include(item => item.Hall)
-                .ThenInclude(hall => hall!.Venue!)
+                .ThenInclude(hall => hall!.Venue)
             .FirstOrDefaultAsync(item =>
                 item.Id == id.Value);
 
@@ -425,9 +331,11 @@ public class PerformanceShowsController : Controller
     // POST: PerformanceShows/Delete/5
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         var show = await _context.PerformanceShows
+            .Include(item => item.Performance)
             .FirstOrDefaultAsync(item =>
                 item.Id == id);
 
@@ -437,7 +345,18 @@ public class PerformanceShowsController : Controller
         }
 
         _context.PerformanceShows.Remove(show);
+
+        var performanceTitle = show.Performance.Title;
+        var showDateTime = show.StartDateTime;
+
         await _context.SaveChangesAsync();
+        await _actionLogService.LogAsync(
+            User,
+            "Delete",
+            "PerformanceShow",
+            id,
+            performanceTitle,
+            $"Видалено показ вистави «{performanceTitle}» на {showDateTime:dd.MM.yyyy HH:mm}.");
 
         TempData["SuccessMessage"] =
             "Показ видалено.";
@@ -447,6 +366,7 @@ public class PerformanceShowsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> ChangeStatus(
         int id,
         PerformanceShowStatus status,
@@ -458,6 +378,7 @@ public class PerformanceShowsController : Controller
         }
 
         var show = await _context.PerformanceShows
+            .Include(item => item.Performance)
             .FirstOrDefaultAsync(item =>
                 item.Id == id);
 
@@ -466,10 +387,19 @@ public class PerformanceShowsController : Controller
             return NotFound();
         }
 
-        show.Status =
-            status;
+        var oldStatus = show.Status;
+
+        show.Status = status;
 
         await _context.SaveChangesAsync();
+
+        await _actionLogService.LogAsync(
+            User,
+            "ChangeStatus",
+            "PerformanceShow",
+            show.Id,
+            show.Performance.Title,
+            $"Статус показу вистави «{show.Performance.Title}» змінено з {oldStatus} на {status}.");
 
         TempData["SuccessMessage"] =
             "Статус показу оновлено.";
@@ -496,14 +426,9 @@ public class PerformanceShowsController : Controller
                 performance.Title)
             .ToListAsync();
 
-        ViewBag.PerformanceId =
-            performanceId;
-
-        ViewBag.Type =
-            type;
-
-        ViewBag.Status =
-            status;
+        ViewBag.PerformanceId = performanceId;
+        ViewBag.Type = type;
+        ViewBag.Status = status;
     }
 
     private async Task LoadFormDataAsync(
@@ -538,9 +463,12 @@ public class PerformanceShowsController : Controller
                     ? show.PerformanceId.ToString()
                     : "");
 
-        var hallOptions = await _context.Halls
+        var halls = await _context.Halls
             .AsNoTracking()
-            .Include(hall => hall.Venue!)
+            .Include(hall => hall.Venue)
+            .Where(hall =>
+                hall.IsActive &&
+                hall.Venue!.IsActive)
             .OrderBy(hall =>
                 hall.Venue!.Name)
             .ThenBy(hall =>
@@ -553,7 +481,7 @@ public class PerformanceShowsController : Controller
                 })
             .ToListAsync();
 
-        hallOptions.Insert(
+        halls.Insert(
             0,
             new SelectListItem
             {
@@ -563,7 +491,7 @@ public class PerformanceShowsController : Controller
 
         ViewBag.HallOptions =
             new SelectList(
-                hallOptions,
+                halls,
                 "Value",
                 "Text",
                 show.HallId?.ToString());
@@ -742,34 +670,5 @@ public class PerformanceShowsController : Controller
             PerformanceShowStatus.Postponed => "Перенесено",
             _ => status.ToString()
         };
-    }
-
-    private static string GetStatusBadgeClass(
-        PerformanceShowStatus status)
-    {
-        return status switch
-        {
-            PerformanceShowStatus.Planned => "text-bg-secondary",
-            PerformanceShowStatus.Confirmed => "text-bg-primary",
-            PerformanceShowStatus.Completed => "text-bg-success",
-            PerformanceShowStatus.Cancelled => "text-bg-dark",
-            PerformanceShowStatus.Postponed => "text-bg-warning",
-            _ => "text-bg-secondary"
-        };
-    }
-
-    private static string GetLocationText(
-        PerformanceShow show)
-    {
-        if (show.Hall != null)
-        {
-            return show.Hall.Venue == null
-                ? show.Hall.Name
-                : $"{show.Hall.Venue.Name} — {show.Hall.Name}";
-        }
-
-        return string.IsNullOrWhiteSpace(show.ExternalLocation)
-            ? "Локацію не вказано"
-            : show.ExternalLocation;
     }
 }

@@ -5,9 +5,12 @@ using TheatreHub.Data;
 using TheatreHub.Models;
 using TheatreHub.Models.Enums;
 using TheatreHub.ViewModels;
+using Microsoft.AspNetCore.Authorization;
+using TheatreHub.Constants;
 
 namespace TheatreHub.Controllers;
 
+[Authorize]
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
@@ -202,6 +205,59 @@ public class HomeController : Controller
             }
         }
 
+        decimal plannedIncomeTotal = 0;
+        decimal plannedExpenseTotal = 0;
+        decimal actualIncomeTotal = 0;
+        decimal actualExpenseTotal = 0;
+
+        if (User.IsInRole(UserRoles.SystemAdmin) ||
+            User.IsInRole(UserRoles.GeneralDirector) ||
+            User.IsInRole(UserRoles.FinanceManager))
+        {
+            var activeBudgetTransactions = await _context.BudgetTransactions
+                .AsNoTracking()
+                .Where(transaction =>
+                    transaction.Status != BudgetTransactionStatus.Cancelled)
+                .ToListAsync();
+
+            plannedIncomeTotal = activeBudgetTransactions
+                .Where(transaction =>
+                    transaction.Type == BudgetTransactionType.Income)
+                .Sum(transaction =>
+                    transaction.PlannedAmount);
+
+            plannedExpenseTotal = activeBudgetTransactions
+                .Where(transaction =>
+                    transaction.Type == BudgetTransactionType.Expense)
+                .Sum(transaction =>
+                    transaction.PlannedAmount);
+
+            actualIncomeTotal = activeBudgetTransactions
+                .Where(transaction =>
+                    transaction.Type == BudgetTransactionType.Income)
+                .Sum(transaction =>
+                    transaction.ActualAmount ?? 0);
+
+            actualExpenseTotal = activeBudgetTransactions
+                .Where(transaction =>
+                    transaction.Type == BudgetTransactionType.Expense)
+                .Sum(transaction =>
+                    transaction.ActualAmount ?? 0);
+        }
+
+        var recentActionLogsRaw = new List<UserActionLog>();
+
+        if (User.IsInRole(UserRoles.SystemAdmin) ||
+            User.IsInRole(UserRoles.GeneralDirector))
+        {
+            recentActionLogsRaw = await _context.UserActionLogs
+                .AsNoTracking()
+                .OrderByDescending(log =>
+                    log.CreatedAt)
+                .Take(5)
+                .ToListAsync();
+        }
+
         var model = new DashboardViewModel
         {
             PerformancesCount = performancesCount,
@@ -222,6 +278,18 @@ public class HomeController : Controller
 
             ProblemProductionItemsCount =
                 problemProductionItemsCount,
+
+            PlannedIncomeTotal = plannedIncomeTotal,
+
+            PlannedExpenseTotal = plannedExpenseTotal,
+
+            PlannedProfit = plannedIncomeTotal - plannedExpenseTotal,
+
+            ActualIncomeTotal = actualIncomeTotal,
+
+            ActualExpenseTotal = actualExpenseTotal,
+
+            ActualProfit = actualIncomeTotal - actualExpenseTotal,
 
             UpcomingRehearsals = upcomingRehearsalsRaw
                 .Select(rehearsal =>
@@ -279,7 +347,20 @@ public class HomeController : Controller
                     })
                 .ToList(),
 
-            AttentionPerformances = attentionPerformances
+            AttentionPerformances = attentionPerformances,
+
+            RecentActionLogs = recentActionLogsRaw
+            .Select(log =>
+              new DashboardActionLogItemViewModel
+              {
+                CreatedAt = log.CreatedAt,
+                UserFullName = log.UserFullName,
+                ActionType = log.ActionType,
+                EntityType = log.EntityType,
+                EntityTitle = log.EntityTitle,
+                Description = log.Description
+              })
+        .ToList()
         };
 
         return View(model);

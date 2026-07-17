@@ -4,16 +4,24 @@ using Microsoft.EntityFrameworkCore;
 using TheatreHub.Data;
 using TheatreHub.Models;
 using TheatreHub.Models.Enums;
+using Microsoft.AspNetCore.Authorization;
+using TheatreHub.Constants;
+using TheatreHub.Services.ActionLogs;
 
 namespace TheatreHub.Controllers;
 
+[Authorize]
 public class ProductionItemsController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly IUserActionLogService _actionLogService;
 
-    public ProductionItemsController(ApplicationDbContext context)
+    public ProductionItemsController(
+        ApplicationDbContext context,
+        IUserActionLogService actionLogService)
     {
         _context = context;
+        _actionLogService = actionLogService;
     }
 
     // GET: ProductionItems
@@ -88,10 +96,35 @@ public class ProductionItemsController : Controller
             return NotFound();
         }
 
+        var budgetTransactions = await _context.BudgetTransactions
+            .AsNoTracking()
+            .Where(transaction =>
+                transaction.ProductionItemId == item.Id &&
+                transaction.Status != BudgetTransactionStatus.Cancelled)
+            .ToListAsync();
+
+        ViewBag.PlannedExpenseTotal =
+            budgetTransactions
+                .Where(transaction =>
+                    transaction.Type == BudgetTransactionType.Expense)
+                .Sum(transaction =>
+                    transaction.PlannedAmount);
+
+        ViewBag.ActualExpenseTotal =
+            budgetTransactions
+                .Where(transaction =>
+                    transaction.Type == BudgetTransactionType.Expense)
+                .Sum(transaction =>
+                    transaction.ActualAmount ?? 0);
+
+        ViewBag.BudgetTransactionsCount =
+            budgetTransactions.Count;
+
         return View(item);
     }
 
     // GET: ProductionItems/Create
+    [Authorize(Policy = AppPolicies.CanManageProduction)]
     public async Task<IActionResult> Create(
         int? performanceId,
         int? actId,
@@ -169,6 +202,7 @@ public class ProductionItemsController : Controller
     // POST: ProductionItems/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManageProduction)]
     public async Task<IActionResult> Create(
         [Bind(
             "Name,Description,Type,Status,Quantity," +
@@ -192,6 +226,19 @@ public class ProductionItemsController : Controller
         _context.ProductionItems.Add(item);
         await _context.SaveChangesAsync();
 
+        var performanceTitle = await _context.Performances
+            .Where(performance => performance.Id == item.PerformanceId)
+            .Select(performance => performance.Title)
+            .FirstOrDefaultAsync();
+
+        await _actionLogService.LogAsync(
+            User,
+            "Create",
+            "ProductionItem",
+            item.Id,
+            item.Name,
+            $"Створено постановочний елемент «{item.Name}» для вистави «{performanceTitle}».");
+
         TempData["SuccessMessage"] =
             $"Елемент «{item.Name}» створено.";
 
@@ -201,6 +248,7 @@ public class ProductionItemsController : Controller
     }
 
     // GET: ProductionItems/Edit/5
+    [Authorize(Policy = AppPolicies.CanManageProduction)]
     public async Task<IActionResult> Edit(int? id)
     {
         if (id == null)
@@ -226,6 +274,7 @@ public class ProductionItemsController : Controller
     // POST: ProductionItems/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManageProduction)]
     public async Task<IActionResult> Edit(
         int id,
         [Bind(
@@ -274,6 +323,19 @@ public class ProductionItemsController : Controller
 
         await _context.SaveChangesAsync();
 
+        var performanceTitle = await _context.Performances
+            .Where(performance => performance.Id == existingItem.PerformanceId)
+            .Select(performance => performance.Title)
+            .FirstOrDefaultAsync();
+
+        await _actionLogService.LogAsync(
+            User,
+            "Edit",
+            "ProductionItem",
+            existingItem.Id,
+            existingItem.Name,
+            $"Оновлено постановочний елемент «{existingItem.Name}» для вистави «{performanceTitle}».");
+
         TempData["SuccessMessage"] =
             $"Елемент «{existingItem.Name}» оновлено.";
 
@@ -283,6 +345,7 @@ public class ProductionItemsController : Controller
     }
 
     // GET: ProductionItems/Delete/5
+    [Authorize(Policy = AppPolicies.CanManageProduction)]
     public async Task<IActionResult> Delete(int? id)
     {
         if (id == null)
@@ -309,6 +372,7 @@ public class ProductionItemsController : Controller
     // POST: ProductionItems/Delete/5
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManageProduction)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         var item = await _context.ProductionItems
@@ -321,9 +385,23 @@ public class ProductionItemsController : Controller
         }
 
         var name = item.Name;
+        var performanceId = item.PerformanceId;
 
         _context.ProductionItems.Remove(item);
         await _context.SaveChangesAsync();
+
+        var performanceTitle = await _context.Performances
+            .Where(performance => performance.Id == performanceId)
+            .Select(performance => performance.Title)
+            .FirstOrDefaultAsync();
+
+        await _actionLogService.LogAsync(
+            User,
+            "Delete",
+            "ProductionItem",
+            id,
+            name,
+            $"Видалено постановочний елемент «{name}» з вистави «{performanceTitle}».");
 
         TempData["SuccessMessage"] =
             $"Елемент «{name}» видалено.";
@@ -331,8 +409,10 @@ public class ProductionItemsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    // ChangeStatus
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManageProduction)]
     public async Task<IActionResult> ChangeStatus(
         int id,
         ProductionItemStatus status,
@@ -352,9 +432,19 @@ public class ProductionItemsController : Controller
             return NotFound();
         }
 
+        var oldStatus = item.Status;
+
         item.Status = status;
 
         await _context.SaveChangesAsync();
+
+        await _actionLogService.LogAsync(
+            User,
+            "ChangeStatus",
+            "ProductionItem",
+            item.Id,
+            item.Name,
+            $"Статус постановочного елемента «{item.Name}» змінено з {oldStatus} на {status}.");
 
         TempData["SuccessMessage"] =
             $"Статус елемента «{item.Name}» оновлено.";

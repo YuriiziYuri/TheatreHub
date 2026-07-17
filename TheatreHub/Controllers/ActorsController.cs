@@ -2,16 +2,24 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TheatreHub.Data;
 using TheatreHub.Models;
+using Microsoft.AspNetCore.Authorization;
+using TheatreHub.Constants;
+using TheatreHub.Services.ActionLogs;
 
 namespace TheatreHub.Controllers;
 
+[Authorize]
 public class ActorsController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly IUserActionLogService _actionLogService;
 
-    public ActorsController(ApplicationDbContext context)
+    public ActorsController(
+        ApplicationDbContext context,
+        IUserActionLogService actionLogService)
     {
         _context = context;
+        _actionLogService = actionLogService;
     }
 
     // GET: Actors
@@ -68,6 +76,7 @@ public class ActorsController : Controller
     }
 
     // GET: Actors/Create
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public IActionResult Create()
     {
         return View();
@@ -76,6 +85,7 @@ public class ActorsController : Controller
     // POST: Actors/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Create(
         [Bind("Id,FirstName,LastName,Email,PhoneNumber,Notes")]
         Actor actor)
@@ -90,6 +100,14 @@ public class ActorsController : Controller
         _context.Actors.Add(actor);
         await _context.SaveChangesAsync();
 
+        await _actionLogService.LogAsync(
+            User,
+            "Create",
+            "Actor",
+            actor.Id,
+            actor.FullName,
+            $"Створено актора «{actor.FullName}».");
+
         TempData["SuccessMessage"] =
             $"Актора «{actor.FullName}» успішно створено.";
 
@@ -97,6 +115,7 @@ public class ActorsController : Controller
     }
 
     // GET: Actors/Edit/5
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Edit(int? id)
     {
         if (id == null)
@@ -119,6 +138,7 @@ public class ActorsController : Controller
     // POST: Actors/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Edit(
         int id,
         [Bind("Id,FirstName,LastName,Email,PhoneNumber,Notes")]
@@ -152,6 +172,14 @@ public class ActorsController : Controller
 
         await _context.SaveChangesAsync();
 
+        await _actionLogService.LogAsync(
+            User,
+            "Edit",
+            "Actor",
+            existingActor.Id,
+            existingActor.FullName,
+            $"Відредаговано актора «{existingActor.FullName}».");
+
         TempData["SuccessMessage"] =
             $"Актора «{existingActor.FullName}» успішно оновлено.";
 
@@ -161,6 +189,7 @@ public class ActorsController : Controller
     }
 
     // GET: Actors/Delete/5
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Delete(int? id)
     {
         if (id == null)
@@ -185,6 +214,7 @@ public class ActorsController : Controller
     // POST: Actors/Delete/5
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         var actor = await _context.Actors
@@ -220,6 +250,14 @@ public class ActorsController : Controller
 
         _context.Actors.Remove(actor);
         await _context.SaveChangesAsync();
+
+        await _actionLogService.LogAsync(
+            User,
+            "Delete",
+            "Actor",
+            id,
+            actorName,
+            $"Видалено актора «{actorName}».");
 
         TempData["SuccessMessage"] =
             $"Актора «{actorName}» видалено.";

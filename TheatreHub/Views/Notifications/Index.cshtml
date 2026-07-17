@@ -1,0 +1,102 @@
+﻿@model TheatreHub.ViewModels.Notifications.NotificationsIndexViewModel
+
+@{
+    ViewData["Title"] = "Сповіщення";
+}
+
+<div class="container-fluid">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        <div>
+            <h1 class="h3 mb-1">Сповіщення</h1>
+            <p class="text-muted mb-0">
+                Автоматично зібрані події, які потребують уваги.
+            </p>
+        </div>
+
+        <div class="d-flex gap-2">
+            @if (Model.TotalCount > 0)
+            {
+                <form asp-action="MarkAllAsRead"
+                      method="post">
+                    @Html.AntiForgeryToken()
+
+                    <button type="submit"
+                            class="btn btn-outline-success">
+                        Позначити всі прочитаними
+                    </button>
+                </form>
+            }
+
+            <a asp-controller="Calendar"
+               asp-action="Index"
+               class="btn btn-outline-primary">
+                Календар
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-danger h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Критичні</div>
+                    <div class="display-6">@Model.CriticalNotifications.Count</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-warning h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Попередження</div>
+                    <div class="display-6">@Model.WarningNotifications.Count</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-info h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Інформаційні</div>
+                    <div class="display-6">@Model.InfoNotifications.Count</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.TotalCount == 0)
+    {
+        <div class="alert alert-success">
+            Немає актуальних сповіщень.
+        </div>
+    }
+    else
+    {
+        <partial name="_NotificationGroup"
+                 model="Model.CriticalNotifications"
+                 view-data='new ViewDataDictionary(ViewData)
+                              {
+                                  { "GroupTitle", "Критичні сповіщення" },
+                                  { "EmptyText", "Критичних сповіщень немає." },
+                                  { "BadgeClass", "text-bg-danger" }
+                              }' />
+
+    <partial name="_NotificationGroup"
+             model="Model.WarningNotifications"
+             view-data='new ViewDataDictionary(ViewData)
+                              {
+                                  { "GroupTitle", "Попередження" },
+                                  { "EmptyText", "Попереджень немає." },
+                                  { "BadgeClass", "text-bg-warning" }
+                              }' />
+
+    <partial name="_NotificationGroup"
+             model="Model.InfoNotifications"
+             view-data='new ViewDataDictionary(ViewData)
+                              {
+                                  { "GroupTitle", "Інформаційні сповіщення" },
+                                  { "EmptyText", "Інформаційних сповіщень немає." },
+                                  { "BadgeClass", "text-bg-info" }
+                              }' />
+        }
+</div>

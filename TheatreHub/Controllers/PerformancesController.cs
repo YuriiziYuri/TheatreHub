@@ -4,16 +4,24 @@ using TheatreHub.Data;
 using TheatreHub.Models;
 using TheatreHub.Models.Enums;
 using TheatreHub.ViewModels;
+using Microsoft.AspNetCore.Authorization;
+using TheatreHub.Constants;
+using TheatreHub.Services.ActionLogs;
 
 namespace TheatreHub.Controllers;
 
+[Authorize]
 public class PerformancesController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly IUserActionLogService _actionLogService;
 
-    public PerformancesController(ApplicationDbContext context)
+    public PerformancesController(
+        ApplicationDbContext context,
+        IUserActionLogService actionLogService)
     {
         _context = context;
+        _actionLogService = actionLogService;
     }
 
     // GET: Performances
@@ -104,6 +112,50 @@ public class PerformancesController : Controller
         show.StartDateTime)
     .ToListAsync();
 
+        var budgetTransactions = await _context.BudgetTransactions
+    .AsNoTracking()
+    .Where(transaction =>
+        transaction.PerformanceId == performance.Id &&
+        transaction.Status != BudgetTransactionStatus.Cancelled)
+    .ToListAsync();
+
+        ViewBag.PlannedBudget =
+            performance.PlannedBudget ?? 0;
+
+        ViewBag.PlannedIncomeTotal =
+            budgetTransactions
+                .Where(transaction =>
+                    transaction.Type == BudgetTransactionType.Income)
+                .Sum(transaction =>
+                    transaction.PlannedAmount);
+
+        ViewBag.PlannedExpenseTotal =
+            budgetTransactions
+                .Where(transaction =>
+                    transaction.Type == BudgetTransactionType.Expense)
+                .Sum(transaction =>
+                    transaction.PlannedAmount);
+
+        ViewBag.ActualIncomeTotal =
+            budgetTransactions
+                .Where(transaction =>
+                    transaction.Type == BudgetTransactionType.Income)
+                .Sum(transaction =>
+                    transaction.ActualAmount ?? 0);
+
+        ViewBag.ActualExpenseTotal =
+            budgetTransactions
+                .Where(transaction =>
+                    transaction.Type == BudgetTransactionType.Expense)
+                .Sum(transaction =>
+                    transaction.ActualAmount ?? 0);
+
+        ViewBag.ActualProfit =
+            ViewBag.ActualIncomeTotal - ViewBag.ActualExpenseTotal;
+
+        ViewBag.PlannedBudgetRemaining =
+            ViewBag.PlannedBudget - ViewBag.PlannedExpenseTotal;
+
         performance.CharacterRoles = performance.CharacterRoles
             .OrderBy(role => role.IsMainRole ? 0 : 1)
             .ThenBy(role => role.Name)
@@ -117,6 +169,7 @@ public class PerformancesController : Controller
     }
 
     // GET: Performances/Create
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public IActionResult Create()
     {
         return View(new Performance());
@@ -125,10 +178,11 @@ public class PerformancesController : Controller
     // POST: Performances/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Create(
         [Bind(
             "Title,Description,Genre,PremiereDate," +
-            "DurationMinutes,Status")]
+            "DurationMinutes,Status,PlannedBudget")]
         Performance performance,
         string? submitAction)
     {
@@ -146,6 +200,13 @@ public class PerformancesController : Controller
 
         _context.Performances.Add(performance);
         await _context.SaveChangesAsync();
+        await _actionLogService.LogAsync(
+            User,
+            "Create",
+            "Performance",
+            performance.Id,
+            performance.Title,
+            $"Створено виставу «{performance.Title}».");
 
         TempData["SuccessMessage"] =
             $"Виставу «{performance.Title}» успішно створено.";
@@ -170,6 +231,7 @@ public class PerformancesController : Controller
     }
 
     // GET: Performances/Edit/5
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Edit(int? id)
     {
         if (id == null)
@@ -191,11 +253,12 @@ public class PerformancesController : Controller
     // POST: Performances/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Edit(
         int id,
         [Bind(
             "Id,Title,Description,Genre,PremiereDate," +
-            "DurationMinutes,Status")]
+            "DurationMinutes,Status,PlannedBudget")]
         Performance performance,
         string? submitAction)
     {
@@ -241,9 +304,19 @@ public class PerformancesController : Controller
         existingPerformance.Status =
             performance.Status;
 
+        existingPerformance.PlannedBudget =
+            performance.PlannedBudget;
+
         try
         {
             await _context.SaveChangesAsync();
+            await _actionLogService.LogAsync(
+                User,
+                "Edit",
+                "Performance",
+                performance.Id,
+                performance.Title,
+                $"Відредаговано виставу «{performance.Title}».");
         }
         catch (DbUpdateConcurrencyException)
         {
@@ -278,6 +351,7 @@ public class PerformancesController : Controller
     }
 
     // GET: Performances/Delete/5
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Delete(int? id)
     {
         if (id == null)
@@ -305,12 +379,235 @@ public class PerformancesController : Controller
                 .CountAsync(show =>
                     show.PerformanceId == performance.Id);
 
+        ViewBag.BudgetTransactionsCount = await _context.BudgetTransactions
+    .AsNoTracking()
+    .CountAsync(transaction =>
+        transaction.PerformanceId == performance.Id);
+
         return View(performance);
+    }
+
+    [Authorize(Policy = AppPolicies.CanViewFinance)]
+    public async Task<IActionResult> Budget(
+    int? id,
+    DateTime? dateFrom,
+    DateTime? dateTo,
+    string? currency)
+    {
+        if (id == null)
+        {
+            return NotFound();
+        }
+
+        var performance = await _context.Performances
+            .AsNoTracking()
+            .FirstOrDefaultAsync(item =>
+                item.Id == id.Value);
+
+        if (performance == null)
+        {
+            return NotFound();
+        }
+
+        var query = _context.BudgetTransactions
+            .AsNoTracking()
+            .Include(transaction => transaction.Performance)
+            .Include(transaction => transaction.PerformanceShow)
+                .ThenInclude(show => show!.Hall)
+                    .ThenInclude(hall => hall!.Venue!)
+            .Include(transaction => transaction.ProductionItem)
+            .Where(transaction =>
+                transaction.PerformanceId == performance.Id);
+
+        if (dateFrom.HasValue)
+        {
+            query = query.Where(transaction =>
+                transaction.TransactionDate.Date >= dateFrom.Value.Date);
+        }
+
+        if (dateTo.HasValue)
+        {
+            query = query.Where(transaction =>
+                transaction.TransactionDate.Date <= dateTo.Value.Date);
+        }
+
+        if (!string.IsNullOrWhiteSpace(currency))
+        {
+            query = query.Where(transaction =>
+                transaction.Currency == currency.Trim().ToUpperInvariant());
+        }
+
+        var transactions = await query
+            .OrderByDescending(transaction =>
+                transaction.TransactionDate)
+            .ThenByDescending(transaction =>
+                transaction.Id)
+            .ToListAsync();
+
+        var activeTransactions = transactions
+            .Where(transaction =>
+                transaction.Status != BudgetTransactionStatus.Cancelled)
+            .ToList();
+
+        var plannedIncomeTotal = activeTransactions
+            .Where(transaction =>
+                transaction.Type == BudgetTransactionType.Income)
+            .Sum(transaction =>
+                transaction.PlannedAmount);
+
+        var plannedExpenseTotal = activeTransactions
+            .Where(transaction =>
+                transaction.Type == BudgetTransactionType.Expense)
+            .Sum(transaction =>
+                transaction.PlannedAmount);
+
+        var actualIncomeTotal = activeTransactions
+            .Where(transaction =>
+                transaction.Type == BudgetTransactionType.Income)
+            .Sum(transaction =>
+                transaction.ActualAmount ?? 0);
+
+        var actualExpenseTotal = activeTransactions
+            .Where(transaction =>
+                transaction.Type == BudgetTransactionType.Expense)
+            .Sum(transaction =>
+                transaction.ActualAmount ?? 0);
+
+        var plannedBudget =
+            performance.PlannedBudget ?? 0;
+
+        var plannedBudgetRemaining =
+            plannedBudget - plannedExpenseTotal;
+
+        var plannedBudgetUsagePercent =
+            plannedBudget > 0
+                ? Math.Round(plannedExpenseTotal / plannedBudget * 100, 2)
+                : 0;
+
+        var incomeByCategory = activeTransactions
+            .Where(transaction =>
+                transaction.Type == BudgetTransactionType.Income)
+            .GroupBy(transaction =>
+                transaction.Category)
+            .Select(group =>
+                new CategoryBudgetSummaryViewModel
+                {
+                    Category = group.Key,
+                    PlannedTotal = group.Sum(transaction =>
+                        transaction.PlannedAmount),
+                    ActualTotal = group.Sum(transaction =>
+                        transaction.ActualAmount ?? 0)
+                })
+            .OrderByDescending(item =>
+                item.ActualTotal)
+            .ThenByDescending(item =>
+                item.PlannedTotal)
+            .ToList();
+
+        var expenseByCategory = activeTransactions
+            .Where(transaction =>
+                transaction.Type == BudgetTransactionType.Expense)
+            .GroupBy(transaction =>
+                transaction.Category)
+            .Select(group =>
+                new CategoryBudgetSummaryViewModel
+                {
+                    Category = group.Key,
+                    PlannedTotal = group.Sum(transaction =>
+                        transaction.PlannedAmount),
+                    ActualTotal = group.Sum(transaction =>
+                        transaction.ActualAmount ?? 0)
+                })
+            .OrderByDescending(item =>
+                item.ActualTotal)
+            .ThenByDescending(item =>
+                item.PlannedTotal)
+            .ToList();
+
+        var showProfits = activeTransactions
+            .Where(transaction =>
+                transaction.PerformanceShow != null)
+            .GroupBy(transaction =>
+                transaction.PerformanceShow!)
+            .Select(group =>
+            {
+                var plannedIncome = group
+                    .Where(transaction =>
+                        transaction.Type == BudgetTransactionType.Income)
+                    .Sum(transaction =>
+                        transaction.PlannedAmount);
+
+                var plannedExpense = group
+                    .Where(transaction =>
+                        transaction.Type == BudgetTransactionType.Expense)
+                    .Sum(transaction =>
+                        transaction.PlannedAmount);
+
+                var actualIncome = group
+                    .Where(transaction =>
+                        transaction.Type == BudgetTransactionType.Income)
+                    .Sum(transaction =>
+                        transaction.ActualAmount ?? 0);
+
+                var actualExpense = group
+                    .Where(transaction =>
+                        transaction.Type == BudgetTransactionType.Expense)
+                    .Sum(transaction =>
+                        transaction.ActualAmount ?? 0);
+
+                return new ShowProfitSummaryViewModel
+                {
+                    PerformanceShowId = group.Key.Id,
+                    StartDateTime = group.Key.StartDateTime,
+                    LocationText = GetBudgetShowLocationText(group.Key),
+                    PlannedIncome = plannedIncome,
+                    PlannedExpense = plannedExpense,
+                    PlannedProfit = plannedIncome - plannedExpense,
+                    ActualIncome = actualIncome,
+                    ActualExpense = actualExpense,
+                    ActualProfit = actualIncome - actualExpense
+                };
+            })
+            .OrderBy(item =>
+                item.StartDateTime)
+            .ToList();
+
+        var model = new PerformanceBudgetViewModel
+        {
+            Performance = performance,
+            Transactions = transactions,
+
+            DateFrom = dateFrom,
+            DateTo = dateTo,
+            Currency = string.IsNullOrWhiteSpace(currency)
+                ? null
+                : currency.Trim().ToUpperInvariant(),
+
+            PlannedBudget = plannedBudget,
+
+            PlannedIncomeTotal = plannedIncomeTotal,
+            PlannedExpenseTotal = plannedExpenseTotal,
+            PlannedProfit = plannedIncomeTotal - plannedExpenseTotal,
+
+            ActualIncomeTotal = actualIncomeTotal,
+            ActualExpenseTotal = actualExpenseTotal,
+            ActualProfit = actualIncomeTotal - actualExpenseTotal,
+
+            PlannedBudgetRemaining = plannedBudgetRemaining,
+            PlannedBudgetUsagePercent = plannedBudgetUsagePercent,
+
+            IncomeByCategory = incomeByCategory,
+            ExpenseByCategory = expenseByCategory,
+            ShowProfits = showProfits
+        };
+
+        return View(model);
     }
 
     // POST: Performances/Delete/5
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> DeleteConfirmed(
     int id)
     {
@@ -335,6 +632,21 @@ public class PerformancesController : Controller
         {
             TempData["ErrorMessage"] =
                 "Неможливо видалити виставу, тому що до неї прив’язані покази.";
+
+            return RedirectToAction(
+                nameof(Delete),
+                new { id });
+        }
+
+        var hasBudgetTransactions = await _context.BudgetTransactions
+            .AsNoTracking()
+            .AnyAsync(transaction =>
+                transaction.PerformanceId == id);
+
+        if (hasBudgetTransactions)
+        {
+            TempData["ErrorMessage"] =
+                "Неможливо видалити виставу, тому що до неї прив’язані фінансові операції.";
 
             return RedirectToAction(
                 nameof(Delete),
@@ -367,6 +679,13 @@ public class PerformancesController : Controller
 
         _context.Performances.Remove(performance);
         await _context.SaveChangesAsync();
+        await _actionLogService.LogAsync(
+                User,
+                "Delete",
+                "Performance",
+                id,
+                performanceTitle,
+                $"Видалено виставу «{performanceTitle}».");
 
         TempData["SuccessMessage"] =
             $"Виставу «{performanceTitle}» видалено.";
@@ -374,6 +693,7 @@ public class PerformancesController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [Authorize(Policy = AppPolicies.CanManagePerformances)]
     public async Task<IActionResult> Preparation(int? id)
 {
     if (id == null)
@@ -909,17 +1229,32 @@ private static string GetProductionItemTypeText(
     };
 }
 
-private static string GetProductionItemStatusText(
-    ProductionItemStatus status)
-{
-    return status switch
+    private static string GetProductionItemStatusText(
+        ProductionItemStatus status)
     {
-        ProductionItemStatus.Needed => "Потрібно",
-        ProductionItemStatus.InProgress => "У роботі",
-        ProductionItemStatus.Ready => "Готово",
-        ProductionItemStatus.Missing => "Проблема",
-        ProductionItemStatus.Cancelled => "Скасовано",
-        _ => status.ToString()
-    };
-}
+        return status switch
+        {
+            ProductionItemStatus.Needed => "Потрібно",
+            ProductionItemStatus.InProgress => "У роботі",
+            ProductionItemStatus.Ready => "Готово",
+            ProductionItemStatus.Missing => "Проблема",
+            ProductionItemStatus.Cancelled => "Скасовано",
+            _ => status.ToString()
+        };
+    }
+
+    private static string GetBudgetShowLocationText(
+        PerformanceShow show)
+    {
+        if (show.Hall != null)
+        {
+            return show.Hall.Venue == null
+                ? show.Hall.Name
+                : $"{show.Hall.Venue.Name} — {show.Hall.Name}";
+        }
+
+        return string.IsNullOrWhiteSpace(show.ExternalLocation)
+            ? "Локацію не вказано"
+            : show.ExternalLocation;
+    }
 }

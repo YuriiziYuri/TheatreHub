@@ -1,6 +1,16 @@
 ﻿@model TheatreHub.Models.Rehearsal
 
+@using Microsoft.AspNetCore.Authorization
+@using TheatreHub.Constants
+
+@inject IAuthorizationService AuthorizationService
+
 @{
+    var canManageRehearsals =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManageRehearsals)).Succeeded;
+
     ViewData["Title"] = "Деталі репетиції";
 }
 
@@ -226,23 +236,26 @@
 
                 <div class="d-flex flex-wrap gap-2">
 
-                    <a asp-action="Edit"
-                       asp-route-id="@Model.Id"
-                       class="btn btn-primary">
-                        Редагувати
-                    </a>
+                    @if (canManageRehearsals)
+                    {
+                        <a asp-action="Edit"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-primary">
+                            Редагувати
+                        </a>
 
-                    <a asp-action="Attendance"
-                       asp-route-id="@Model.Id"
-                       class="btn btn-outline-success">
-                        Відвідування
-                    </a>
+                        <a asp-action="Attendance"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-outline-success">
+                            Відвідування
+                        </a>
 
-                    <a asp-action="Delete"
-                       asp-route-id="@Model.Id"
-                       class="btn btn-outline-danger">
-                        Видалити
-                    </a>
+                        <a asp-action="Delete"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-outline-danger">
+                            Видалити
+                        </a>
+                    }
 
                     <a asp-action="Index"
                        class="btn btn-outline-secondary">

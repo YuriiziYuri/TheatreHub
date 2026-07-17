@@ -1,32 +1,68 @@
 ﻿@model TheatreHub.ViewModels.DashboardViewModel
 
+@using Microsoft.AspNetCore.Authorization
+@using TheatreHub.Constants
+
+@inject IAuthorizationService AuthorizationService
+
 @{
     ViewData["Title"] = "Панель керування";
+
+    var canManagePerformances =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManagePerformances)).Succeeded;
+
+    var canManageRehearsals =
+        (await AuthorizationService.AuthorizeAsync(
+            User,
+            AppPolicies.CanManageRehearsals)).Succeeded;
+
+    var canViewFinance =
+        User.IsInRole(UserRoles.SystemAdmin) ||
+        User.IsInRole(UserRoles.GeneralDirector) ||
+        User.IsInRole(UserRoles.FinanceManager);
+
+    var canViewAdmin =
+        User.IsInRole(UserRoles.SystemAdmin) ||
+        User.IsInRole(UserRoles.GeneralDirector);
 }
 
 <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
     <div>
         <h1 class="h3 mb-1">
-            Панель керування
+            Панель керування TheatreHub
         </h1>
 
         <p class="text-muted mb-0">
-            Коротке зведення по виставах, репетиціях, завданнях і постановочних елементах.
+            Загальне зведення по виставах, репетиціях, завданнях, фінансах і підготовці.
         </p>
     </div>
 
     <div class="d-flex flex-wrap gap-2">
-        <a asp-controller="Performances"
-           asp-action="Create"
-           class="btn btn-primary">
-            Створити виставу
+        <a asp-controller="Calendar"
+           asp-action="Index"
+           class="btn btn-outline-secondary">
+            Календар
         </a>
 
-        <a asp-controller="Rehearsals"
-           asp-action="Create"
-           class="btn btn-outline-primary">
-            Створити репетицію
-        </a>
+        @if (canManagePerformances)
+        {
+            <a asp-controller="Performances"
+               asp-action="Create"
+               class="btn btn-primary">
+                Створити виставу
+            </a>
+        }
+
+        @if (canManageRehearsals)
+        {
+            <a asp-controller="Rehearsals"
+               asp-action="Create"
+               class="btn btn-outline-primary">
+                Створити репетицію
+            </a>
+        }
     </div>
 </div>
 
@@ -106,6 +142,85 @@
 
 </div>
 
+@if (canViewFinance)
+{
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <div>
+                    <h2 class="h4 mb-1">
+                        Фінансовий підсумок
+                    </h2>
+
+                    <p class="text-muted mb-0">
+                        Загальна картина доходів і витрат по системі.
+                    </p>
+                </div>
+
+                <a asp-controller="BudgetTransactions"
+                   asp-action="Index"
+                   class="btn btn-sm btn-outline-secondary">
+                    Відкрити фінанси
+                </a>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6 col-xl-3">
+                    <div class="border rounded p-3 h-100">
+                        <div class="text-muted small">
+                            Планові доходи
+                        </div>
+
+                        <div class="fs-5 fw-semibold">
+                            @Model.PlannedIncomeTotal.ToString("N2") грн
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-xl-3">
+                    <div class="border rounded p-3 h-100">
+                        <div class="text-muted small">
+                            Планові витрати
+                        </div>
+
+                        <div class="fs-5 fw-semibold">
+                            @Model.PlannedExpenseTotal.ToString("N2") грн
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-xl-3">
+                    <div class="border rounded p-3 h-100">
+                        <div class="text-muted small">
+                            Плановий баланс
+                        </div>
+
+                        <div class="fs-5 fw-semibold">
+                            @Model.PlannedProfit.ToString("N2") грн
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-xl-3">
+                    <div class="border rounded p-3 h-100">
+                        <div class="text-muted small">
+                            Фактичний баланс
+                        </div>
+
+                        <div class="fs-5 fw-semibold">
+                            @Model.ActualProfit.ToString("N2") грн
+                        </div>
+
+                        <div class="small text-muted">
+                            Доходи: @Model.ActualIncomeTotal.ToString("N2") · Витрати: @Model.ActualExpenseTotal.ToString("N2")
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 <div class="row g-4 mb-4">
 
     <div class="col-lg-7">
@@ -117,8 +232,8 @@
                         Найближчі репетиції
                     </h2>
 
-                    <a asp-controller="Rehearsals"
-                       asp-action="Calendar"
+                    <a asp-controller="Calendar"
+                       asp-action="Index"
                        class="btn btn-sm btn-outline-secondary">
                         Календар
                     </a>
@@ -177,22 +292,52 @@
             <div class="card-body p-4">
 
                 <h2 class="h4 mb-3">
-                    Постановочні елементи
+                    Швидкі переходи
                 </h2>
 
-                <div class="fs-3 fw-semibold">
-                    @Model.ProblemProductionItemsCount
-                </div>
+                <div class="d-grid gap-2">
+                    <a asp-controller="Performances"
+                       asp-action="Index"
+                       class="btn btn-outline-primary">
+                        Вистави
+                    </a>
 
-                <div class="text-muted mb-3">
-                    Проблемні або прострочені елементи
-                </div>
+                    <a asp-controller="TheatreTasks"
+                       asp-action="Index"
+                       class="btn btn-outline-primary">
+                        Завдання
+                    </a>
 
-                <a asp-controller="ProductionItems"
-                   asp-action="Index"
-                   class="btn btn-outline-primary">
-                    Відкрити реквізит
-                </a>
+                    <a asp-controller="ProductionItems"
+                       asp-action="Index"
+                       class="btn btn-outline-primary">
+                        Реквізит / костюми / грим
+                    </a>
+
+                    @if (canViewFinance)
+                    {
+                        <a asp-controller="BudgetTransactions"
+                           asp-action="Index"
+                           class="btn btn-outline-primary">
+                            Фінанси
+                        </a>
+                    }
+
+                    @if (canViewAdmin)
+                    {
+                        <a asp-controller="AdminActionLogs"
+                           asp-action="Index"
+                           class="btn btn-outline-secondary">
+                            Журнал дій
+                        </a>
+
+                        <a asp-controller="AdminBackups"
+                           asp-action="Index"
+                           class="btn btn-outline-secondary">
+                            Резервні копії
+                        </a>
+                    }
+                </div>
 
             </div>
         </div>
@@ -235,7 +380,9 @@
                                class="list-group-item list-group-item-action">
 
                                 <div class="d-flex flex-wrap justify-content-between gap-2">
-                                    <strong>@task.Title</strong>
+                                    <strong>
+                                        @task.Title
+                                    </strong>
 
                                     <span>
                                         @if (task.IsOverdue)
@@ -307,7 +454,9 @@
                                class="list-group-item list-group-item-action">
 
                                 <div class="d-flex flex-wrap justify-content-between gap-2">
-                                    <strong>@item.Name</strong>
+                                    <strong>
+                                        @item.Name
+                                    </strong>
 
                                     <span>
                                         @if (item.IsOverdue)
@@ -404,12 +553,15 @@
                             </div>
 
                             <div class="d-flex flex-wrap gap-2">
-                                <a asp-controller="Performances"
-                                   asp-action="Preparation"
-                                   asp-route-id="@performance.Id"
-                                   class="btn btn-sm btn-outline-secondary">
-                                    Контроль
-                                </a>
+                        @if (canManagePerformances)
+                                {
+                                    <a asp-controller="Performances"
+                                       asp-action="Preparation"
+                                       asp-route-id="@performance.Id"
+                                       class="btn btn-sm btn-outline-secondary">
+                                        Контроль
+                                    </a>
+                                }
 
                                 <a asp-controller="Performances"
                                    asp-action="Details"
@@ -422,9 +574,76 @@
                         </div>
 
                     </div>
-                        }
+                }
             </div>
         }
 
     </div>
 </div>
+
+@if (canViewAdmin)
+{
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <h2 class="h4 mb-0">
+                    Останні дії користувачів
+                </h2>
+
+                <a asp-controller="AdminActionLogs"
+                   asp-action="Index"
+                   class="btn btn-sm btn-outline-secondary">
+                    Весь журнал
+                </a>
+            </div>
+
+            @if (!Model.RecentActionLogs.Any())
+            {
+                <div class="alert alert-info mb-0">
+                    Поки що немає записів у журналі дій.
+                </div>
+            }
+            else
+            {
+                <div class="list-group">
+                    @foreach (var log in Model.RecentActionLogs)
+                    {
+                        <div class="list-group-item">
+                            <div class="d-flex flex-wrap justify-content-between gap-2">
+                                <strong>
+                                    @log.UserFullName
+                                </strong>
+
+                                <span class="small text-muted">
+                                    @log.CreatedAt.ToString("dd.MM.yyyy HH:mm")
+                                </span>
+                            </div>
+
+                            <div class="small text-muted">
+                                @log.ActionType · @log.EntityType
+                                @if (!string.IsNullOrWhiteSpace(log.EntityTitle))
+                                {
+                                    <span> · @log.EntityTitle</span>
+                                }
+                            </div>
+
+                            <div>
+                                @log.Description
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            <div class="text-center mt-4 mb-2">
+                <a asp-controller="Home"
+                   asp-action="Privacy"
+                   class="text-muted small text-decoration-none">
+                    Політика користування
+                </a>
+            </div>
+
+        </div>
+    </div>
+}
