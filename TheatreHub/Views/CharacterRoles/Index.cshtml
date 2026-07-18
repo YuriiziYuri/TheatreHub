@@ -1,4 +1,4 @@
-﻿@model IEnumerable<TheatreHub.Models.RoleAssignment>
+﻿@model IEnumerable<TheatreHub.Models.CharacterRole>
 
 @using Microsoft.AspNetCore.Authorization
 @using TheatreHub.Constants
@@ -6,9 +6,7 @@
 @inject IAuthorizationService AuthorizationService
 
 @{
-    ViewData["Title"] = "Акторські склади";
-    var roleId = ViewBag.CharacterRoleId;
-    var roleName = ViewBag.CharacterRoleName as string;
+    ViewData["Title"] = "Персонажі";
 
     var canManagePerformances =
         (await AuthorizationService.AuthorizeAsync(
@@ -24,37 +22,42 @@
 
     <div>
         <h1 class="h2 mb-1">
-            Акторські склади
+            Персонажі
         </h1>
 
-        @if (!string.IsNullOrWhiteSpace(roleName))
-        {
-            <p class="text-muted mb-0">
-                @roleName
-            </p>
-        }
-        else
-        {
-            <p class="text-muted mb-0">
-                Поточні та попередні виконавці театральних ролей
-            </p>
-        }
+        <p class="text-muted mb-0">
+            Персонажі вистав і призначені виконавці.
+        </p>
     </div>
 
     @if (canManagePerformances)
     {
-        <a asp-action="Create"
-           asp-route-characterRoleId="@roleId"
+        <a asp-controller="CharacterRoles"
+           asp-action="Create"
            class="btn btn-primary">
-            Додати призначення
+            Додати персонажа
         </a>
     }
 </div>
 
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
 @if (!Model.Any())
 {
     <div class="alert alert-info">
-        Призначень поки немає.
+        Персонажів поки немає.
     </div>
 }
 else
@@ -66,130 +69,133 @@ else
 
                 <thead class="table-light">
                     <tr>
+                        <th>Персонаж</th>
                         <th>Вистава</th>
-                        <th>Роль</th>
-                        <th>Актор</th>
-                        <th>Склад</th>
-                        <th>Період</th>
-                        <th>Статус</th>
-                        <th>Поточний</th>
-                        <th>Публічний</th>
-
-                        @if (canManagePerformances)
-                        {
-                            <th class="text-end">Дії</th>
-                        }
+                        <th>Тип ролі</th>
+                        <th>Поточні виконавці</th>
+                        <th>Призначень</th>
+                        <th class="text-end">Дії</th>
                     </tr>
                 </thead>
 
                 <tbody>
                     @foreach (var item in Model)
                     {
+                        var currentAssignments =
+                        item.Assignments
+                        .Where(assignment =>
+                        assignment.IsCurrent)
+                        .OrderBy(assignment =>
+                        assignment.CastType)
+                        .ThenBy(assignment =>
+                        assignment.Actor.FullName)
+                        .ToList();
+
                         <tr>
                             <td>
-                                @item.CharacterRole.Performance.Title
-                            </td>
+                                <strong>@item.Name</strong>
 
-                            <td class="fw-semibold">
-                                @item.CharacterRole.Name
-                            </td>
-
-                            <td>
-                                @item.Actor.FullName
-                            </td>
-
-                            <td>
-                                @Html.DisplayFor(modelItem => item.CastType)
-                            </td>
-
-                            <td class="text-nowrap">
-                                @item.StartDate.ToString("dd.MM.yyyy")
-
-                                @if (item.EndDate.HasValue)
+                                @if (!string.IsNullOrWhiteSpace(item.Description))
                                 {
-                                    <span>
-                                        — @item.EndDate.Value.ToString("dd.MM.yyyy")
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span>— дотепер</span>
+                                    <div class="small text-muted mt-1">
+                                        @item.Description
+                                    </div>
                                 }
                             </td>
 
                             <td>
-                                @Html.DisplayFor(modelItem => item.Status)
+                                @item.Performance.Title
                             </td>
 
                             <td>
-                                @if (item.IsCurrent)
+                                @if (item.IsMainRole)
                                 {
-                                    <span class="badge text-bg-success">
-                                        Так
+                                    <span class="badge text-bg-primary">
+                                        Головна
                                     </span>
                                 }
                                 else
                                 {
                                     <span class="badge text-bg-secondary">
-                                        Ні
+                                        Другорядна
                                     </span>
                                 }
                             </td>
 
                             <td>
-                                @if (item.IsPublic)
+                                @if (currentAssignments.Any())
                                 {
-                                    <span class="badge text-bg-primary">
-                                        Так
-                                    </span>
+                                    foreach (var assignment in currentAssignments)
+                                    {
+                                        <div class="mb-1">
+                                            <span class="fw-semibold">
+                                                @assignment.Actor.FullName
+                                            </span>
+
+                                            <span class="badge text-bg-light border ms-1">
+                                                @Html.DisplayFor(
+                                                modelItem =>
+                                                assignment.CastType)
+                            </span>
+                        </div>
+                                                }
                                 }
                                 else
                                 {
-                                    <span class="badge text-bg-light border">
-                                        Ні
+                                    <span class="badge text-bg-warning">
+                                        Не призначено
                                     </span>
                                 }
                             </td>
 
-                            @if (canManagePerformances)
-                            {
-                                <td class="text-end text-nowrap">
+                            <td>
+                                <a asp-controller="RoleAssignments"
+                                   asp-action="Index"
+                                   asp-route-characterRoleId="@item.Id"
+                                   class="text-decoration-none">
+                                    @item.Assignments.Count
+                                </a>
+                            </td>
 
-                                    <a asp-action="Edit"
+                            <td class="text-end text-nowrap">
+
+                                <a asp-controller="CharacterRoles"
+                                   asp-action="Details"
+                                   asp-route-id="@item.Id"
+                                   class="btn btn-sm btn-outline-secondary">
+                                    Деталі
+                                </a>
+
+                                <a asp-controller="RoleAssignments"
+                                   asp-action="Index"
+                                   asp-route-characterRoleId="@item.Id"
+                                   class="btn btn-sm btn-outline-dark">
+                                    Виконавці
+                                </a>
+
+                                @if (canManagePerformances)
+                                {
+                                    <a asp-controller="CharacterRoles"
+                                       asp-action="Edit"
                                        asp-route-id="@item.Id"
-                                       class="btn btn-sm btn-outline-secondary">
+                                       class="btn btn-sm btn-outline-primary">
                                         Редагувати
                                     </a>
 
-                                    <form asp-action="Delete"
-                                          asp-route-id="@item.Id"
-                                          method="post"
-                                          class="d-inline"
-                                          onsubmit="return confirm('Видалити це призначення?');">
+                                    <a asp-controller="CharacterRoles"
+                                       asp-action="Delete"
+                                       asp-route-id="@item.Id"
+                                       class="btn btn-sm btn-outline-danger">
+                                        Видалити
+                                    </a>
+                                }
 
-                                        <button type="submit"
-                                                class="btn btn-sm btn-outline-danger">
-                                            Видалити
-                                        </button>
-
-                                    </form>
-
-                                </td>
-                            }
+                            </td>
                         </tr>
                     }
                 </tbody>
 
             </table>
-
         </div>
     </div>
 }
-
-<div class="mt-3">
-    <a asp-controller="CharacterRoles"
-       asp-action="Index"
-       class="btn btn-outline-dark">
-        До списку персонажів
-    </a>
-</div>

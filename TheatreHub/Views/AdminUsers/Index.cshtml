@@ -96,7 +96,7 @@ else
                     <th>Ролі</th>
                     <th>Актор</th>
                     <th>Статус</th>
-                    <th style="width: 280px;">Дії</th>
+                    <th style="width: 380px;">Дії</th>
                 </tr>
             </thead>
 
@@ -159,6 +159,7 @@ else
 
                         <td>
                             <div class="d-flex flex-wrap gap-1">
+
                                 <a asp-controller="AdminUsers"
                                    asp-action="Edit"
                                    asp-route-id="@user.Id"
@@ -178,16 +179,39 @@ else
                                       asp-route-id="@user.Id"
                                       method="post"
                                       class="d-inline">
+
                                     @Html.AntiForgeryToken()
 
                                     <button type="submit"
-                                            class="btn btn-sm @(user.IsActive ? "btn-outline-danger" : "btn-outline-success")"
-                                            onclick="return confirm('Змінити статус користувача?');">
-                                        @(user.IsActive ? "Деактивувати" : "Активувати")
+                                            class="btn btn-sm @(user.IsActive
+                                                                    ? "btn-outline-danger"
+                                                                    : "btn-outline-success")"
+                                                                                            onclick="return confirm('Змінити статус користувача?');">
+
+                                        @(user.IsActive
+                                                                        ? "Деактивувати"
+                                                                        : "Активувати")
+                            </button>
+                        </form>
+
+                                <form asp-controller="AdminUsers"
+                                      asp-action="Delete"
+                                      asp-route-id="@user.Id"
+                                      method="post"
+                                      class="d-inline">
+
+                                    @Html.AntiForgeryToken()
+
+                                    <button type="submit"
+                                            class="btn btn-sm btn-danger"
+                                            onclick="return confirm('Остаточно видалити користувача? Цю дію неможливо скасувати.');">
+                                        Видалити
                                     </button>
                                 </form>
+
                             </div>
                         </td>
+
                     </tr>
                 }
             </tbody>

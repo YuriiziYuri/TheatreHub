@@ -551,6 +551,80 @@ public class AdminUsersController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Delete(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return NotFound();
+        }
+
+        var user = await _userManager.FindByIdAsync(id);
+
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        var currentUserId = _userManager.GetUserId(User);
+
+        if (user.Id == currentUserId)
+        {
+            TempData["ErrorMessage"] =
+                "Не можна видалити власний обліковий запис.";
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        var roles = await _userManager.GetRolesAsync(user);
+
+        if (roles.Contains(UserRoles.SystemAdmin))
+        {
+            var systemAdmins =
+                await _userManager.GetUsersInRoleAsync(
+                    UserRoles.SystemAdmin);
+
+            if (systemAdmins.Count <= 1)
+            {
+                TempData["ErrorMessage"] =
+                    "Не можна видалити останнього системного адміністратора.";
+
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        var userFullName = user.FullName;
+        var userEmail = user.Email;
+
+        var result = await _userManager.DeleteAsync(user);
+
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(
+                "; ",
+                result.Errors.Select(error => error.Description));
+
+            TempData["ErrorMessage"] =
+                $"Не вдалося видалити користувача. {errors}";
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        await _actionLogService.LogAsync(
+            User,
+            "Delete",
+            "User",
+            null,
+            userFullName,
+            $"Видалено користувача «{userFullName}» з email {userEmail}.");
+
+        TempData["SuccessMessage"] =
+            $"Користувача «{userFullName}» остаточно видалено.";
+
+        return RedirectToAction(nameof(Index));
+    }
+
     private async Task PopulateCreateFormAsync(
         AdminUserCreateViewModel model)
     {

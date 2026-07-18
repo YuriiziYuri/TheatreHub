@@ -289,6 +289,11 @@ public class HallsController : Controller
             return NotFound();
         }
 
+        ViewBag.PerformanceShowsCount =
+            await _context.PerformanceShows
+                .AsNoTracking()
+                .CountAsync(show => show.HallId == hall.Id);
+
         return View(hall);
     }
 
@@ -300,7 +305,6 @@ public class HallsController : Controller
     {
         var hall = await _context.Halls
             .Include(item => item.Venue)
-            .Include(item => item.Rehearsals)
             .FirstOrDefaultAsync(item => item.Id == id);
 
         if (hall == null)
@@ -308,24 +312,66 @@ public class HallsController : Controller
             return NotFound();
         }
 
-        if (hall.Rehearsals.Any())
+        var rehearsalsCount =
+            await _context.Rehearsals
+                .CountAsync(rehearsal =>
+                    rehearsal.HallId == id);
+
+        var performanceShowsCount =
+            await _context.PerformanceShows
+                .CountAsync(show =>
+                    show.HallId == id);
+
+        if (rehearsalsCount > 0 ||
+            performanceShowsCount > 0)
         {
+            var dependencies = new List<string>();
+
+            if (rehearsalsCount > 0)
+            {
+                dependencies.Add(
+                    $"репетиції: {rehearsalsCount}");
+            }
+
+            if (performanceShowsCount > 0)
+            {
+                dependencies.Add(
+                    $"покази: {performanceShowsCount}");
+            }
+
             TempData["ErrorMessage"] =
-                "Неможливо видалити зал, оскільки з ним пов’язані репетиції.";
+                "Неможливо видалити зал, оскільки з ним пов’язані " +
+                string.Join(", ", dependencies) +
+                ". Спочатку перенесіть або видаліть пов’язані записи.";
 
             return RedirectToAction(
-                nameof(Details),
+                nameof(Delete),
                 new { id });
         }
 
         var venueId = hall.VenueId;
         var hallName = hall.Name;
+
         var hallTitle = hall.Venue == null
             ? hall.Name
             : $"{hall.Venue.Name} — {hall.Name}";
 
         _context.Halls.Remove(hall);
-        await _context.SaveChangesAsync();
+
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            TempData["ErrorMessage"] =
+                "Не вдалося видалити зал, оскільки він використовується " +
+                "в інших записах системи.";
+
+            return RedirectToAction(
+                nameof(Delete),
+                new { id });
+        }
 
         await _actionLogService.LogAsync(
             User,

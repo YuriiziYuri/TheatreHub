@@ -3,8 +3,17 @@
 @{
     ViewData["Title"] = "Видалення залу";
 
-    var hasRehearsals =
-        Model.Rehearsals.Any();
+    var rehearsalsCount =
+        Model.Rehearsals.Count;
+
+    var performanceShowsCount =
+        ViewBag.PerformanceShowsCount is int count
+            ? count
+            : 0;
+
+    var hasDependencies =
+        rehearsalsCount > 0 ||
+        performanceShowsCount > 0;
 }
 
 <div class="row justify-content-center">
@@ -37,14 +46,22 @@
                     <dd class="col-sm-8">
                         @Model.Rehearsals.Count
                     </dd>
+
+                    <dt class="col-sm-4">Покази</dt>
+                    <dd class="col-sm-8">
+                        @performanceShowsCount
+                    </dd>
+
                 </dl>
 
-                @if (hasRehearsals)
+                @if (hasDependencies)
                 {
                     <div class="alert alert-warning">
-                        Зал не можна видалити, бо з ним пов’язані
-                        репетиції. Спочатку перенесіть або видаліть
-                        ці репетиції.
+                        Зал не можна видалити, оскільки з ним пов’язані
+                        репетиції або покази вистав.
+
+                        Спочатку перенесіть чи видаліть ці записи.
+                        Замість видалення зал також можна деактивувати.
                     </div>
 
                     <a asp-action="Details"

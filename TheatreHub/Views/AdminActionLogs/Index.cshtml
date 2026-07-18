@@ -1,7 +1,22 @@
 ﻿@model TheatreHub.ViewModels.ActionLogs.UserActionLogIndexViewModel
+@using TheatreHub.Constants
 
 @{
     ViewData["Title"] = "Журнал дій користувачів";
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["ErrorMessage"]
+    </div>
 }
 
 <div class="container-fluid">
@@ -13,15 +28,34 @@
             </p>
         </div>
 
-        <a asp-action="ExportToExcel"
-           asp-route-search="@Model.Search"
-           asp-route-actionType="@Model.ActionType"
-           asp-route-entityType="@Model.EntityType"
-           asp-route-dateFrom="@Model.DateFrom?.ToString("yyyy-MM-dd")"
-           asp-route-dateTo="@Model.DateTo?.ToString("yyyy-MM-dd")"
-           class="btn btn-success">
-            Експортувати в Excel
-        </a>
+        <div class="d-flex flex-wrap gap-2">
+            <a asp-action="ExportToExcel"
+               asp-route-search="@Model.Search"
+               asp-route-actionType="@Model.ActionType"
+               asp-route-entityType="@Model.EntityType"
+               asp-route-dateFrom="@Model.DateFrom?.ToString("yyyy-MM-dd")"
+               asp-route-dateTo="@Model.DateTo?.ToString("yyyy-MM-dd")"
+               class="btn btn-success">
+                Експортувати в Excel
+            </a>
+
+            @if (User.IsInRole(UserRoles.SystemAdmin))
+            {
+                <form asp-controller="AdminActionLogs"
+                      asp-action="Clear"
+                      method="post"
+                      class="d-inline">
+
+                    @Html.AntiForgeryToken()
+
+                    <button type="submit"
+                            class="btn btn-outline-danger"
+                            onclick="return confirm('Очистити весь журнал дій? Усі записи буде остаточно видалено. Цю дію неможливо скасувати.');">
+                        Очистити журнал
+                    </button>
+                </form>
+            }
+        </div>
     </div>
 
     <form method="get" class="card shadow-sm mb-4">

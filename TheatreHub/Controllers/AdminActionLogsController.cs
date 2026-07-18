@@ -197,4 +197,21 @@ public class AdminActionLogsController : Controller
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             fileName);
     }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = UserRoles.SystemAdmin)]
+    public async Task<IActionResult> Clear()
+    {
+        var deletedCount =
+            await _context.UserActionLogs
+                .ExecuteDeleteAsync();
+
+        TempData["SuccessMessage"] =
+            deletedCount > 0
+                ? $"Журнал дій очищено. Видалено записів: {deletedCount}."
+                : "Журнал дій уже порожній.";
+
+        return RedirectToAction(nameof(Index));
+    }
 }
